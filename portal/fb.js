@@ -78,14 +78,6 @@
     b.set(fs.doc('users/' + user.uid), { name: SETUP.name, username: SETUP.username, createdAt: Date.now() });
     await b.commit();
     SETUP = null;
-    // bring across the data from the claude.ai portal, once
-    try {
-      const seed = await fetch('seed.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null);
-      if (seed) {
-        const ops = []; Object.keys(seed).forEach(c => Object.keys(seed[c]).forEach(id => ops.push([c, id, seed[c][id]])));
-        for (let i = 0; i < ops.length; i += 400) { const bb = fs.batch(); ops.slice(i, i + 400).forEach(([c, id, d]) => bb.set(fs.collection(c).doc(id), d)); await bb.commit(); }
-      }
-    } catch (e) { console.warn('seed import skipped', e); }
   }
 
   const ME = { user: null, member: null, profile: null, owner: null };
@@ -174,6 +166,12 @@
       await ME.user.updatePassword(newPw);
     },
     signOut: () => auth.signOut(),
+    /** Load a data file exported from the old claude.ai portal: { collection: { docId: data } } */
+    async importData(obj) {
+      const ops = []; Object.keys(obj || {}).forEach(c => { if (!/^[a-z]+$/.test(c) || ['members', 'roles', 'users', 'public'].includes(c)) return; Object.keys(obj[c] || {}).forEach(id => { if (id !== 'owner') ops.push([c, id, obj[c][id]]); }); });
+      for (let i = 0; i < ops.length; i += 400) { const bb = fs.batch(); ops.slice(i, i + 400).forEach(([c, id, d]) => bb.set(fs.collection(c).doc(id), d)); await bb.commit(); }
+      return ops.length;
+    },
     authMsg,
     username: () => ME.user && toUser(ME.user.email)
   };

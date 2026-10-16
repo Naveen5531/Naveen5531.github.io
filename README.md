@@ -12,7 +12,6 @@
 | `Movana.apk` | Android app (opens the staff portal). |
 | `portal/index.html` | The staff portal. |
 | `portal/firebase-config.js` | Connection to your Firebase project. Paste your `firebaseConfig` here. |
-| `portal/seed.json` | Data copied from the old claude.ai portal. Loaded once when the admin login is created. |
 | `firestore.rules` | Security rules. Paste into Firebase console → Firestore Database → Rules → Publish. |
 
 ## Switching the portal on (one time)
@@ -35,6 +34,7 @@
    ```
 6. **Authentication → Settings → Authorized domains** → add `naveen5531.github.io`.
 7. Open https://naveen5531.github.io/portal/ – the first screen creates the **admin** login. Do this straight away: the first person to open it becomes the owner.
+8. In the portal open **My access → Bring across old data** and choose `movana-data.json` (sent privately, not stored here) to copy in the data from the old portal.
 
 ## Staff logins
 

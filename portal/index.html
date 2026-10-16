@@ -2376,6 +2376,7 @@ function myAccessView() {
     '<p class="help" style="margin:10px 0 0">' + esc(r.desc || '') + '</p></section>';
   if (w.role === 'none' || (w.role !== 'superadmin' && w.role !== '_loading' && S.whoKnown && S.me)) h += requestPanel(w);
   if (window.MOVANA_FB) h += '<section class="panel"><h2>Login & password</h2><p class="help">You sign in as <b class="code">' + esc(window.MOVANA_FB.username() || '') + '</b>.</p><div class="form"><label>Current password<input id="pw-old" type="password" autocomplete="current-password"></label><label>New password (8+ characters)<input id="pw-new" type="password" autocomplete="new-password"></label><label>New password again<input id="pw-new2" type="password" autocomplete="new-password"></label></div><p class="foot" id="pw-msg" role="status"></p><div class="actions"><button class="btn primary" type="button" data-act="pw-change">Change password</button><button class="btn" type="button" data-act="sign-out">Sign out</button></div></section>';
+  if (window.MOVANA_FB && S.isOwner) h += '<section class="panel"><h2>Bring across old data</h2><p class="help">Choose the <b>movana-data.json</b> file to copy shipments, customers, vehicle types, invoices and settings from the old portal. Safe to run again: the same records are overwritten, not duplicated.</p><input type="file" id="imp-file" accept=".json,application/json"><p class="foot" id="imp-msg" role="status"></p></section>';
   h += '<section class="panel"><h2>Mobile app</h2><p class="help">Use the portal on your phone: Android app download and iPhone home-screen steps are on the company website.</p><p><a class="btn small primary" href="https://claude.ai/artifact/R3vDnu6Rj7o9HZNRgcRptq#app" target="_blank" rel="noopener">Get the mobile app</a></p></section>';
   h += '<section class="panel"><h2>What you can do</h2>' + permTable(r.perms, false) + '</section>';
   return h;
@@ -2808,6 +2809,15 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => { if (e.target.id === 'reg-dept') { S.regDept = e.target.value; render(); } });
 
 document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#who') && S.me) go('me', 'main'); });
+
+document.addEventListener('change', e => {
+  if (e.target.id !== 'imp-file' || !window.MOVANA_FB) return;
+  const f = e.target.files[0], msg = $('#imp-msg'); if (!f) return;
+  msg.textContent = 'Reading…';
+  const rd = new FileReader();
+  rd.onload = async () => { try { const n = await window.MOVANA_FB.importData(JSON.parse(String(rd.result))); toast(n + ' records copied in from the old portal.'); const m2 = $('#imp-msg'); if (m2) m2.textContent = n + ' records copied in.'; } catch (err) { msg.textContent = 'Could not import: ' + (err.code || err.message); } };
+  rd.readAsText(f);
+});
 // ================= navigation =================
 const L = (k, o) => () => listView(k, o);
 const NAV = [
