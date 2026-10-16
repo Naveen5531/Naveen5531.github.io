@@ -1,0 +1,76 @@
+rules_version = '2';
+// Movana portal – security rules. Paste this whole file into
+// Firebase console → Firestore Database → Rules, then press Publish.
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function ownerDoc() { return /databases/$(db)/documents/settings/owner; }
+    function memberDoc() { return /databases/$(db)/documents/members/$(request.auth.uid); }
+    function isOwner() { return signedIn() && exists(ownerDoc()) && get(ownerDoc()).data.uid == request.auth.uid; }
+    function isMember() {
+      return signedIn() && (isOwner() || (exists(memberDoc())
+        && get(memberDoc()).data.status != 'Suspended'
+        && get(memberDoc()).data.role != 'none'));
+    }
+    function role() { return get(memberDoc()).data.role; }
+    // Super admin and Admin head manage logins, roles and settings.
+    function isAdmin() { return isOwner() || (isMember() && role() in ['superadmin', 'admin_head']); }
+    // Read-only roles can look but never change anything.
+    function canWrite() { return isOwner() || (isMember() && !(role() in ['viewer', 'auditor', 'director'])); }
+
+    // "Is the portal set up yet?" – readable before login so the first screen knows what to show.
+    match /public/{d} {
+      allow read: if true;
+      allow create: if signedIn() && !exists(/databases/$(db)/documents/public/setup);
+      allow update, delete: if isAdmin();
+    }
+
+    // The owner is claimed once, by the first admin, and can never be changed from the app.
+    match /settings/owner {
+      allow read: if signedIn();
+      allow create: if signedIn() && !exists(ownerDoc()) && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+    match /settings/{id} {
+      allow read: if isMember();
+      allow write: if id != 'owner' && isAdmin();
+    }
+
+    // Who has which role. Everyone signed in may read their own; admins manage all.
+    match /members/{uid} {
+      allow read: if signedIn() && (uid == request.auth.uid || isMember());
+      allow create: if isAdmin()
+        || (uid == request.auth.uid && !exists(ownerDoc())
+            && getAfter(ownerDoc()).data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // Names and usernames for logins.
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() || (uid == request.auth.uid && !exists(memberDoc()) && !exists(ownerDoc()));
+      allow delete: if isAdmin();
+    }
+
+    match /roles/{id} {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
+
+    // Unique ticket ids: claimed once, never reused.
+    match /ticketids/{id} {
+      allow read: if canWrite();
+      allow create: if canWrite();
+      allow update: if canWrite() && resource.data.claimedBy == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // Everything else: shipments, pickups, trips, invoices, payments, staff, leave, payroll, tickets …
+    match /{coll}/{id} {
+      allow read: if isMember();
+      allow write: if canWrite()
+        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids']);
+    }
+  }
+}

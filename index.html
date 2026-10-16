@@ -156,7 +156,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: 
   <div class="wrap">
     <a class="brand" href="#top" aria-label="Movana Logistics home"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg></span><span><b>Movana Logistics</b><small>Pan-India freight</small></span></a>
     <nav aria-label="Sections"><a href="#services">Services</a><a href="#fleet">Fleet</a><a href="#coverage">Coverage</a><a href="#app">Mobile app</a><a href="#contact">Contact</a></nav>
-    <a class="btn login" id="loginBtn" href="https://claude.ai/artifact/J1xhR22xwHuJGUiDBt1SoR" target="_blank" rel="noopener">Staff login</a>
+    <a class="btn login" id="loginBtn" href="https://naveen5531.github.io/portal/" target="_blank" rel="noopener">Staff login</a>
   </div>
 </header>
 
@@ -232,19 +232,19 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: 
 
   <section class="block" id="app">
     <div class="wrap">
-      <div class="sec-head"><p class="eyebrow">Mobile app</p><h2>The control tower in your pocket</h2><p class="lead">Staff use the Movana app to book pickups, assign vehicles, close runsheets, approve requests and raise tickets. It opens the same portal as the desktop, signed in with the Claude account your administrator gave access to.</p></div>
+      <div class="sec-head"><p class="eyebrow">Mobile app</p><h2>The control tower in your pocket</h2><p class="lead">Staff use the Movana app to book pickups, assign vehicles, close runsheets, approve requests and raise tickets. It opens the same portal as the desktop, with the username and password your administrator gives you.</p></div>
       <div class="app">
         <div class="card">
           <span class="os">Android</span>
           <h3>Download the app</h3>
           <div class="row"><button class="btn gold" type="button" id="dlAndroid">Download for Android</button><span class="status" id="dlStatus"></span></div>
-          <ol><li>The file arrives as <b>Movana-Logistics-Android.zip</b>. Open it in Files and tap <b>Movana.apk</b>.</li><li>If Android asks, allow installs from Files (or your browser) for this one time.</li><li>Open <b>Movana</b> and tap <b>Open control tower</b>. Sign in to Claude in Chrome once.</li></ol>
+          <ol><li>The file arrives as <b>Movana-Logistics-Android.zip</b>. Open it in Files and tap <b>Movana.apk</b>.</li><li>If Android asks, allow installs from Files (or your browser) for this one time.</li><li>Open <b>Movana</b> and tap <b>Open control tower</b>. Sign in with your username and password.</li></ol>
         </div>
         <div class="card">
           <span class="os">iPhone &amp; iPad</span>
           <h3>Add to Home Screen</h3>
           <ol><li>Open the staff portal in <b>Safari</b> with the button below.</li><li>Tap the <b>Share</b> icon, then <b>Add to Home Screen</b>.</li><li>Name it Movana and tap <b>Add</b>. It opens like an app.</li></ol>
-          <div class="row"><a class="btn" id="iosBtn" href="https://claude.ai/artifact/J1xhR22xwHuJGUiDBt1SoR" target="_blank" rel="noopener">Open staff portal</a></div>
+          <div class="row"><a class="btn" id="iosBtn" href="https://naveen5531.github.io/portal/" target="_blank" rel="noopener">Open staff portal</a></div>
         </div>
         <div class="card">
           <span class="os">Scan on your phone</span>
@@ -292,7 +292,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (function () {
-  const PORTAL = 'https://claude.ai/artifact/J1xhR22xwHuJGUiDBt1SoR';
+  const PORTAL = 'https://naveen5531.github.io/portal/';
   const GEO_STATES = [
   ['Jammu and Kashmir', '01', 'Srinagar', 'S'], ['Himachal Pradesh', '02', 'Shimla', 'H'], ['Punjab', '03', 'Chandigarh', 'N'], ['Chandigarh', '04', 'Chandigarh', 'N'],
   ['Uttarakhand', '05', 'Dehradun', 'H'], ['Haryana', '06', 'Gurugram', 'N'], ['Delhi', '07', 'New Delhi', 'N'], ['Rajasthan', '08', 'Jaipur', 'N'], ['Uttar Pradesh', '09', 'Lucknow', 'N'],
@@ -413,10 +413,10 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: 
   paintInfo();
   $('#infoEdit').innerHTML = '';
   // Android download: plain link to the APK hosted next to this page
-  const dl = $('#dlAndroid'); dl.disabled = false; $('#dlStatus').textContent = 'Version 1.0 · 1.2 MB';
+  const dl = $('#dlAndroid'); dl.disabled = false; $('#dlStatus').textContent = 'Version 1.1 · 1.2 MB';
   dl.addEventListener('click', () => { location.href = 'Movana.apk'; });
   const steps = dl.closest('.card').querySelector('ol');
-  steps.innerHTML = '<li>Tap <b>Download for Android</b>. Chrome saves <b>Movana.apk</b>.</li><li>Open it from the download bar or Files. If Android asks, allow installs from Chrome for this one time.</li><li>Open <b>Movana</b> and tap <b>Open control tower</b>. Sign in to Claude once.</li>';
+  steps.innerHTML = '<li>Tap <b>Download for Android</b>. Chrome saves <b>Movana.apk</b>.</li><li>Open it from the download bar or Files. If Android asks, allow installs from Chrome for this one time.</li><li>Open <b>Movana</b> and tap <b>Open control tower</b>. Sign in with the username and password your administrator gave you.</li>';
   // enquiries go to WhatsApp or email
   const enquiry = () => ({ name: $('#q-name').value.trim(), company: $('#q-co').value.trim(), phone: $('#q-phone').value.trim(), email: $('#q-email').value.trim(), from: $('#q-from').value.trim(), to: $('#q-to').value.trim(), vehicle: $('#q-veh').value, date: $('#q-date').value, notes: $('#q-notes').value.trim() });
   const asText = q => 'Pickup / quote request – Movana Logistics\nName: ' + q.name + (q.company ? ' (' + q.company + ')' : '') + '\nPhone: ' + q.phone + (q.email ? '\nEmail: ' + q.email : '') + '\nLane: ' + (q.from || '?') + ' → ' + (q.to || '?') + '\nVehicle: ' + (q.vehicle || 'suggest') + (q.date ? '\nPickup date: ' + q.date : '') + (q.notes ? '\nLoad: ' + q.notes : '');
