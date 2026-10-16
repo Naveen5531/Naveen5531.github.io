@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Movana Logistics – full truckload, part load, first and last mile, reverse logistics across India. Instant freight estimate and pickup booking."><meta name="theme-color" content="#0c0d0f"><title>Movana Logistics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a consignment-note (LR) motif. Dark masthead band with the live estimate printed as an LR slip; white body sections ruled like a waybill; gold only on rules, numbers and the one primary action. */
+:root {
+  --bg: #f6f6f3; --paper: #ffffff; --ink: #121314; --ink-2: #4a4c50; --rule: #dedbd2; --gold: #9a6d16; --gold-soft: #f4ead3;
+  --band: #0c0d0f; --band-ink: #f2efe7; --band-sub: #a9a59a; --band-rule: #2a2b2e; --ok: #1d7a43;
+  --display: "Fraunces", Georgia, "Times New Roman", serif; --body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1012; --paper: #17181b; --ink: #ecebe6; --ink-2: #a9a8a1; --rule: #2c2d31; --gold: #d4a64a; --gold-soft: #2b2416; --band: #070809; --band-ink: #f2efe7; --band-sub: #9d998e; --band-rule: #24252a; --ok: #4cc27f; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #0f1012; --paper: #17181b; --ink: #ecebe6; --ink-2: #a9a8a1; --rule: #2c2d31; --gold: #d4a64a; --gold-soft: #2b2416; --band: #070809; --band-ink: #f2efe7; --band-sub: #9d998e; --band-rule: #24252a; --ok: #4cc27f; color-scheme: dark }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; } body { margin: 0; } img { max-width: 100%; } [hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--band); }
+a { color: inherit; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; line-height: 1.12; text-wrap: balance; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: clamp(1.7rem, 3.4vw, 2.5rem); }
+h3 { font-size: 1.2rem; }
+p { margin: 0; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.eyebrow { font: 600 .74rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.lead { color: var(--ink-2); max-width: 62ch; }
+.btn { display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); font: 600 .95rem var(--body); padding: 12px 18px; border-radius: 999px; text-decoration: none; cursor: pointer; }
+.btn:hover { border-color: var(--gold); }
+.btn.gold { background: var(--gold); border-color: var(--gold); color: #fff; }
+.btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.btn[disabled] { opacity: .55; cursor: default; }
+
+/* masthead */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: var(--band); color: var(--band-ink); border-bottom: 1px solid var(--band-rule); }
+.top .wrap { display: flex; align-items: center; gap: 20px; padding-block: 12px; }
+.brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
+.mark { width: 36px; height: 36px; border-radius: 10px; background: #b8862b; display: grid; place-items: center; flex: none; }
+.mark svg { width: 21px; height: 21px; }
+.brand b { font: 700 1.08rem var(--display); display: block; line-height: 1.1; }
+.brand small { font: 500 .6rem var(--mono); letter-spacing: .18em; color: var(--band-sub); text-transform: uppercase; }
+.top nav { display: flex; gap: 18px; margin-left: auto; font-size: .9rem; }
+.top nav a { text-decoration: none; color: var(--band-sub); }
+.top nav a:hover { color: var(--band-ink); }
+.top .login { background: transparent; color: var(--band-ink); border-color: #4b4127; padding: 9px 15px; font-size: .86rem; }
+@media (max-width: 860px) { .top nav { display: none; } .top .login { margin-left: auto; } }
+
+/* hero */
+.hero { background: var(--band); color: var(--band-ink); }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 48px; padding-block: 56px 64px; align-items: center; }
+.hero h1 { font-size: clamp(2.3rem, 5.4vw, 4rem); font-weight: 600; }
+.hero h1 em { font-style: italic; color: #d4a64a; font-weight: 500; }
+.hero .lead { color: var(--band-sub); margin-top: 18px; font-size: 1.07rem; }
+.hero .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.hero .btn { background: transparent; color: var(--band-ink); border-color: #3a3426; }
+.hero .btn.gold { background: #b8862b; border-color: #b8862b; color: #fff; }
+.lanes { margin-top: 30px; display: grid; gap: 6px; font: 400 .78rem var(--mono); color: var(--band-sub); }
+.lanes span b { color: var(--band-ink); font-weight: 600; }
+@media (max-width: 900px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-block: 36px 44px; } }
+
+/* LR estimate slip */
+.lr { background: #fbfaf6; color: #17181a; border-radius: 6px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.7); position: relative; overflow: hidden; }
+.lr::before { content: ""; position: absolute; inset: 0 0 auto; height: 6px; background: repeating-linear-gradient(90deg, #b8862b 0 22px, transparent 22px 30px); }
+.lr-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 22px 22px 12px; border-bottom: 1px dashed #cfc9b8; }
+.lr-head b { font: 600 1.1rem var(--display); }
+.lr-head span { font: 500 .72rem var(--mono); color: #6d6a60; letter-spacing: .06em; }
+.lr-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.lr-f { padding: 12px 22px; border-bottom: 1px solid #e7e2d5; display: grid; gap: 4px; min-width: 0; }
+.lr-f:nth-child(odd) { border-right: 1px solid #e7e2d5; }
+.lr-f label { font: 600 .66rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: #7a766a; }
+.lr-f input, .lr-f select { border: 0; background: transparent; font: 600 1rem var(--body); color: #121314; padding: 2px 0; width: 100%; min-width: 0; color-scheme: light; }
+.lr-f input:focus, .lr-f select:focus { outline: none; box-shadow: 0 2px 0 #b8862b; }
+.lr-out { padding: 16px 22px 20px; display: grid; gap: 8px; }
+.lr-row { display: flex; justify-content: space-between; gap: 12px; font-size: .9rem; color: #45433d; }
+.lr-row b { font-variant-numeric: tabular-nums; color: #121314; }
+.lr-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-top: 2px solid #121314; padding-top: 12px; margin-top: 4px; }
+.lr-total b { font: 700 1.7rem var(--display); font-variant-numeric: tabular-nums; }
+.lr-note { font-size: .76rem; color: #6d6a60; }
+.stamp { position: absolute; right: 18px; top: 58px; transform: rotate(-9deg); border: 2px solid #b8862b; color: #9a6d16; font: 700 .64rem var(--mono); letter-spacing: .16em; padding: 5px 8px; border-radius: 4px; opacity: .8; pointer-events: none; }
+
+/* sections */
+section.block { padding-block: 72px; border-bottom: 1px solid var(--rule); }
+.sec-head { display: grid; gap: 12px; margin-bottom: 34px; max-width: 760px; }
+.facts { background: var(--paper); border-bottom: 1px solid var(--rule); }
+.facts .wrap { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.fact { padding: 22px 18px; border-right: 1px solid var(--rule); display: grid; gap: 2px; }
+.fact:last-child { border-right: 0; }
+.fact b { font: 600 2rem var(--display); font-variant-numeric: tabular-nums; }
+.fact span { color: var(--ink-2); font-size: .88rem; }
+@media (max-width: 720px) { .facts .wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fact:nth-child(2) { border-right: 0; } .fact:nth-child(-n+2) { border-bottom: 1px solid var(--rule); } }
+
+.services { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
+.svc { padding: 26px 24px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); display: grid; gap: 10px; align-content: start; background: var(--paper); }
+.svc .code { font: 600 .72rem var(--mono); color: var(--gold); letter-spacing: .1em; }
+.svc p { color: var(--ink-2); font-size: .94rem; }
+.svc ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: .88rem; display: grid; gap: 3px; }
+@media (max-width: 900px) { .services { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .services { grid-template-columns: minmax(0, 1fr); } }
+
+.flow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; counter-reset: s; }
+.step { position: relative; padding: 18px 14px 0 0; display: grid; gap: 6px; align-content: start; }
+.step::before { counter-increment: s; content: counter(s, decimal-leading-zero); font: 600 .78rem var(--mono); color: var(--gold); }
+.step::after { content: ""; position: absolute; top: 6px; left: 30px; right: 8px; height: 1px; background: var(--rule); }
+.step:last-child::after { display: none; }
+.step b { font: 600 1rem var(--display); }
+.step span { font-size: .84rem; color: var(--ink-2); }
+@media (max-width: 900px) { .flow { grid-template-columns: minmax(0, 1fr); gap: 4px; } .step { padding: 10px 0 10px 44px; } .step::before { position: absolute; left: 0; top: 12px; } .step::after { display: none; } }
+
+.tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--r); background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { font: 600 .68rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+td.n { text-align: right; font-variant-numeric: tabular-nums; }
+tr:last-child td { border-bottom: 0; }
+td.best { white-space: normal; color: var(--ink-2); min-width: 220px; }
+
+.states { display: flex; flex-wrap: wrap; gap: 8px; }
+.st { border: 1px solid var(--rule); background: var(--paper); border-radius: 999px; padding: 6px 12px; font-size: .84rem; }
+.st i { font-style: normal; font: 600 .72rem var(--mono); color: var(--gold); margin-left: 6px; }
+.st.s { border-style: dashed; }
+.legend { margin-top: 14px; font-size: .84rem; color: var(--ink-2); }
+
+.app { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, .8fr); gap: 16px; }
+.card { background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r); padding: 24px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; min-width: 0; }
+.card ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--ink-2); font-size: .92rem; }
+.card .os { font: 600 .72rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.qr { background: #fff; color: #121314; padding: 12px; border-radius: 10px; width: fit-content; max-width: 100%; }
+.qr img, .qr canvas { display: block; width: 168px; height: 168px; }
+.status { font-size: .84rem; color: var(--ink-2); }
+.status.ok { color: var(--ok); }
+@media (max-width: 960px) { .app { grid-template-columns: minmax(0, 1fr); } }
+
+.contact { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.form label { display: grid; gap: 5px; font-size: .82rem; font-weight: 600; color: var(--ink-2); min-width: 0; }
+.form .wide { grid-column: 1 / -1; }
+.form input, .form select, .form textarea { font: 400 .98rem var(--body); color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; width: 100%; min-width: 0; }
+.form textarea { min-height: 84px; resize: vertical; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.kv { display: grid; gap: 12px; }
+.kv div { display: grid; gap: 2px; }
+.kv span { font: 600 .68rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+.kv b { font-weight: 600; word-break: break-word; }
+.copy { border: 0; background: none; color: var(--gold); font: 600 .8rem var(--body); cursor: pointer; padding: 0; justify-self: start; }
+@media (max-width: 760px) { .contact, .form { grid-template-columns: minmax(0, 1fr); } }
+.leads { margin-top: 18px; }
+.lead-item { border-top: 1px solid var(--rule); padding: 12px 0; display: grid; gap: 4px; font-size: .9rem; }
+.lead-item b { font-weight: 600; }
+.lead-item .meta { font: 400 .76rem var(--mono); color: var(--ink-2); }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 10px; font-size: .9rem; z-index: 20; max-width: calc(100% - 32px); }
+footer { padding-block: 34px; color: var(--ink-2); font-size: .84rem; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: space-between; }
+@media (prefers-reduced-motion: no-preference) { .lr { animation: rise .6s ease-out both; } @keyframes rise { from { transform: translateY(10px); } to { transform: none; } } }
+</style>
+
+</head><body><header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Movana Logistics home"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg></span><span><b>Movana Logistics</b><small>Pan-India freight</small></span></a>
+    <nav aria-label="Sections"><a href="#services">Services</a><a href="#fleet">Fleet</a><a href="#coverage">Coverage</a><a href="#app">Mobile app</a><a href="#contact">Contact</a></nav>
+    <a class="btn login" id="loginBtn" href="https://claude.ai/artifact/J1xhR22xwHuJGUiDBt1SoR" target="_blank" rel="noopener">Staff login</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow" style="color:#d4a64a">Full truck · Part load · Last mile · Returns</p>
+        <h1 style="margin-top:16px">Pincode to pincode, <em>every handover on record.</em></h1>
+        <p class="lead">We pick up from your warehouse, run the linehaul, deliver to the door and bring returns back. Each consignment carries one LR from pickup to proof of delivery, so your invoice matches what actually moved.</p>
+        <div class="cta"><a class="btn gold" href="#contact">Book a pickup</a><a class="btn" href="#app">Get the mobile app</a></div>
+        <div class="lanes" aria-label="Example lanes"><span><b>HYD 500001 → WGL 506002</b> · 17 ft · same day</span><span><b>BLR 560001 → CHE 600001</b> · 32 ft MXL · overnight</span><span><b>DEL 110001 → GHY 781001</b> · 22 ft · NE surcharge applies</span></div>
+      </div>
+      <form class="lr" id="est" aria-label="Freight estimate" onsubmit="return false">
+        <div class="lr-head"><b>Consignment note · estimate</b><span id="lrNo">LR —</span></div>
+        <div class="lr-grid">
+          <div class="lr-f"><label for="e-from">From city</label><input id="e-from" list="cities" value="Hyderabad" autocomplete="off"></div>
+          <div class="lr-f"><label for="e-to">To city</label><input id="e-to" list="cities" value="Warangal" autocomplete="off"></div>
+          <div class="lr-f"><label for="e-veh">Vehicle</label><select id="e-veh"></select></div>
+          <div class="lr-f"><label for="e-trips">Trips</label><input id="e-trips" type="number" min="1" max="99" value="1" inputmode="numeric"></div>
+        </div>
+        <div class="lr-out" id="estOut" aria-live="polite"></div>
+        <span class="stamp">INDICATIVE</span>
+      </form>
+    </div>
+  </section>
+
+  <div class="facts"><div class="wrap" id="facts"></div></div>
+
+  <section class="block" id="services">
+    <div class="wrap">
+      <div class="sec-head"><p class="eyebrow">Services</p><h2>One partner from the first pickup to the last signature</h2><p class="lead">Book any leg on its own or run the whole chain with us. Every leg feeds the same record, so tracking, billing and payouts stay in step.</p></div>
+      <div class="services">
+        <article class="svc"><span class="code">FIRST MILE</span><h3>Pickups</h3><p>Scheduled and same-day pickups from warehouses, factories and stores.</p><ul><li>Boxes, weight and L×B×H captured at pickup</li><li>Vehicle and driver assigned before dispatch</li></ul></article>
+        <article class="svc"><span class="code">FTL · PTL</span><h3>Linehaul</h3><p>Full and part truckloads between hubs, Tata Ace to 40 ft trailers.</p><ul><li>Sealed manifests with trip numbers</li><li>Cost by road distance and vehicle size</li></ul></article>
+        <article class="svc"><span class="code">LAST MILE</span><h3>Doorstep delivery</h3><p>Runsheets, out-for-delivery updates and proof of delivery.</p><ul><li>Cash on delivery collected and remitted</li><li>Failed attempts re-tried or returned</li></ul></article>
+        <article class="svc"><span class="code">REVERSE</span><h3>Returns &amp; RTO</h3><p>Customer returns and undelivered stock brought back and graded.</p><ul><li>QC at hub before restock or refund</li><li>Automatic return after repeated failures</li></ul></article>
+        <article class="svc"><span class="code">WAREHOUSE</span><h3>Hubs &amp; cross-dock</h3><p>Storage, sorting and cross-docking at origin and destination hubs.</p><ul><li>Inbound and outbound scans</li><li>Daily capacity planning per hub</li></ul></article>
+        <article class="svc"><span class="code">DEDICATED</span><h3>Dedicated fleet</h3><p>Vehicles reserved for your routes, with daily vehicle reports.</p><ul><li>Fixed monthly or per-trip pricing</li><li>Papers, fitness and permits kept current</li></ul></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head"><p class="eyebrow">How a consignment moves</p><h2>Seven handovers, each one signed off</h2></div>
+      <div class="flow">
+        <div class="step"><b>Pickup</b><span>Boxes counted, LR raised</span></div>
+        <div class="step"><b>Origin hub</b><span>Inbound scan, sorted to lane</span></div>
+        <div class="step"><b>Linehaul</b><span>Sealed truck, trip manifest</span></div>
+        <div class="step"><b>Destination hub</b><span>Seal checked, unloaded</span></div>
+        <div class="step"><b>Out for delivery</b><span>On a rider's runsheet</span></div>
+        <div class="step"><b>Delivered</b><span>Receiver name, COD collected</span></div>
+        <div class="step"><b>Invoice</b><span>GST invoice from delivered LRs</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="fleet">
+    <div class="wrap">
+      <div class="sec-head"><p class="eyebrow">Fleet</p><h2>The right body length for the load</h2><p class="lead">Indian trucks are sized by body length in feet. Pick by payload and volume; we match the closest vehicle on the lane.</p></div>
+      <div class="tablewrap"><table><thead><tr><th>Vehicle</th><th>Class</th><th>Payload</th><th>Body (L×W×H ft)</th><th>Volume</th><th>Body type</th><th>Good for</th></tr></thead><tbody id="fleetRows"></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="block" id="coverage">
+    <div class="wrap">
+      <div class="sec-head"><p class="eyebrow">Coverage</p><h2>All 36 states and union territories</h2><p class="lead">City and pincode coverage across India. Numbers show the main cities and district towns on our lane map in each state.</p></div>
+      <div class="states" id="states"></div>
+      <p class="legend">Dashed: North-East, Jammu &amp; Kashmir, Ladakh and island territories carry a surcharge. Hill states carry a smaller one.</p>
+    </div>
+  </section>
+
+  <section class="block" id="app">
+    <div class="wrap">
+      <div class="sec-head"><p class="eyebrow">Mobile app</p><h2>The control tower in your pocket</h2><p class="lead">Staff use the Movana app to book pickups, assign vehicles, close runsheets, approve requests and raise tickets. It opens the same portal as the desktop, signed in with the Claude account your administrator gave access to.</p></div>
+      <div class="app">
+        <div class="card">
+          <span class="os">Android</span>
+          <h3>Download the app</h3>
+          <div class="row"><button class="btn gold" type="button" id="dlAndroid">Download for Android</button><span class="status" id="dlStatus"></span></div>
+          <ol><li>The file arrives as <b>Movana-Logistics-Android.zip</b>. Open it in Files and tap <b>Movana.apk</b>.</li><li>If Android asks, allow installs from Files (or your browser) for this one time.</li><li>Open <b>Movana</b> and tap <b>Open control tower</b>. Sign in to Claude in Chrome once.</li></ol>
+        </div>
+        <div class="card">
+          <span class="os">iPhone &amp; iPad</span>
+          <h3>Add to Home Screen</h3>
+          <ol><li>Open the staff portal in <b>Safari</b> with the button below.</li><li>Tap the <b>Share</b> icon, then <b>Add to Home Screen</b>.</li><li>Name it Movana and tap <b>Add</b>. It opens like an app.</li></ol>
+          <div class="row"><a class="btn" id="iosBtn" href="https://claude.ai/artifact/J1xhR22xwHuJGUiDBt1SoR" target="_blank" rel="noopener">Open staff portal</a></div>
+        </div>
+        <div class="card">
+          <span class="os">Scan on your phone</span>
+          <div class="qr" id="qr" aria-label="QR code for the staff portal"></div>
+          <p class="status">Opens the staff portal. On Android, Chrome's menu also offers <b>Add to Home screen</b>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="contact">
+    <div class="wrap">
+      <div class="sec-head"><p class="eyebrow">Contact</p><h2>Book a pickup or ask for a quote</h2><p class="lead">Tell us the lane and the load. Our operations desk replies with a confirmed rate and pickup slot.</p></div>
+      <div class="contact">
+        <form class="card" id="enq" novalidate>
+          <div class="form">
+            <label>Your name<input id="q-name" required autocomplete="name"></label>
+            <label>Company<input id="q-co" autocomplete="organization"></label>
+            <label>Phone<input id="q-phone" type="tel" required autocomplete="tel" inputmode="tel"></label>
+            <label>Email<input id="q-email" type="email" autocomplete="email"></label>
+            <label>From (city or pincode)<input id="q-from" list="cities"></label>
+            <label>To (city or pincode)<input id="q-to" list="cities"></label>
+            <label>Vehicle<select id="q-veh"><option value="">Not sure – suggest one</option></select></label>
+            <label>Pickup date<input id="q-date" type="date"></label>
+            <label class="wide">Load details<textarea id="q-notes" placeholder="e.g. 120 cartons, 1.8 tonnes, 6 CBM, palletised"></textarea></label>
+          </div>
+          <p class="status" id="enqMsg" role="status"></p>
+          <div class="row"><button class="btn gold" type="submit" id="enqSend">Send enquiry</button><button class="btn" type="button" id="enqCopy">Copy enquiry</button></div>
+        </form>
+        <aside class="card">
+          <h3>Operations desk</h3>
+          <div class="kv" id="info"></div>
+          <div id="infoEdit"></div>
+        </aside>
+      </div>
+      <div id="leadsBox"></div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap"><span>© <span id="yr"></span> Movana Logistics. Freight by road across India.</span><span>Transport GST under GTA rules: 5% reverse charge for registered consignees, or 12% forward charge where opted.</span></div></footer>
+<datalist id="cities"></datalist>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function () {
+  const PORTAL = 'https://claude.ai/artifact/J1xhR22xwHuJGUiDBt1SoR';
+  const GEO_STATES = [
+  ['Jammu and Kashmir', '01', 'Srinagar', 'S'], ['Himachal Pradesh', '02', 'Shimla', 'H'], ['Punjab', '03', 'Chandigarh', 'N'], ['Chandigarh', '04', 'Chandigarh', 'N'],
+  ['Uttarakhand', '05', 'Dehradun', 'H'], ['Haryana', '06', 'Gurugram', 'N'], ['Delhi', '07', 'New Delhi', 'N'], ['Rajasthan', '08', 'Jaipur', 'N'], ['Uttar Pradesh', '09', 'Lucknow', 'N'],
+  ['Bihar', '10', 'Patna', 'N'], ['Sikkim', '11', 'Gangtok', 'H'], ['Arunachal Pradesh', '12', 'Itanagar', 'S'], ['Nagaland', '13', 'Kohima', 'S'], ['Manipur', '14', 'Imphal', 'S'],
+  ['Mizoram', '15', 'Aizawl', 'S'], ['Tripura', '16', 'Agartala', 'S'], ['Meghalaya', '17', 'Shillong', 'S'], ['Assam', '18', 'Guwahati', 'S'], ['West Bengal', '19', 'Kolkata', 'N'],
+  ['Jharkhand', '20', 'Ranchi', 'N'], ['Odisha', '21', 'Bhubaneswar', 'N'], ['Chhattisgarh', '22', 'Raipur', 'N'], ['Madhya Pradesh', '23', 'Bhopal', 'N'], ['Gujarat', '24', 'Gandhinagar', 'N'],
+  ['Dadra and Nagar Haveli and Daman and Diu', '26', 'Daman', 'N'], ['Maharashtra', '27', 'Mumbai', 'N'], ['Karnataka', '29', 'Bengaluru', 'N'], ['Goa', '30', 'Panaji', 'N'],
+  ['Lakshadweep', '31', 'Kavaratti', 'S'], ['Kerala', '32', 'Thiruvananthapuram', 'N'], ['Tamil Nadu', '33', 'Chennai', 'N'], ['Puducherry', '34', 'Puducherry', 'N'],
+  ['Andaman and Nicobar Islands', '35', 'Port Blair', 'S'], ['Telangana', '36', 'Hyderabad', 'N'], ['Andhra Pradesh', '37', 'Amaravati', 'N'], ['Ladakh', '38', 'Leh', 'S']
+];
+  const GEO_CITIES_RAW = {
+  'Andhra Pradesh': 'Visakhapatnam|17.69|83.22|530001;Vijayawada|16.51|80.65|520001;Guntur|16.31|80.44|522001;Nellore|14.44|79.99|524001;Kurnool|15.83|78.04|518001;Tirupati|13.63|79.42|517501;Kakinada|16.99|82.25|533001;Rajahmundry|17.00|81.80|533101;Kadapa|14.47|78.82|516001;Anantapur|14.68|77.60|515001;Ongole|15.50|80.05|523001;Eluru|16.71|81.10|534001;Srikakulam|18.30|83.90|532001;Vizianagaram|18.11|83.40|535001;Chittoor|13.22|79.10|517001;Amaravati|16.51|80.52|522020;Machilipatnam|16.19|81.14|521001;Hindupur|13.83|77.49|515201;Bhimavaram|16.54|81.52|534201;Sri City|13.55|80.00|517646',
+  'Arunachal Pradesh': 'Itanagar|27.08|93.61|791111;Tawang|27.59|91.86|790104;Pasighat|28.07|95.33|791102;Naharlagun|27.10|93.69|791110',
+  'Assam': 'Guwahati|26.14|91.74|781001;Dispur|26.14|91.79|781006;Dibrugarh|27.47|94.91|786001;Silchar|24.83|92.78|788001;Jorhat|26.75|94.20|785001;Tezpur|26.63|92.80|784001;Nagaon|26.35|92.68|782001;Tinsukia|27.49|95.36|786125;Bongaigaon|26.48|90.56|783380;Goalpara|26.17|90.62|783101',
+  'Bihar': 'Patna|25.59|85.14|800001;Gaya|24.79|85.00|823001;Bhagalpur|25.24|86.97|812001;Muzaffarpur|26.12|85.39|842001;Darbhanga|26.15|85.90|846004;Purnia|25.78|87.47|854301;Begusarai|25.42|86.13|851101;Arrah|25.56|84.66|802301;Chhapra|25.78|84.73|841301;Motihari|26.65|84.92|845401;Bihar Sharif|25.20|85.52|803101;Katihar|25.54|87.58|854105;Hajipur|25.69|85.21|844101',
+  'Chhattisgarh': 'Raipur|21.25|81.63|492001;Bhilai|21.21|81.38|490001;Bilaspur|22.08|82.14|495001;Korba|22.36|82.75|495677;Durg|21.19|81.28|491001;Raigarh|21.90|83.40|496001;Jagdalpur|19.07|82.03|494001;Ambikapur|23.12|83.20|497001;Rajnandgaon|21.10|81.03|491441',
+  'Goa': 'Panaji|15.49|73.83|403001;Margao|15.27|73.96|403601;Vasco da Gama|15.40|73.81|403802;Mapusa|15.59|73.81|403507;Verna|15.36|73.93|403722',
+  'Gujarat': 'Ahmedabad|23.02|72.57|380001;Surat|21.17|72.83|395003;Vadodara|22.31|73.18|390001;Rajkot|22.30|70.80|360001;Bhavnagar|21.76|72.15|364001;Jamnagar|22.47|70.06|361001;Gandhinagar|23.22|72.65|382010;Junagadh|21.52|70.46|362001;Anand|22.56|72.95|388001;Bharuch|21.71|72.98|392001;Vapi|20.37|72.90|396191;Mehsana|23.60|72.38|384001;Morbi|22.82|70.84|363641;Gandhidham|23.08|70.13|370201;Bhuj|23.25|69.67|370001;Navsari|20.95|72.92|396445;Porbandar|21.64|69.61|360575;Sanand|22.99|72.38|382110;Ankleshwar|21.63|73.00|393001;Mundra|22.84|69.72|370421',
+  'Haryana': 'Gurugram|28.46|77.03|122001;Faridabad|28.41|77.32|121001;Panipat|29.39|76.97|132103;Ambala|30.38|76.78|133001;Karnal|29.69|76.99|132001;Hisar|29.15|75.72|125001;Rohtak|28.90|76.61|124001;Sonipat|28.99|77.02|131001;Yamunanagar|30.13|77.29|135001;Panchkula|30.69|76.86|134109;Bahadurgarh|28.69|76.92|124507;Rewari|28.20|76.62|123401;Manesar|28.36|76.94|122050;Sirsa|29.53|75.03|125055;Kundli|28.88|77.12|131028;Palwal|28.14|77.33|121102',
+  'Himachal Pradesh': 'Shimla|31.10|77.17|171001;Mandi|31.71|76.93|175001;Solan|30.90|77.10|173212;Dharamshala|32.22|76.32|176215;Baddi|30.96|76.79|173205;Kullu|31.96|77.11|175101;Hamirpur|31.68|76.52|177001;Una|31.47|76.27|174303;Nalagarh|31.04|76.72|174101',
+  'Jharkhand': 'Ranchi|23.34|85.31|834001;Jamshedpur|22.80|86.20|831001;Dhanbad|23.80|86.43|826001;Bokaro|23.67|86.15|827001;Deoghar|24.48|86.70|814112;Hazaribagh|23.99|85.36|825301;Giridih|24.19|86.30|815301;Dumka|24.27|87.25|814101',
+  'Karnataka': 'Bengaluru|12.97|77.59|560001;Mysuru|12.30|76.64|570001;Hubballi|15.36|75.12|580020;Dharwad|15.46|75.01|580001;Mangaluru|12.91|74.86|575001;Belagavi|15.85|74.50|590001;Kalaburagi|17.33|76.83|585101;Davanagere|14.46|75.92|577001;Ballari|15.14|76.92|583101;Vijayapura|16.83|75.71|586101;Shivamogga|13.93|75.57|577201;Tumakuru|13.34|77.10|572101;Raichur|16.21|77.36|584101;Bidar|17.91|77.52|585401;Udupi|13.34|74.75|576101;Hassan|13.01|76.10|573201;Hosapete|15.27|76.39|583201;Chitradurga|14.23|76.40|577501;Kolar|13.14|78.13|563101;Hoskote|13.07|77.80|562114;Nelamangala|13.10|77.39|562123',
+  'Kerala': 'Thiruvananthapuram|8.52|76.94|695001;Kochi|9.93|76.27|682001;Kozhikode|11.26|75.78|673001;Thrissur|10.53|76.21|680001;Kollam|8.89|76.61|691001;Kannur|11.87|75.37|670001;Palakkad|10.79|76.65|678001;Alappuzha|9.50|76.34|688001;Kottayam|9.59|76.52|686001;Malappuram|11.07|76.07|676505;Kasaragod|12.50|74.99|671121;Kalamassery|10.05|76.32|683104',
+  'Madhya Pradesh': 'Bhopal|23.26|77.41|462001;Indore|22.72|75.86|452001;Jabalpur|23.18|79.99|482001;Gwalior|26.22|78.18|474001;Ujjain|23.18|75.78|456001;Sagar|23.84|78.74|470001;Satna|24.60|80.83|485001;Rewa|24.53|81.30|486001;Ratlam|23.33|75.04|457001;Dewas|22.97|76.05|455001;Katni|23.83|80.39|483501;Chhindwara|22.06|78.94|480001;Khandwa|21.83|76.35|450001;Pithampur|22.61|75.68|454775;Singrauli|24.20|82.67|486889;Mandideep|23.08|77.53|462046',
+  'Maharashtra': 'Mumbai|19.08|72.88|400001;Pune|18.52|73.86|411001;Nagpur|21.15|79.09|440001;Nashik|20.00|73.79|422001;Thane|19.22|72.98|400601;Navi Mumbai|19.03|73.03|400703;Bhiwandi|19.30|73.06|421302;Chhatrapati Sambhajinagar|19.88|75.34|431001;Solapur|17.66|75.91|413001;Kolhapur|16.70|74.24|416001;Amravati|20.93|77.75|444601;Nanded|19.14|77.32|431601;Akola|20.70|77.00|444001;Jalgaon|21.00|75.56|425001;Latur|18.41|76.58|413512;Ahilyanagar|19.09|74.74|414001;Satara|17.69|74.00|415001;Sangli|16.85|74.58|416416;Chandrapur|19.96|79.30|442401;Ratnagiri|16.99|73.31|415612;Dhule|20.90|74.77|424001;Panvel|18.99|73.12|410206;Vasai|19.39|72.84|401201;Chakan|18.76|73.86|410501;Talegaon|18.73|73.68|410506;JNPT Nhava Sheva|18.95|72.95|400707',
+  'Manipur': 'Imphal|24.82|93.94|795001;Churachandpur|24.33|93.68|795128',
+  'Meghalaya': 'Shillong|25.58|91.89|793001;Tura|25.51|90.22|794001',
+  'Mizoram': 'Aizawl|23.73|92.72|796001;Lunglei|22.88|92.73|796701',
+  'Nagaland': 'Kohima|25.67|94.11|797001;Dimapur|25.91|93.73|797112',
+  'Odisha': 'Bhubaneswar|20.30|85.82|751001;Cuttack|20.46|85.88|753001;Rourkela|22.26|84.85|769001;Berhampur|19.31|84.79|760001;Sambalpur|21.47|83.97|768001;Puri|19.81|85.83|752001;Balasore|21.49|86.93|756001;Jharsuguda|21.86|84.01|768201;Angul|20.84|85.10|759122;Paradip|20.32|86.61|754142;Koraput|18.81|82.71|764020',
+  'Punjab': 'Ludhiana|30.90|75.85|141001;Amritsar|31.63|74.87|143001;Jalandhar|31.33|75.58|144001;Patiala|30.34|76.39|147001;Bathinda|30.21|74.95|151001;Mohali|30.70|76.72|160055;Pathankot|32.27|75.65|145001;Hoshiarpur|31.53|75.91|146001;Moga|30.82|75.17|142001;Firozpur|30.92|74.61|152001;Rajpura|30.48|76.59|140401;Zirakpur|30.64|76.82|140603',
+  'Rajasthan': 'Jaipur|26.91|75.79|302001;Jodhpur|26.24|73.02|342001;Udaipur|24.59|73.71|313001;Kota|25.18|75.83|324001;Ajmer|26.45|74.64|305001;Bikaner|28.02|73.31|334001;Bhilwara|25.35|74.63|311001;Alwar|27.55|76.60|301001;Bharatpur|27.22|77.49|321001;Sikar|27.61|75.14|332001;Sri Ganganagar|29.90|73.88|335001;Pali|25.77|73.32|306401;Neemrana|27.99|76.38|301705;Bhiwadi|28.21|76.86|301019;Barmer|25.75|71.39|344001;Jaisalmer|26.92|70.91|345001;Chittorgarh|24.88|74.62|312001',
+  'Sikkim': 'Gangtok|27.33|88.61|737101;Namchi|27.17|88.36|737126',
+  'Tamil Nadu': 'Chennai|13.08|80.27|600001;Coimbatore|11.02|76.96|641001;Madurai|9.93|78.12|625001;Tiruchirappalli|10.79|78.70|620001;Salem|11.66|78.15|636001;Tirunelveli|8.71|77.76|627001;Tiruppur|11.11|77.34|641601;Erode|11.34|77.72|638001;Vellore|12.92|79.13|632001;Thoothukudi|8.76|78.13|628001;Hosur|12.74|77.83|635109;Kanchipuram|12.83|79.70|631501;Sriperumbudur|12.97|79.95|602105;Thanjavur|10.79|79.14|613001;Nagercoil|8.18|77.41|629001;Dindigul|10.36|77.98|624001;Karur|10.96|78.08|639001;Namakkal|11.22|78.17|637001;Cuddalore|11.75|79.75|607001;Krishnagiri|12.52|78.21|635001;Oragadam|12.84|79.94|602105;Ennore|13.22|80.32|600057',
+  'Telangana': 'Hyderabad|17.39|78.49|500001;Secunderabad|17.44|78.50|500003;Warangal|17.97|79.59|506002;Hanamkonda|18.01|79.56|506001;Karimnagar|18.44|79.13|505001;Nizamabad|18.67|78.09|503001;Khammam|17.25|80.15|507001;Mahbubnagar|16.74|77.99|509001;Nalgonda|17.05|79.27|508001;Adilabad|19.66|78.53|504001;Mancherial|18.87|79.46|504208;Ramagundam|18.80|79.45|505208;Siddipet|18.10|78.85|502103;Suryapet|17.14|79.62|508213;Kothagudem|17.55|80.62|507101;Sangareddy|17.62|78.09|502001;Medak|18.05|78.26|502110;Kamareddy|18.32|78.34|503111;Jagtial|18.79|78.91|505327;Miryalaguda|16.87|79.56|508207;Kodad|16.99|79.97|508206;Zaheerabad|17.68|77.61|502220;Shamshabad|17.25|78.40|501218;Medchal|17.63|78.48|501401;Patancheru|17.53|78.26|502319;Isnapur|17.54|78.18|502307;Bhongir|17.51|78.89|508116;Nirmal|19.10|78.34|504106;Wanaparthy|16.36|78.06|509103;Jangaon|17.72|79.15|506167;Mahabubabad|17.60|80.00|506101;Peddapalli|18.61|79.37|505172;Bhadrachalam|17.67|80.89|507111;Kompally|17.54|78.48|500014;Uppal|17.40|78.56|500039',
+  'Tripura': 'Agartala|23.83|91.29|799001;Dharmanagar|24.37|92.17|799250',
+  'Uttar Pradesh': 'Lucknow|26.85|80.95|226001;Kanpur|26.45|80.33|208001;Ghaziabad|28.67|77.45|201001;Noida|28.54|77.39|201301;Greater Noida|28.47|77.50|201310;Agra|27.18|78.01|282001;Varanasi|25.32|82.97|221001;Prayagraj|25.44|81.85|211001;Meerut|28.98|77.71|250001;Bareilly|28.37|79.43|243001;Aligarh|27.88|78.08|202001;Moradabad|28.84|78.77|244001;Gorakhpur|26.76|83.37|273001;Saharanpur|29.96|77.55|247001;Jhansi|25.45|78.57|284001;Mathura|27.49|77.67|281001;Ayodhya|26.80|82.20|224123;Firozabad|27.15|78.40|283203;Muzaffarnagar|29.47|77.70|251001;Shahjahanpur|27.88|79.91|242001;Hapur|28.73|77.78|245101;Unnao|26.55|80.49|209801;Sitapur|27.57|80.68|261001',
+  'Uttarakhand': 'Dehradun|30.32|78.03|248001;Haridwar|29.95|78.16|249401;Roorkee|29.87|77.89|247667;Haldwani|29.22|79.51|263139;Rudrapur|28.98|79.40|263153;Kashipur|29.21|78.96|244713;Rishikesh|30.09|78.27|249201;Nainital|29.39|79.45|263001;Pantnagar|29.02|79.48|263145',
+  'West Bengal': 'Kolkata|22.57|88.36|700001;Howrah|22.59|88.31|711101;Siliguri|26.73|88.40|734001;Durgapur|23.52|87.31|713201;Asansol|23.68|86.98|713301;Kharagpur|22.35|87.32|721301;Haldia|22.06|88.07|721602;Bardhaman|23.23|87.86|713101;Malda|25.01|88.14|732101;Kalyani|22.98|88.43|741235;Jalpaiguri|26.52|88.72|735101;Darjeeling|27.04|88.26|734101;Krishnanagar|23.40|88.50|741101;Dankuni|22.68|88.29|712311',
+  'Delhi': 'New Delhi|28.61|77.21|110001;Delhi|28.66|77.23|110006;Okhla|28.53|77.27|110020;Narela|28.85|77.09|110040;Mundka|28.68|77.03|110041;Bawana|28.80|77.03|110039',
+  'Chandigarh': 'Chandigarh|30.73|76.78|160017',
+  'Jammu and Kashmir': 'Srinagar|34.08|74.80|190001;Jammu|32.73|74.86|180001;Anantnag|33.73|75.15|192101;Baramulla|34.21|74.34|193101;Kathua|32.37|75.52|184101',
+  'Ladakh': 'Leh|34.15|77.58|194101;Kargil|34.55|76.13|194103',
+  'Puducherry': 'Puducherry|11.94|79.81|605001;Karaikal|10.92|79.84|609602',
+  'Andaman and Nicobar Islands': 'Port Blair|11.62|92.73|744101',
+  'Lakshadweep': 'Kavaratti|10.57|72.64|682555',
+  'Dadra and Nagar Haveli and Daman and Diu': 'Silvassa|20.27|73.01|396230;Daman|20.40|72.83|396210;Diu|20.71|70.99|362520'
+};
+  const VTYPE_TEMPLATES = [
+  ['Bike (2W)', '2-wheeler', 20, 0, 0, 0, 'Box', 45, 6], ['E-rickshaw / 3W cargo', '3-wheeler', 500, 5.5, 4.5, 4.5, 'Closed / container', 0, 10],
+  ['Tata Ace 7 ft', 'SCV (small)', 750, 7, 4.8, 4.8, 'Closed / container', 16, 14], ['Mahindra Bolero Pickup 8 ft', 'SCV (small)', 1500, 8, 5.5, 5, 'Open', 13, 17],
+  ['Tata 407 10 ft', 'LCV', 2500, 10, 5.8, 6, 'Closed / container', 10, 22], ['Eicher 14 ft', 'LCV', 4000, 14, 6, 6, 'Closed / container', 8, 28],
+  ['17 ft', 'ICV', 5000, 17, 6, 7, 'Closed / container', 7, 32], ['19 ft', 'ICV', 7000, 19, 7, 7, 'Closed / container', 6, 36],
+  ['20 ft', 'ICV', 7000, 20, 7, 7, 'Closed / container', 6, 38], ['22 ft', 'ICV', 9000, 22, 7.5, 7, 'Closed / container', 5.5, 42],
+  ['24 ft', 'HCV', 10000, 24, 8, 8, 'Closed / container', 5, 46], ['32 ft SXL (single axle)', 'HCV', 7000, 32, 8, 8, 'Closed / container', 4.5, 55],
+  ['32 ft MXL (multi axle)', 'HCV', 15000, 32, 8, 8, 'Closed / container', 4, 62], ['40 ft flatbed trailer', 'Trailer', 25000, 40, 8, 0, 'Flatbed', 3.5, 75],
+  ['20 ft container', 'Container', 21000, 19.4, 7.7, 7.8, 'Closed / container', 4, 65], ['40 ft container', 'Container', 26000, 39.5, 7.7, 7.8, 'Closed / container', 3.5, 80],
+  ['Reefer 20 ft', 'Reefer', 6000, 20, 7, 7, 'Refrigerated', 4.5, 60], ['Reefer 32 ft', 'Reefer', 12000, 32, 8, 8, 'Refrigerated', 3.8, 85]
+];
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+  const rs = n => '₹' + inr.format(Math.round(n));
+  let tt; const toast = m => { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => { t.hidden = true; }, 3200); };
+  $('#yr').textContent = new Date().getFullYear();
+
+  // ---- data
+  const KIND = Object.fromEntries(GEO_STATES.map(s => [s[0], s[3]]));
+  const CITIES = [];
+  Object.keys(GEO_CITIES_RAW).forEach(st => GEO_CITIES_RAW[st].split(';').forEach(r => { const [n, la, ln, pin] = r.split('|'); CITIES.push({ n, st, lat: +la, lng: +ln, pin }); }));
+  $('#cities').innerHTML = CITIES.map(c => '<option value="' + esc(c.n) + '">' + esc(c.st + ' · ' + c.pin) + '</option>').join('');
+  const VT = VTYPE_TEMPLATES.map(v => ({ name: v[0], cat: v[1], kg: v[2], l: v[3], w: v[4], h: v[5], body: v[6], kmpl: v[7], rate: v[8], cbm: Math.round(v[3] * v[4] * v[5] * 0.0283168 * 10) / 10 }));
+  const TOLL = { '2-wheeler': 0, '3-wheeler': 0, 'SCV (small)': 0.8, LCV: 1.5, ICV: 2.5, HCV: 3.8, Trailer: 4.8, Container: 4.8, Reefer: 3.8 };
+  const BEST = { '2-wheeler': 'Documents, parcels and small e-commerce drops', '3-wheeler': 'Local cartons and kirana deliveries', 'SCV (small)': 'City deliveries, retail replenishment, small B2B drops', LCV: 'Intra-city and short regional runs, 1–4 tonne loads', ICV: 'Regional FTL, store replenishment, FMCG', HCV: 'Long-haul FTL, bulk and industrial loads', Trailer: 'Machinery, steel, over-dimensional cargo', Container: 'Port and export movements, sealed loads', Reefer: 'Dairy, pharma, frozen and fresh produce' };
+  const opts = VT.map((v, i) => '<option value="' + i + '"' + (v.name === '17 ft' ? ' selected' : '') + '>' + esc(v.name) + ' · ' + inr.format(v.kg) + ' kg</option>').join('');
+  $('#e-veh').innerHTML = opts;
+  $('#q-veh').innerHTML += VT.map((v, i) => '<option>' + esc(v.name) + '</option>').join('');
+  $('#fleetRows').innerHTML = VT.map(v => '<tr><td><b>' + esc(v.name) + '</b></td><td>' + esc(v.cat) + '</td><td class="n">' + inr.format(v.kg) + ' kg</td><td class="n">' + (v.l ? v.l + ' × ' + v.w + ' × ' + (v.h || 'open') : '—') + '</td><td class="n">' + (v.cbm ? v.cbm + ' CBM' : '—') + '</td><td>' + esc(v.body) + '</td><td class="best">' + esc(BEST[v.cat] || '') + '</td></tr>').join('');
+  const byState = {}; CITIES.forEach(c => { byState[c.st] = (byState[c.st] || 0) + 1; });
+  $('#states').innerHTML = GEO_STATES.slice().sort((a, b) => a[0].localeCompare(b[0])).map(s => '<span class="st' + (s[3] === 'S' ? ' s' : '') + '">' + esc(s[0]) + '<i>' + (byState[s[0]] || 0) + '</i></span>').join('');
+  $('#facts').innerHTML = [[GEO_STATES.length, 'States and union territories'], [CITIES.length + '+', 'Cities and district towns mapped'], [VT.length, 'Vehicle sizes, Ace to 40 ft'], ['1 LR', 'From pickup to proof of delivery']].map(f => '<div class="fact"><b>' + f[0] + '</b><span>' + f[1] + '</span></div>').join('');
+
+  // ---- estimate (same rules as the portal's route costing)
+  const find = q => { q = String(q || '').trim().toLowerCase(); if (!q) return null; return CITIES.find(c => c.n.toLowerCase() === q || c.pin === q) || CITIES.find(c => c.pin.slice(0, 3) === q.slice(0, 3) && /^\d{6}$/.test(q)) || CITIES.find(c => c.n.toLowerCase().startsWith(q)); };
+  const hav = (a, b) => { const R = 6371, t = x => x * Math.PI / 180; const dLat = t(b.lat - a.lat), dLng = t(b.lng - a.lng); const h = Math.sin(dLat / 2) ** 2 + Math.cos(t(a.lat)) * Math.cos(t(b.lat)) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+  function estimate() {
+    const a = find($('#e-from').value), b = find($('#e-to').value), v = VT[+$('#e-veh').value] || VT[0], trips = Math.max(1, Math.min(99, +$('#e-trips').value || 1));
+    const out = $('#estOut');
+    $('#lrNo').textContent = 'LR ' + (a ? a.pin.slice(0, 3) : '···') + '-' + (b ? b.pin.slice(0, 3) : '···') + '-' + String(v.l).replace('.', '');
+    if (!a || !b) { out.innerHTML = '<p class="lr-note">Type a city from the list, or a 6-digit pincode, in both From and To.</p>'; return; }
+    const d = hav(a, b); const km = d < 1 ? 10 : Math.round(d * 1.25 + 5);
+    const base = km * v.rate, kinds = [KIND[a.st], KIND[b.st]], sur = base * (kinds.includes('S') ? 0.25 : kinds.includes('H') ? 0.15 : 0);
+    const toll = (TOLL[v.cat] || 0) * km, payout = base + sur + toll, client = payout * 1.15, per = client, total = per * trips;
+    const days = Math.max(1, Math.ceil(km / 350));
+    out.innerHTML = '<div class="lr-row"><span>' + esc(a.n + ', ' + a.st) + ' → ' + esc(b.n + ', ' + b.st) + '</span></div>' +
+      '<div class="lr-row"><span>Road distance (approx.)</span><b>' + inr.format(km) + ' km · ' + days + ' day' + (days > 1 ? 's' : '') + '</b></div>' +
+      '<div class="lr-row"><span>Freight ' + esc(v.name) + ' @ ₹' + v.rate + '/km</span><b>' + rs(base) + '</b></div>' +
+      (sur ? '<div class="lr-row"><span>' + (kinds.includes('S') ? 'NE / J&amp;K / islands' : 'Hill state') + ' surcharge</span><b>' + rs(sur) + '</b></div>' : '') +
+      '<div class="lr-row"><span>Tolls (est.)</span><b>' + rs(toll) + '</b></div>' +
+      '<div class="lr-total"><span>' + (trips > 1 ? trips + ' trips · ' : '') + 'Estimate before GST</span><b>' + rs(total * 0.95) + ' – ' + rs(total * 1.08) + '</b></div>' +
+      '<p class="lr-note">GST on road freight: 5% paid by a registered consignee under reverse charge. Loading, detention and multi-point drops are quoted separately. Final rate on confirmation.</p>';
+  }
+  ['#e-from', '#e-to', '#e-veh', '#e-trips'].forEach(s => $(s).addEventListener('input', estimate));
+  estimate();
+
+  // ---- QR for the portal
+  try { new QRCode($('#qr'), { text: PORTAL, width: 168, height: 168, colorDark: '#121314', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }); } catch (e) { $('#qr').innerHTML = '<p class="status">QR code could not load. Use the Open staff portal button.</p>'; }
+
+  // ---- contact details: edit these four lines, then upload again
+  const SITE = { phone: '', whatsapp: '', email: '', address: '', hours: 'Mon–Sat, 9am–8pm' };
+
+  const wa = String(SITE.whatsapp || SITE.phone).replace(/\D/g, '');
+  const waNum = wa.length === 10 ? '91' + wa : wa;
+  function paintInfo() {
+    const rows = [['Phone', SITE.phone, SITE.phone ? 'tel:' + SITE.phone.replace(/\s/g, '') : ''], ['WhatsApp', SITE.whatsapp, waNum ? 'https://wa.me/' + waNum : ''], ['Email', SITE.email, SITE.email ? 'mailto:' + SITE.email : ''], ['Address', SITE.address, ''], ['Hours', SITE.hours, '']].filter(r => r[1]);
+    $('#info').innerHTML = rows.length ? rows.map(r => '<div><span>' + r[0] + '</span><b>' + (r[2] ? '<a href="' + esc(r[2]) + '">' + esc(r[1]) + '</a>' : esc(r[1])) + '</b></div>').join('') : '<p class="status">Contact numbers coming soon.</p>';
+  }
+  paintInfo();
+  $('#infoEdit').innerHTML = '';
+  // Android download: plain link to the APK hosted next to this page
+  const dl = $('#dlAndroid'); dl.disabled = false; $('#dlStatus').textContent = 'Version 1.0 · 1.2 MB';
+  dl.addEventListener('click', () => { location.href = 'Movana.apk'; });
+  const steps = dl.closest('.card').querySelector('ol');
+  steps.innerHTML = '<li>Tap <b>Download for Android</b>. Chrome saves <b>Movana.apk</b>.</li><li>Open it from the download bar or Files. If Android asks, allow installs from Chrome for this one time.</li><li>Open <b>Movana</b> and tap <b>Open control tower</b>. Sign in to Claude once.</li>';
+  // enquiries go to WhatsApp or email
+  const enquiry = () => ({ name: $('#q-name').value.trim(), company: $('#q-co').value.trim(), phone: $('#q-phone').value.trim(), email: $('#q-email').value.trim(), from: $('#q-from').value.trim(), to: $('#q-to').value.trim(), vehicle: $('#q-veh').value, date: $('#q-date').value, notes: $('#q-notes').value.trim() });
+  const asText = q => 'Pickup / quote request – Movana Logistics\nName: ' + q.name + (q.company ? ' (' + q.company + ')' : '') + '\nPhone: ' + q.phone + (q.email ? '\nEmail: ' + q.email : '') + '\nLane: ' + (q.from || '?') + ' → ' + (q.to || '?') + '\nVehicle: ' + (q.vehicle || 'suggest') + (q.date ? '\nPickup date: ' + q.date : '') + (q.notes ? '\nLoad: ' + q.notes : '');
+  $('#enqSend').textContent = waNum ? 'Send on WhatsApp' : (SITE.email ? 'Send by email' : 'Send enquiry');
+  $('#enqCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(asText(enquiry())); toast('Enquiry copied'); } catch (e) { $('#enqMsg').textContent = asText(enquiry()); } });
+  $('#enq').addEventListener('submit', e => {
+    e.preventDefault();
+    const q = enquiry(), msg = $('#enqMsg');
+    if (!q.name || !/^[+\d][\d\s-]{7,}$/.test(q.phone)) { msg.textContent = 'Add your name and a phone number we can call back.'; return; }
+    const text = encodeURIComponent(asText(q));
+    if (waNum) location.href = 'https://wa.me/' + waNum + '?text=' + text;
+    else if (SITE.email) location.href = 'mailto:' + SITE.email + '?subject=' + encodeURIComponent('Pickup / quote request') + '&body=' + text;
+    else msg.textContent = 'Use Copy enquiry and send it to us.';
+  });
+})();
+</script>
+</body></html>
