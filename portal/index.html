@@ -35,6 +35,7 @@ button.who:hover { background: var(--surface-2); }
 .pgrid input:disabled, .pgrid select:disabled { opacity: .7; }
 .hike-list { display: grid; gap: 10px; margin: 6px 0 12px; } .hike-row { display: grid; grid-template-columns: minmax(0, 140px) minmax(0, 220px); gap: 12px; }
 @media (max-width: 520px) { .hike-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.offer-edit { padding: 6px 2px 10px; } .offer-edit .section-title { margin: 12px 0 6px; }
 </style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><title>Movana Control Tower</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -445,7 +446,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261026o"></script><script>
+<script src="fb.js?v=20261026p"></script><script src="offer.js?v=1"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -550,7 +551,7 @@ const ACCT_TYPE = Object.fromEntries(COA);
 const EXPENSE_ACCTS = COA.filter(a => a[1] === 'Expense').map(a => a[0]);
 
 // ================= state =================
-const COLLS = ['shipments', 'pickups', 'trips', 'drs', 'returns', 'invoices', 'payments', 'vendorbills', 'journal', 'tickets', 'assets', 'access', 'approvals', 'staff', 'attendance', 'vehicles', 'vtypes', 'maintenance', 'fuel', 'customers', 'hubs', 'rates', 'settings', 'audit', 'pins', 'leaves', 'payroll', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal'];
+const COLLS = ['shipments', 'pickups', 'trips', 'drs', 'returns', 'invoices', 'payments', 'vendorbills', 'journal', 'tickets', 'assets', 'access', 'approvals', 'staff', 'attendance', 'vehicles', 'vtypes', 'maintenance', 'fuel', 'customers', 'hubs', 'rates', 'settings', 'audit', 'pins', 'leaves', 'payroll', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer'];
 const S = { mod: 'punch', tab: {}, data: {}, loaded: {}, q: {}, filt: {}, sel: {}, db: null, me: null, canWrite: true, readonly: false, dbState: 'connecting', downloads: null, users: null,
   from: addDays(today(), -29), to: today(), month: today().slice(0, 7), attDate: today(), attHub: '' };
 COLLS.forEach(k => { S.data[k] = []; S.q[k] = ''; S.filt[k] = 'All'; S.sel[k] = new Set(); });
@@ -586,7 +587,7 @@ async function boot() {
   COLLS.forEach(k => {
     let q = db.collection(k);
     if (k === 'audit') q = q.orderBy('day', 'desc').limit(31);
-    else if (!['settings', 'attendance', 'pins', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal'].includes(k)) q = q.orderBy('createdAt', 'desc').limit(1000);
+    else if (!['settings', 'attendance', 'pins', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer'].includes(k)) q = q.orderBy('createdAt', 'desc').limit(1000);
     q.onSnapshot(snap => {
       S.data[k] = snap.docs.map(d => Object.assign({ _id: d.id }, d.data()));
       S.loaded[k] = true; scheduleRender();
@@ -1216,6 +1217,7 @@ function captureInputs() { const m = {}; $$('#layer input, #layer select, #layer
 function restoreInputs(m) { Object.keys(m).forEach(id => { const el = document.getElementById(id); if (!el) return; if (el.type === 'checkbox') el.checked = m[id]; else if (el.type !== 'file') el.value = m[id]; }); }
 function fieldHtml(f, r) {
   const v = r[f.k] == null ? '' : r[f.k];
+  if (f === SCHEMA.staff.fields.find(x => x.k === 'salary')) return '<label><span>' + esc(f.label) + '</span><input id="f-salary" type="number" value="' + esc(v) + '" readonly tabindex="-1" style="opacity:.75"><span class="mini">Filled automatically from the package (Team live › Package &amp; offer letter)</span></label>';
   const id = 'f-' + f.k;
   const lab = '<span' + (f.req ? ' class="req"' : '') + '>' + esc(f.label) + '</span>';
   const wide = f.type === 'textarea' ? ' class="wide"' : '';
@@ -2510,8 +2512,21 @@ const nameOf = id => (S.me && id === S.me.id ? (S.me.name || 'You') + ' (you)' :
 const avatarOf = id => S.avatars[id] || (S.me && id === S.me.id ? S.me.avatarUrl : '');
 
 /** Account settings: password, Google sign-in, Gmail approvals (admins), old data (owner), app downloads. */
+function myOfferPanel() {
+  if (!S.me || !S.db) return '';
+  if (S.myOffer === undefined) { S.myOffer = null; S.db.collection('punch_offer').doc(S.me.id).get().then(d => { S.myOffer = d && d.exists ? Object.assign({ _id: d.id }, d.data()) : false; render(); }).catch(() => { S.myOffer = false; }); return ''; }
+  const o = S.myOffer; if (!o || !['Released', 'Accepted'].includes(o.status)) return '';
+  return '<section class="panel"><h2>My offer letter</h2><p class="help">' + (o.status === 'Accepted' ? 'You accepted this offer on ' + esc(fmtTime(o.acceptedAt)) + '.' : 'Please read your offer letter and accept it.') + '</p><div class="actions"><button class="btn small" type="button" data-myof="view">' + (S.myOfView ? 'Hide letter' : 'View letter') + '</button><button class="btn small" type="button" data-myof="print">Print / PDF</button>' + (o.status === 'Released' ? '<button class="btn primary small" type="button" data-myof="accept">Accept offer</button>' : '') + '</div>' +
+    (S.myOfView && window.OfferLetter ? '<div class="offer-view" style="margin-top:12px">' + OfferLetter.html(o, offerCompany()) + '</div>' : '') + '</section>';
+}
+document.addEventListener('click', async ev => { const t = ev.target.closest('[data-myof]'); if (!t || !S.myOffer) return; const a = t.dataset.myof;
+  if (a === 'view') { S.myOfView = !S.myOfView; render(); return; }
+  if (a === 'print') { if (window.OfferLetter) OfferLetter.print(S.myOffer, offerCompany()); return; }
+  if (a === 'accept') { if (!confirm('Accept this offer on the terms in the letter?')) return; const b = Object.assign({}, S.myOffer); delete b._id; b.status = 'Accepted'; b.acceptedAt = Date.now();
+    try { await S.db.collection('punch_offer').doc(S.me.id).set(b); S.myOffer = Object.assign({ _id: S.me.id }, b); audit('punch_offer', 'Offer accepted by ' + (S.me.name || '')); toast('Offer accepted'); render(); } catch (e) { toast('Could not accept. Try again.'); } }
+});
 function accountView() {
-  const w = whoAmI(); let h = '';
+  const w = whoAmI(); let h = myOfferPanel();
   if (window.MOVANA_FB) h += '<section class="panel"><h2>Login & password</h2><p class="help">You sign in as <b class="code">' + esc(window.MOVANA_FB.username() || '') + '</b>.</p><div class="form"><label>Current password<input id="pw-old" type="password" autocomplete="current-password"></label><label>New password (8+ characters)<input id="pw-new" type="password" autocomplete="new-password"></label><label>New password again<input id="pw-new2" type="password" autocomplete="new-password"></label></div><p class="foot" id="pw-msg" role="status"></p><div class="actions"><button class="btn primary" type="button" data-act="pw-change">Change password</button></div></section>';
   if (window.MOVANA_FB && window.MOVANA_FB.gmailList && hasRoleAny(['superadmin', 'admin_head'])) {
     h += '<section class="panel"><h2>Gmail sign-in for staff</h2><p class="help">Approve a Gmail address with a role. That person taps <b>Sign in with Google</b> on the login screen and gets the role straight away, no username or password needed.</p>' +
@@ -3086,6 +3101,59 @@ function directoryView() {
   if (!hits.length) return h + '<div class="empty">No employee matches “' + esc(S.q.dir) + '”.</div>';
   return h + '<p class="mini">' + hits.length + ' of ' + E.length + ' employees</p><div class="dir-list">' + hits.slice(0, 200).map(e => '<button type="button" class="dir-row" data-act="dir-open" data-x="' + esc(e._id) + '"' + (cur && cur._id === e._id ? ' aria-current="true"' : '') + '><span class="dir-av sm">' + esc((e.name || '?').split(' ').map(x => x[0]).slice(0, 2).join('').toUpperCase()) + '</span><span class="grow"><b>' + esc(e.name || '') + '</b><span class="mini">' + esc([e.eid, e.desg].filter(Boolean).join(' · ')) + '</span></span></button>').join('') + '</div>';
 }
+/* ===== Package & offer letter: HR sets the package, releases the offer letter (same letter as Punch); the employee accepts it online ===== */
+const OF_F = [['desg', 'Designation'], ['grade', 'Grade'], ['cat', 'Department'], ['loc', 'Work location'], ['join', 'Date of joining', 'date'], ['mgr', 'Reporting manager'], ['mob', 'Mobile'], ['email', 'Email'], ['addr', 'Address', 'wide']];
+const OF_P = [['basic', 'Basic / month (₹)'], ['hra', 'HRA / month (₹)'], ['conv', 'Conveyance / month (₹)'], ['spl', 'Special allowance / month (₹)'], ['pfPct', 'PF % of Basic'], ['pt', 'Professional tax / month (₹)']];
+const OF_T = [['prob', 'Probation (months)'], ['pnotice', 'Notice in probation (days)'], ['notice', 'Notice after confirmation (days)'], ['hrs', 'Working hours / day'], ['wdays', 'Working days / week']];
+const pOffer = uid => (S.data.punch_offer || []).find(o => o._id === uid);
+const offerCompany = () => ({ name: SET().company || 'Movana Logistics' });
+/** The offer record for an employee: saved offer, else built from their Punch profile and salary set-up. */
+function offerOf(e) {
+  const o = pOffer(e._id), v = pPay(e._id) || {};
+  return Object.assign({ pfPct: 12, pt: 200, grat: 1, prob: 6, pnotice: 15, notice: 30, hrs: 9, wdays: 6, status: 'Draft' },
+    { name: e.name, eid: e.eid, desg: e.desg, grade: e.grade, cat: e.cat, loc: (e.wp || {}).name, join: e.join, basic: v.basicAmt, hra: v.hraAmt, conv: v.convAmt, spl: v.splAmt, pfPct: v.pfPct == null ? 12 : v.pfPct, pt: v.pt == null ? 200 : v.pt }, o || {}, { name: e.name, eid: e.eid });
+}
+const OF_ST = { Draft: 'neutral', Released: 'warn', Accepted: 'good', Withdrawn: 'bad' };
+function punchOffers() {
+  if (!pCan(P_SALV)) return '<div class="empty">Packages and offer letters are for HR head, HR manager and admins.</div>';
+  const E = pEmps(), ed = pCan(P_SALE); if (!E.length) return pBanner() + pNoEmp();
+  let h = pBanner() + (ed && pCan(P_HR) ? '<div class="toolbar"><button class="btn small primary" type="button" data-of="newjoin">＋ New joiner (create Punch login)</button></div>' : '') + '<p class="help">Set the package, preview the offer letter (same letter as the Punch app) and release it. The employee sees it in the portal under Settings and accepts it there. Saving a package also sets their monthly salary.</p>';
+  h += '<div class="tablewrap"><table><thead><tr><th>Name</th><th>ID</th><th>Designation</th><th class="num">Gross / month</th><th class="num">CTC / month</th><th class="num">CTC / year</th><th>Offer letter</th><th></th></tr></thead><tbody>';
+  E.forEach(e => { const o = offerOf(e), k = window.OfferLetter ? OfferLetter.ctc(o) : { gross: 0, m: 0, y: 0 }, open = S.pOff === e._id;
+    h += '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(o.desg || '') + '</td><td class="num">' + money2(k.gross) + '</td><td class="num">' + money2(k.m) + '</td><td class="num">' + money2(k.y) + '</td><td><span class="pill ' + (OF_ST[o.status] || 'neutral') + '">' + esc(o.status) + '</span>' + (o.status === 'Accepted' && o.acceptedAt ? ' <small>' + esc(fmtTime(o.acceptedAt)) + '</small>' : o.status === 'Released' && o.releasedAt ? ' <small>' + esc(fmtTime(o.releasedAt)) + '</small>' : '') + '</td><td style="white-space:nowrap"><button class="btn small" type="button" data-of="open" data-x="' + esc(e._id) + '">' + (open ? 'Close' : ed ? 'Package' : 'View') + '</button></td></tr>';
+    if (open) { const dis = ed ? '' : ' disabled', inp = ([k2, l, t]) => '<label' + (t === 'wide' ? ' style="grid-column:1/-1"' : '') + '>' + esc(l) + '<input data-off="' + k2 + '" type="' + (t === 'date' ? 'date' : 'text') + '" value="' + esc(o[k2] == null ? '' : o[k2]) + '"' + dis + '></label>', num_ = ([k2, l]) => '<label>' + esc(l) + '<input data-off="' + k2 + '" type="number" step="0.01" value="' + esc(o[k2] == null ? '' : o[k2]) + '"' + dis + '></label>';
+      h += '<tr><td colspan="8"><div class="offer-edit"><h4 class="section-title">Joining details</h4><div class="pgrid">' + OF_F.map(inp).join('') + '</div>' +
+        '<h4 class="section-title">Package</h4><div class="pgrid">' + OF_P.map(num_).join('') + '<label>Gratuity in CTC<select data-off="grat"' + dis + '><option value="1"' + (o.grat ? ' selected' : '') + '>Yes (4.81% of Basic)</option><option value="0"' + (o.grat ? '' : ' selected') + '>No</option></select></label></div>' +
+        '<div class="kpis" style="margin:6px 0 10px"><div class="kpi"><span class="v">' + money2(k.gross) + '</span><span class="l">Gross / month</span></div><div class="kpi"><span class="v">' + money2(k.net) + '</span><span class="l">Take-home / month</span></div><div class="kpi okay"><span class="v">' + money2(k.m) + '</span><span class="l">CTC / month</span></div><div class="kpi"><span class="v">' + money2(k.y) + '</span><span class="l">CTC / year</span></div></div>' +
+        '<h4 class="section-title">Terms</h4><div class="pgrid">' + OF_T.map(num_).join('') + '</div>' +
+        '<div class="actions" style="margin-top:12px">' + (ed ? '<button class="btn primary small" type="button" data-of="save" data-x="' + esc(e._id) + '">Save package</button>' : '') + '<button class="btn small" type="button" data-of="preview" data-x="' + esc(e._id) + '">' + (S.pOffPrev ? 'Hide letter' : 'Preview letter') + '</button><button class="btn small" type="button" data-of="print" data-x="' + esc(e._id) + '">Print / PDF</button>' +
+        (ed && o.status !== 'Released' && o.status !== 'Accepted' ? '<button class="btn primary small" type="button" data-of="release" data-x="' + esc(e._id) + '">Release offer letter</button>' : '') + (ed && o.status === 'Released' ? '<button class="btn small danger" type="button" data-of="withdraw" data-x="' + esc(e._id) + '">Withdraw</button>' : '') + '</div>' +
+        (S.pOffPrev && window.OfferLetter ? '<div class="offer-view" style="margin-top:12px">' + OfferLetter.html(o, offerCompany()) + '</div>' : '') + '</div></td></tr>'; } });
+  return h + '</tbody></table></div>';
+}
+function readOffer(uid) { const e = (S.data.punch_emp || []).find(x => x._id === uid) || { _id: uid }, o = offerOf(e), b = Object.assign({}, o); delete b._id;
+  $$('[data-off]').forEach(i => { const k = i.dataset.off; b[k] = k === 'grat' ? i.value === '1' : (OF_P.concat(OF_T).some(x => x[0] === k) ? (i.value === '' ? 0 : num(i.value)) : i.value.trim()); }); return b; }
+document.addEventListener('click', async ev => {
+  const t = ev.target.closest('[data-of]'); if (!t) return; const a = t.dataset.of, x = t.dataset.x;
+  if (a === 'open') { S.pOff = S.pOff === x ? null : x; S.pOffPrev = false; render(); return; }
+  if (a === 'gopkg') { S.pAdd = null; S.pOff = x; S.pOffPrev = false; go('punch', 'offer'); return; }
+  if (a === 'newjoin') { S.pAdd = 'new'; S.pEmp = null; S.pAddFromOffer = true; S.pAddPw = Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 8).toUpperCase(); go('punch', 'emp'); return; }
+  if (a === 'preview') { if (pCan(P_SALE)) S.pOffDraft = readOffer(x); S.pOffPrev = !S.pOffPrev; render(); return; }
+  if (a === 'print') { const o = pCan(P_SALE) ? readOffer(x) : offerOf((S.data.punch_emp || []).find(e => e._id === x) || { _id: x }); if (window.OfferLetter) OfferLetter.print(o, offerCompany()); return; }
+  if (!pCan(P_SALE)) return;
+  const b = readOffer(x), now = Date.now(), by = S.me && S.me.id;
+  if (a === 'save' || a === 'release') {
+    if (!(num(b.basic) > 0)) { toast('Enter the Basic salary'); return; }
+    if (a === 'release') { if (!b.join) { toast('Enter the date of joining'); return; } if (!confirm('Release the offer letter to ' + b.name + '? They can see and accept it in the portal.')) return; b.status = 'Released'; b.releasedAt = now; b.releasedBy = by; }
+    b.uid = x; b.updatedAt = now; b.by = by;
+    if (!(await pSet('punch_offer', x, b))) return;
+    // the package sets the monthly salary used by Punch and HR
+    const v = Object.assign({}, pPay(x) || {}); delete v._id; Object.assign(v, { basicAmt: num(b.basic), hraAmt: num(b.hra), convAmt: num(b.conv), splAmt: num(b.spl), pfPct: num(b.pfPct), pfMode: 'pct', pt: num(b.pt), v2: 1, updatedAt: now, by });
+    await pSet('punch_pay', x, v);
+    const e = Object.assign({}, (S.data.punch_emp || []).find(z => z._id === x) || {}); delete e._id; ['desg', 'grade', 'cat', 'join'].forEach(k => { if (b[k]) e[k] = b[k]; }); e.updatedAt = now; await pSet('punch_emp', x, e);
+    audit('punch_offer', (a === 'release' ? 'Offer letter released to ' : 'Package saved for ') + b.name); toast(a === 'release' ? 'Offer letter released' : 'Package saved'); render(); return; }
+  if (a === 'withdraw') { if (!confirm('Withdraw this offer letter?')) return; const o = Object.assign({}, pOffer(x)); delete o._id; o.status = 'Withdrawn'; o.updatedAt = now; o.by = by; if (await pSet('punch_offer', x, o)) { audit('punch_offer', 'Offer letter withdrawn for ' + o.name); toast('Withdrawn'); } return; }
+});
 /** Live home: who is in or out right now, requests to decide, this month per person – updates as the app syncs. */
 function punchLive() {
   const E = pEmps(), ym = today().slice(0, 7), dd = today().slice(8), now = Date.now();
@@ -3155,10 +3223,10 @@ function punchEmployees() {
   const E = pEmps(), ed = pCan(P_HR), cur = S.pEmp ? (S.data.punch_emp || []).find(e => e._id === S.pEmp) || { _id: S.pEmp } : null, add = S.pAdd;
   let h = pBanner() + (ed ? '<div class="toolbar"><button class="btn small primary" type="button" data-pa="add">Add employee (new Punch login)</button><button class="btn small" type="button" data-pa="link">Add an existing portal login</button></div>' : '');
   if (add) {
-    if (add === 'done') h += '<section class="panel"><h2>Login created</h2><p>Give these to the employee. They sign in to the Punch app with them.</p><p>Username: <b>' + esc(S.pAddDone.user) + '</b><br>Temporary password: <b>' + esc(S.pAddDone.pw) + '</b></p><p><button class="btn small" type="button" data-pa="addclose">Done</button></p></section>';
+    if (add === 'done') h += '<section class="panel"><h2>Login created</h2><p>Give these to the employee. They sign in to the Punch app with them.</p><p>Username: <b>' + esc(S.pAddDone.user) + '</b><br>Temporary password: <b>' + esc(S.pAddDone.pw) + '</b></p><p class="help">This login works in the Punch app (Employee login) and in the portal. They change the password after signing in.</p><p>' + (S.pAddDone.uid && pCan(P_SALE) ? '<button class="btn small primary" type="button" data-of="gopkg" data-x="' + esc(S.pAddDone.uid) + '">Set package &amp; offer letter</button> ' : '') + '<button class="btn small" type="button" data-pa="addclose">Done</button></p></section>';
     else if (add === 'link') { const have = new Set(E.map(e => e._id)), M = (S.data.members || []).filter(m => !have.has(m._id) && m.status !== 'Suspended');
       h += '<section class="panel"><h2>Add an existing portal login to Punch</h2>' + (M.length ? '<div class="toolbar"><select id="pl-uid"><option value="">Choose a person</option>' + M.map(m => '<option value="' + esc(m._id) + '">' + esc(nameOf(m._id)) + ' · ' + esc(roleById(m.role).name) + '</option>').join('') + '</select><button class="btn small primary" type="button" data-pa="linkgo">Add</button><button class="btn small" type="button" data-pa="addclose">Cancel</button></div>' : '<p>Everyone with a login is already on Punch.</p>') + '</section>'; }
-    else h += '<section class="panel"><h2>New employee</h2><div class="pgrid"><label class="mini">Full name<input id="pa-name"></label><label class="mini">Username (login)<input id="pa-user" autocapitalize="none"></label><label class="mini">Temporary password (8+)<input id="pa-pw" value="' + esc(S.pAddPw || '') + '"></label><label class="mini">Employee ID<input id="pa-eid" inputmode="numeric" value="' + esc(nextEmpId()) + '"></label><label class="mini">Designation<input id="pa-desg"></label><label class="mini">Date of joining<input id="pa-join" type="date"></label></div><p class="mini" id="pa-msg"></p><p><button class="btn small primary" type="button" data-pa="addgo">Create login and add</button> <button class="btn small" type="button" data-pa="addclose">Cancel</button></p><p class="help">Creates a portal login with the role "Employee (Punch app only)". They see only their own data in the app.</p></section>';
+    else h += '<section class="panel"><h2>New employee</h2><div class="pgrid"><label class="mini">Full name<input id="pa-name"></label><label class="mini">Username (login)<input id="pa-user" autocapitalize="none" value="' + esc(nextEmpId()) + '"></label><label class="mini">Temporary password (8+)<input id="pa-pw" value="' + esc(S.pAddPw || '') + '"></label><label class="mini">Employee ID<input id="pa-eid" inputmode="numeric" value="' + esc(nextEmpId()) + '"></label><label class="mini">Designation<input id="pa-desg"></label><label class="mini">Date of joining<input id="pa-join" type="date"></label></div><p class="mini" id="pa-msg"></p><p><button class="btn small primary" type="button" data-pa="addgo">Create login and add</button> <button class="btn small" type="button" data-pa="addclose">Cancel</button></p><p class="help">Creates a portal login with the role "Employee (Punch app only)". They see only their own data in the app.</p></section>';
   }
   if (cur) { const e = cur, wo = e.wo || [0];
     h += '<section class="panel"><h2>' + esc(e.name || nameOf(e._id)) + '</h2><div class="pgrid">' +
@@ -3212,7 +3280,7 @@ document.addEventListener('click', async e => {
     try { const uid = await window.MOVANA_FB.createStaff(name, user, pw); S.names[uid] = name;
       await S.db.collection('members').doc(uid).set({ role: 'employee', staff: '', status: 'Active', createdAt: Date.now(), updatedAt: Date.now(), addedBy: S.me && S.me.id });
       await S.db.collection('punch_emp').doc(uid).set({ name, eid: v('pa-eid'), desg: v('pa-desg'), join: v('pa-join'), wo: [0], radius: 150, createdAt: Date.now(), updatedAt: Date.now() });
-      audit('punch_emp', 'Punch login created for ' + name); S.pAdd = 'done'; S.pAddDone = { user, pw }; render();
+      audit('punch_emp', 'Punch login created for ' + name); S.pAdd = 'done'; S.pAddDone = { user, pw, uid }; render();
     } catch (err) { msg.textContent = (window.MOVANA_FB.authMsg ? window.MOVANA_FB.authMsg(err) : 'Could not create the login.'); t.disabled = false; } return; }
   if (a === 'csv') { const ym = pMonth(), rows = [['Employee', 'ID', 'Date', 'Status', 'In', 'Out', 'Hours', 'OT']];
     pEmps().forEach(e => pDays(e, ym).forEach(d => rows.push([e.name, e.eid || '', d.k, d.st, tmS(d.a), tmS(d.b), d.ms ? (d.ms / 36e5).toFixed(2) : '', d.ot ? (d.ot / 36e5).toFixed(2) : ''])));
@@ -3260,7 +3328,7 @@ const NAV = [
   { id: 'punch', label: 'Team live', icon: 'clock', dept: 'hr', top: true, sub: () => 'Live attendance from the Punch app · ' + fmtDate(today()),
     get tabs() { return [{ id: 'live', label: 'Live', view: punchLive }, { id: 'reg', label: 'Attendance register', view: punchRegister },
       { id: 'req', label: 'Requests', view: punchRequests, n: () => (S.data.punch_req || []).filter(r => r.s === 'Pending').length }]
-      .concat(pCan(P_SALV) ? [{ id: 'sal', label: 'Salary', view: punchSalary }] : []).concat([{ id: 'emp', label: 'Employees', view: punchEmployees }]); } },
+      .concat(pCan(P_SALV) ? [{ id: 'sal', label: 'Salary', view: punchSalary }, { id: 'offer', label: 'Package & offer letter', view: punchOffers, n: () => (S.data.punch_offer || []).filter(o => o.status === 'Released').length }] : []).concat([{ id: 'emp', label: 'Employees', view: punchEmployees }]); } },
   { id: 'dashboard', label: 'Dashboard', icon: 'dash', dept: 'overview', sub: () => 'Everything at a glance · ' + fmtDate(today()), tabs: [{ id: 'main', label: 'Overview', view: dashboard }] },
   { id: 'shipments', label: 'Shipments', icon: 'truck', dept: 'ops', sub: () => 'Book, track and price every consignment', tabs: [
     { id: 'board', label: 'Board', view: boardView }, { id: 'list', label: 'All shipments', view: L('shipments'), n: () => S.data.shipments.length },
