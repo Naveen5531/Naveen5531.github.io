@@ -102,11 +102,21 @@ const CSS = `
 @media print{.slip:not(.off) .lh{padding-bottom:5px;gap:10px}.slip:not(.off) .lh img{width:38px;height:38px;border-radius:8px}.slip:not(.off) .lht b{font-size:14pt}.slip:not(.off) .lht span{font-size:7.5pt}.slip:not(.off) .lhbar{height:3px;margin-bottom:5px}.slip:not(.off) .dt{font-size:10.5pt;padding:3px 0}}
 @media print{.slip.off .trm li{margin:3px 0}.slip.off .anx{margin:4px 0 8px}.slip.off{font-size:10pt;line-height:1.42;width:auto!important;max-width:none!important}.slip.off .pg{width:auto;min-height:268mm;padding:0 0 14mm;margin:0;border:0;border-radius:0}.slip.off .pg.pb{break-before:page;page-break-before:always}.slip.off .lf{left:0;right:0;bottom:0}.slip.off p{margin:5px 0}.slip.off .sl{height:34px}}
 `;
-function ensureCss() { if (document.getElementById('offerCss')) return; const s = document.createElement('style'); s.id = 'offerCss'; s.textContent = CSS + '\n.offer-view{overflow-x:auto;background:#eef1f4;padding:12px;border-radius:14px}.offer-view .slip.off{width:794px;margin:0 auto}\n@media print{body.printing-offer>*:not(#offerPrint){display:none!important}#offerPrint{display:block!important}}'; document.head.appendChild(s); }
+function ensureCss() { if (document.getElementById('offerCss')) return; const s = document.createElement('style'); s.id = 'offerCss'; s.textContent = CSS + '\n.slip.off table{width:100%;border-collapse:collapse;font-size:inherit}.slip.off table th,.slip.off table td{padding:4px 8px!important;height:auto!important;line-height:1.35;white-space:normal!important;text-transform:none!important;letter-spacing:0!important;font-size:inherit!important;border:1px solid #d6dae0;text-align:left;vertical-align:top;background:none}' +
+    '.slip.off .st th{background:#eef1f4!important;font-weight:700}.slip.off .r{text-align:right!important;font-variant-numeric:tabular-nums}.slip.off .kd td:first-child{background:#f6f7f9!important}.slip.off .oct tr.h2 td{background:#f6f7f9!important}.slip.off .oct tr.ctc td{background:#e7f3ee!important}' +
+    '\n.offer-view{overflow-x:auto;background:#eef1f4;padding:12px;border-radius:14px}.offer-view .slip.off{width:794px;margin:0 auto}' +
+    '\n@media print{html,body{margin:0!important;padding:0!important;background:#fff!important}body.printing-offer>*:not(#offerPrint){display:none!important}#offerPrint{display:block!important}' +
+    '#offerPrint .slip.off{width:210mm!important;margin:0!important;font-size:10pt;line-height:1.42}' +
+    '#offerPrint .slip.off .pg{width:210mm!important;height:296mm!important;min-height:0!important;padding:14mm 16mm 20mm!important;margin:0!important;border:0!important;border-radius:0!important;box-sizing:border-box;overflow:hidden;position:relative;break-before:auto!important;page-break-before:auto!important;break-after:page;page-break-after:always}' +
+    '#offerPrint .slip.off .pg:last-child{break-after:auto;page-break-after:auto}#offerPrint .slip.off .lf{left:16mm!important;right:16mm!important;bottom:8mm!important}}'; document.head.appendChild(s); }
 window.OfferLetter = {
   ctc,
   html(e, company) { COMPANY = company || {}; ensureCss(); return '<div class="slip off">' + letter(e) + '</div>'; },
   print(e, company) { COMPANY = company || {}; ensureCss(); let p = document.getElementById('offerPrint'); if (!p) { p = document.createElement('div'); p.id = 'offerPrint'; p.style.display = 'none'; document.body.appendChild(p); }
-    p.innerHTML = '<div class="slip off">' + letter(e) + '</div>'; document.body.classList.add('printing-offer'); const done = () => { document.body.classList.remove('printing-offer'); p.innerHTML = ''; removeEventListener('afterprint', done); }; addEventListener('afterprint', done); setTimeout(() => window.print(), 50); }
+    p.innerHTML = '<div class="slip off">' + letter(e) + '</div>'; document.body.classList.add('printing-offer');
+    // A4 with no browser margins while the letter prints, so Chrome adds no page header/footer (URL, date, title)
+    let pg = document.getElementById('offerPage'); if (!pg) { pg = document.createElement('style'); pg.id = 'offerPage'; document.head.appendChild(pg); } pg.textContent = '@page{size:A4;margin:0}';
+    const t0 = document.title; document.title = 'Offer letter - ' + (e.name || '');
+    const done = () => { document.body.classList.remove('printing-offer'); p.innerHTML = ''; pg.textContent = ''; document.title = t0; removeEventListener('afterprint', done); }; addEventListener('afterprint', done); setTimeout(() => window.print(), 50); }
 };
 })();
