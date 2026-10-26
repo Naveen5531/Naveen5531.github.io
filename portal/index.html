@@ -387,7 +387,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261026g"></script><script>
+<script src="fb.js?v=20261026h"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -2377,6 +2377,13 @@ function myAccessView() {
     '<p class="help" style="margin:10px 0 0">' + esc(r.desc || '') + '</p></section>';
   if (w.role === 'none' || (w.role !== 'superadmin' && w.role !== '_loading' && S.whoKnown && S.me)) h += requestPanel(w);
   if (window.MOVANA_FB) h += '<section class="panel"><h2>Login & password</h2><p class="help">You sign in as <b class="code">' + esc(window.MOVANA_FB.username() || '') + '</b>.</p><div class="form"><label>Current password<input id="pw-old" type="password" autocomplete="current-password"></label><label>New password (8+ characters)<input id="pw-new" type="password" autocomplete="new-password"></label><label>New password again<input id="pw-new2" type="password" autocomplete="new-password"></label></div><p class="foot" id="pw-msg" role="status"></p><div class="actions"><button class="btn primary" type="button" data-act="pw-change">Change password</button><button class="btn" type="button" data-act="sign-out">Sign out</button></div></section>';
+  if (window.MOVANA_FB && window.MOVANA_FB.gmailList && (w.role === 'superadmin' || w.role === 'admin_head')) {
+    h += '<section class="panel"><h2>Gmail sign-in for staff</h2><p class="help">Approve a Gmail address with a role. That person taps <b>Sign in with Google</b> on the login screen and gets the role straight away, no username or password needed.</p>' +
+      '<div class="form"><label>Gmail address<input id="gm-em" type="email" placeholder="name@gmail.com"></label><label>Name<input id="gm-nm" type="text"></label><label>Role<select id="gm-rl">' +
+      allRoles().filter(x => x._id !== 'none').map(x => '<option value="' + esc(x._id) + '">' + esc(x.name) + '</option>').join('') + '</select></label></div>' +
+      '<p><button class="btn small primary" type="button" data-gm="add">Approve Gmail</button></p><p class="mini" id="gm-msg"></p><div id="gm-list" class="mini">Loading…</div></section>';
+    setTimeout(gmailRefresh, 0);
+  }
   if (window.MOVANA_FB && window.MOVANA_FB.googleEmail) { const ge = window.MOVANA_FB.googleEmail();
     h += '<section class="panel"><h2>Sign in with Google</h2>' + (ge ? '<p class="help">Linked to <b>' + esc(ge) + '</b>. On the login screen tap <b>Sign in with Google</b> and choose this account; you get the same role as now.</p><p><button class="btn small" type="button" data-gl="unlink">Unlink Google</button></p>' : '<p class="help">Link your Gmail to this login, then sign in with one tap using <b>Sign in with Google</b>. Your role stays the same.</p><p><button class="btn small primary" type="button" data-gl="link">Link my Google account</button></p>') + '<p class="mini" id="gl-msg"></p></section>'; }
   if (window.MOVANA_FB && S.isOwner) h += '<section class="panel"><h2>Bring across old data</h2><p class="help">Choose the <b>movana-data.json</b> file to copy shipments, customers, vehicle types, invoices and settings from the old portal. Safe to run again: the same records are overwritten, not duplicated.</p><input type="file" id="imp-file" accept=".json,application/json"><p class="foot" id="imp-msg" role="status"></p></section>';
@@ -2977,6 +2984,21 @@ document.addEventListener('click', async e => {
     if (!confirm('Copy ' + ym + ' attendance of ' + n + ' employee(s) into Employees › Attendance? Existing marks for them on those dates are replaced.')) return;
     for (const k of Object.keys(byDate)) { const doc = (S.data.attendance || []).find(d => d._id === k), marks = Object.assign({}, (doc && doc.marks) || {}, byDate[k]); await setDoc('attendance', k, { marks }); }
     toast('Copied into Employees › Attendance'); return; }
+});
+async function gmailRefresh() {
+  const el = document.getElementById('gm-list'); if (!el) return;
+  try { const L = await window.MOVANA_FB.gmailList();
+    el.innerHTML = L.length ? '<table class="tbl"><tr><th>Gmail</th><th>Name</th><th>Role</th><th></th></tr>' + L.map(g => '<tr><td>' + esc(g.email) + '</td><td>' + esc(g.name || '') + '</td><td>' + esc((roleById(g.role) || {}).name || g.role) + '</td><td><button class="btn small" type="button" data-gm="del" data-em="' + esc(g.email) + '">Remove</button></td></tr>').join('') + '</table>' : 'No Gmail addresses approved yet.';
+  } catch (err) { el.textContent = 'Could not load the list: ' + (err && err.message || err); }
+}
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-gm]'); if (!t || !window.MOVANA_FB) return; const msg = document.getElementById('gm-msg'); t.disabled = true;
+  try {
+    if (t.dataset.gm === 'add') { const em = await window.MOVANA_FB.gmailSet($('#gm-em').value, $('#gm-rl').value, $('#gm-nm').value); audit('members', 'Gmail sign-in approved: ' + em + ' as ' + $('#gm-rl').value); toast('Approved ' + em); $('#gm-em').value = ''; $('#gm-nm').value = ''; }
+    else { if (!confirm('Remove ' + t.dataset.em + ' from Gmail sign-in? Anyone already signed in with it keeps their login until you change their role in Logins & roles.')) { t.disabled = false; return; } await window.MOVANA_FB.gmailDel(t.dataset.em); toast('Removed'); }
+    if (msg) msg.textContent = ''; await gmailRefresh();
+  } catch (err) { if (msg) msg.textContent = err && err.message || String(err); }
+  t.disabled = false;
 });
 document.addEventListener('click', async e => {
   const t = e.target.closest('[data-gl]'); if (!t || !window.MOVANA_FB) return; const msg = $('#gl-msg');

@@ -71,7 +71,21 @@
       const err = gate.querySelector('#fbErr'); err.className = 'err'; err.textContent = ''; gb.disabled = true; GPEND = true; GMSG = '';
       try {
         const r = await auth.signInWithPopup(gprov());
-        if (r.additionalUserInfo && r.additionalUserInfo.isNewUser) {
+        let hasMember = false; try { hasMember = (await fs.doc('members/' + r.user.uid).get()).exists; } catch (x) {}
+        if (!hasMember) {
+          // Gmail addresses approved by an admin (collection "gmail", id = the address) get their role straight away
+          const em = String(r.user.email || '').toLowerCase(); let g = null;
+          try { const s = await fs.doc('gmail/' + em).get(); g = s.exists ? s.data() : null; } catch (x) {}
+          if (g && g.role) {
+            try {
+              const now = Date.now();
+              await fs.doc('members/' + r.user.uid).set({ role: g.role, status: 'Active', staff: g.staff || '', google: em, createdAt: now, updatedAt: now, addedBy: r.user.uid });
+              await fs.doc('users/' + r.user.uid).set({ name: g.name || r.user.displayName || em, username: em, createdAt: now });
+              hasMember = true;
+            } catch (x) {}
+          }
+        }
+        if (!hasMember && r.additionalUserInfo && r.additionalUserInfo.isNewUser) {
           // this Google account is not linked to any portal login: remove the empty login again
           const em = r.user.email; try { await r.user.delete(); } catch (x) { try { await auth.signOut(); } catch (y) {} }
           GPEND = false; GMSG = em + ' is not linked to a portal login. Sign in with your username once, then open My access › Sign in with Google › Link.'; loginScreen(); return;
@@ -192,6 +206,9 @@
     googleEmail: () => { const g = ME.user && (ME.user.providerData || []).find(p => p && p.providerId === 'google.com'); return g ? g.email : ''; },
     async linkGoogle() { await ME.user.linkWithPopup(gprov()); try { await ME.user.reload(); } catch (e) {} return (ME.user.providerData || []).find(p => p && p.providerId === 'google.com').email; },
     async unlinkGoogle() { await ME.user.unlink('google.com'); },
+    async gmailList() { const q = await fs.collection('gmail').get(); return q.docs.map(d => Object.assign({ email: d.id }, d.data())); },
+    async gmailSet(email, role, name) { email = String(email || '').trim().toLowerCase(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Enter a valid Gmail address.'); await fs.doc('gmail/' + email).set({ role, name: name || '', at: Date.now(), by: ME.user.uid }); return email; },
+    async gmailDel(email) { await fs.doc('gmail/' + email).delete(); },
     /** Load a data file exported from the old claude.ai portal: { collection: { docId: data } } */
     async importData(obj) {
       const ops = []; Object.keys(obj || {}).forEach(c => { if (!/^[a-z]+$/.test(c) || ['members', 'roles', 'users', 'public'].includes(c)) return; Object.keys(obj[c] || {}).forEach(id => { if (id !== 'owner') ops.push([c, id, obj[c][id]]); }); });
