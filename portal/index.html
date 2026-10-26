@@ -1,5 +1,21 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b0b0c"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b0b0c"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}
+/* ===== Punch live home ===== */
+.live-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
+.live-dot { display: inline-flex; align-items: center; gap: 7px; font-size: .78rem; font-weight: 600; color: var(--good); background: var(--good-bg); padding: 4px 10px; border-radius: 999px; }
+.live-dot i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: livep 1.6s ease-in-out infinite; }
+.live-dot.off { color: var(--muted); background: var(--surface-2); } .live-dot.off i { animation: none; }
+@keyframes livep { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .live-dot i { animation: none; } }
+.board { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 12px; margin: 0 0 18px; }
+.pcard { border: 1px solid var(--line); border-left: 4px solid var(--line-2); background: var(--surface); border-radius: var(--r-sm); padding: 12px 14px; display: grid; gap: 4px; min-width: 0; }
+.pcard.in { border-left-color: #0c9b76; } .pcard.out { border-left-color: #f26a1b; } .pcard.none { border-left-color: var(--bad); } .pcard.off { border-left-color: var(--info); }
+.pcard .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcard .st { font-size: .85rem; } .pcard .sub { font-size: .76rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcard.in .st { color: #0c9b76; font-weight: 600; } .pcard.out .st { color: #c2540f; font-weight: 600; }
+.lgrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.board-h { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 8px; font-weight: 700; } .board-h .mini { font-weight: 400; }
+</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b0b0c"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><title>Movana Control Tower</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -387,7 +403,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261026h"></script><script>
+<script src="fb.js?v=20261026i"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -493,7 +509,7 @@ const EXPENSE_ACCTS = COA.filter(a => a[1] === 'Expense').map(a => a[0]);
 
 // ================= state =================
 const COLLS = ['shipments', 'pickups', 'trips', 'drs', 'returns', 'invoices', 'payments', 'vendorbills', 'journal', 'tickets', 'assets', 'access', 'approvals', 'staff', 'attendance', 'vehicles', 'vtypes', 'maintenance', 'fuel', 'customers', 'hubs', 'rates', 'settings', 'audit', 'pins', 'leaves', 'payroll', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req'];
-const S = { mod: 'dashboard', tab: {}, data: {}, loaded: {}, q: {}, filt: {}, sel: {}, db: null, me: null, canWrite: true, readonly: false, dbState: 'connecting', downloads: null, users: null,
+const S = { mod: 'punch', tab: {}, data: {}, loaded: {}, q: {}, filt: {}, sel: {}, db: null, me: null, canWrite: true, readonly: false, dbState: 'connecting', downloads: null, users: null,
   from: addDays(today(), -29), to: today(), month: today().slice(0, 7), attDate: today(), attHub: '' };
 COLLS.forEach(k => { S.data[k] = []; S.q[k] = ''; S.filt[k] = 'All'; S.sel[k] = new Set(); });
 const SET = () => Object.assign({}, DEFAULT_SETTINGS, (S.data.settings.find(d => d._id === 'main') || {}));
@@ -535,6 +551,7 @@ async function boot() {
     }, err => { S.loaded[k] = true; if (err && err.code === 'revoked') S.dbState = 'none'; scheduleRender(); });
   });
 }
+setInterval(() => { try { const ae = document.activeElement; if (S.mod === 'punch' && curTab().id === 'live' && !(ae && /INPUT|SELECT|TEXTAREA/.test(ae.tagName)) && !document.hidden) render(); } catch (e) {} }, 30000);
 let rq = false;
 function scheduleRender() { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); refreshDrawer(); }); }
 
@@ -2879,6 +2896,50 @@ function punchToday() {
   return pBanner() + '<div class="kpis"><div class="kpi okay"><span class="v">' + inN + '</span><span class="l">Checked in now</span></div><div class="kpi"><span class="v">' + E.length + '</span><span class="l">Employees on Punch</span></div><div class="kpi ' + ((S.data.punch_req || []).some(r => r.s === 'Pending') ? 'alert' : '') + '"><span class="v">' + (S.data.punch_req || []).filter(r => r.s === 'Pending').length + '</span><span class="l">Requests waiting</span></div></div>' +
     '<div class="tablewrap"><table><thead><tr><th>Name</th><th>ID</th><th>Designation</th><th>Workplace</th><th>Today</th><th>Location</th></tr></thead><tbody>' + rows.join('') + '</tbody></table></div>';
 }
+/** Earned pay so far this month: same rules as the app's payslip (pay days ÷ day basis), days up to today only. */
+function pEarn(e, ym) {
+  const v = pPay(e._id); if (!v) return null;
+  const hf = (v.hikes || []).filter(h => num(h.p) && h.f && ym >= h.f).reduce((f, h) => f * (1 + num(h.p) / 100), 1);
+  const amt = k => num(v[k]) * hf, full = amt('basicAmt') + amt('hraAmt') + amt('convAmt') + amt('splAmt');
+  const D = pDays(e, ym), [y, m] = ym.split('-').map(Number), dim = new Date(y, m, 0).getDate(), basis = v.basis || 'cal';
+  const c = f => D.filter(f).length, wo = c(d => d.st === 'Week off');
+  const base = basis === 'cal' ? dim : basis === 'work' ? dim - wo : num(basis);
+  let pay = c(d => d.code === 'P') + c(d => d.code === 'H') / 2 + c(d => d.st === 'Comp off') + (v.leavePaid === false ? 0 : c(d => /^Leave/.test(d.st) && !/LOP/.test(d.st))) + (v.holPaid === false ? 0 : c(d => d.st === 'Holiday')) + (basis === 'cal' || basis === '30' ? wo : 0);
+  if (basis === '26' || basis === '30') pay = Math.min(pay, base);
+  const k = base ? pay / base : 0, basic = amt('basicAmt') * k, gross = full * k;
+  const pf = v.pfMode === 'fix' ? num(v.pf) : Math.round(basic * num(v.pfPct == null ? 12 : v.pfPct) / 100);
+  return { full, pay, base, gross: Math.round(gross), net: Math.round(gross - pf - num(v.pt) - num(v.vpf) - num(v.esi) - num(v.oth)) };
+}
+/** Live home: who is in or out right now, requests to decide, this month per person – updates as the app syncs. */
+function punchLive() {
+  const E = pEmps(), ym = today().slice(0, 7), dd = today().slice(8), now = Date.now();
+  const lastAt = Math.max(0, ...(S.data.punch_att || []).map(d => num(d.updatedAt)), ...(S.data.punch_req || []).map(d => num(d.at)));
+  const at = lastAt ? new Date(lastAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }) : '';
+  let h = pBanner() + '<div class="live-head"><span class="live-dot' + (S.dbState === 'ok' ? '' : ' off') + '"><i></i>' + (S.dbState === 'ok' ? 'Live' : 'Offline') + '</span><span class="mini">' + (at ? 'Last update from the app ' + (dayOf(lastAt) === today() ? at : fmtDate(dayOf(lastAt)) + ' ' + at) : 'Waiting for the first check-in') + ' · ' + fmtDate(today()) + '</span></div>';
+  if (!E.length) return h + pNoEmp();
+  const G = { in: [], out: [], none: [], off: [] };
+  E.forEach(e => { const a = pAtt(e._id, ym), d = a && a.days && a.days[dd], open = a && a.open && dayOf(a.open.t) === today() ? a.open : null, x = pDay(e, ym, +dd);
+    const wp = (e.wp && e.wp.name) || '', loc = open && open.lat != null ? ' · <a href="https://www.google.com/maps?q=' + open.lat + ',' + open.lng + '" target="_blank" rel="noopener">Map</a>' : '';
+    const done = a && (a.logs || []).filter(l => dayOf(l.in) === today()), ms = sum(done || [], l => num(l.out) - num(l.in));
+    if (open) G.in.push({ e, st: 'In since ' + tmS(open.t), sub: hm(now - open.t + ms) + ' today' + (wp ? ' · ' + esc(wp) : '') + loc });
+    else if (done && done.length) G.out.push({ e, st: 'Out at ' + tmS(done[0].out), sub: tmS(done[done.length - 1].in) + ' – ' + tmS(done[0].out) + ' · ' + hm(ms) });
+    else if (d && d.a) G.out.push({ e, st: d.b ? 'Out at ' + tmS(d.b) : 'Checked in ' + tmS(d.a), sub: hm(d.ms) });
+    else if (['Week off', 'Holiday', 'Comp off'].includes(x.st) || /^Leave/.test(x.st)) G.off.push({ e, st: x.st, sub: esc(e.desg || '') });
+    else G.none.push({ e, st: x.st === 'Not yet' || !x.st ? 'Not checked in' : x.st, sub: esc(e.desg || '') + (wp ? ' · ' + esc(wp) : '') });
+  });
+  const pend = (S.data.punch_req || []).filter(r => r.s === 'Pending').sort((a, b) => num(a.at) - num(b.at)), ap = pCan(P_APPR), sal = pCan(P_SALV);
+  const tot = sal ? E.reduce((t, e) => { const p = pEarn(e, ym); return t + (p ? p.gross : 0); }, 0) : 0;
+  h += '<div class="kpis"><div class="kpi okay"><span class="v">' + G.in.length + '</span><span class="l">In now</span></div><div class="kpi"><span class="v">' + G.out.length + '</span><span class="l">Done for today</span></div><div class="kpi' + (G.none.length ? ' alert' : '') + '"><span class="v">' + G.none.length + '</span><span class="l">Not checked in</span></div><div class="kpi"><span class="v">' + G.off.length + '</span><span class="l">Off / leave today</span></div>' +
+    '<button type="button" class="kpi' + (pend.length ? ' alert' : '') + '" data-go="punch" data-gotab="req"><span class="v">' + pend.length + '</span><span class="l">Requests waiting</span></button>' + (sal ? '<button type="button" class="kpi" data-go="punch" data-gotab="sal"><span class="v">' + money2(tot) + '</span><span class="l">Salary earned so far this month</span></button>' : '') + '</div>';
+  const card = (cls, x) => '<div class="pcard ' + cls + '"><div class="nm">' + esc(x.e.name) + (x.e.eid ? ' <span class="mini">' + esc(x.e.eid) + '</span>' : '') + '</div><div class="st">' + esc(x.st) + '</div><div class="sub">' + x.sub + '</div></div>';
+  [['in', 'In now', 'checked in on the app'], ['none', 'Not checked in', ''], ['out', 'Checked out', ''], ['off', 'Off or on leave', '']].forEach(([k, t, n]) => { if (G[k].length) h += '<div class="board-h">' + t + ' <span class="mini">' + G[k].length + (n ? ' ' + n : '') + '</span></div><div class="board">' + G[k].map(x => card(k, x)).join('') + '</div>'; });
+  if (pend.length) h += '<section class="panel"><h2>Requests waiting (' + pend.length + ')</h2>' + (ap ? '' : '<p class="help">HR manager or HR head approves these.</p>') + '<div class="tablewrap"><table><thead><tr><th>Employee</th><th>Request</th><th>Days</th><th>Reason</th><th>Sent</th><th></th></tr></thead><tbody>' +
+    pend.slice(0, 20).map(r => { const dz = (r.days || []).slice().sort(); return '<tr><td>' + esc(r.name || '') + '</td><td>' + esc(pReqLabel(r)) + '</td><td>' + (dz.length ? fmtDate(dz[0]) + (dz.length > 1 ? ' – ' + fmtDate(dz[dz.length - 1]) + ' (' + dz.length + ')' : '') : '') + '</td><td>' + esc(r.why || '') + '</td><td>' + fmtTime(r.at) + '</td><td>' + (ap ? '<button class="btn small primary" type="button" data-pa="ok" data-x="' + esc(r._id) + '">Approve</button> <button class="btn small" type="button" data-pa="no" data-x="' + esc(r._id) + '">Reject</button>' : '') + '</td></tr>'; }).join('') + '</tbody></table></div></section>';
+  h += '<section class="panel"><h2>' + new Date(ym + '-01T00:00:00').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) + ' so far</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th class="num">Present</th><th class="num">Half</th><th class="num">Absent</th><th class="num">Leave</th><th class="num">Comp off</th><th class="num">Week off</th><th class="num">Hours</th>' + (sal ? '<th class="num">Pay days</th><th class="num">Earned (gross)</th><th class="num">Take-home so far</th>' : '') + '</tr></thead><tbody>' +
+    E.map(e => { const x = pSum(e, ym), p = sal ? pEarn(e, ym) : null; return '<tr><td>' + esc(e.name) + '</td><td class="num">' + x.p + '</td><td class="num">' + x.h + '</td><td class="num">' + x.a + '</td><td class="num">' + x.l + '</td><td class="num">' + x.co + '</td><td class="num">' + x.wo + '</td><td class="num">' + hm(x.ms) + '</td>' + (sal ? (p ? '<td class="num">' + (+p.pay.toFixed(1)) + ' / ' + p.base + '</td><td class="num">' + money2(p.gross) + '</td><td class="num">' + money2(p.net) + '</td>' : '<td colspan="3" class="mini">Salary not set up</td>') : '') + '</tr>'; }).join('') + '</tbody></table></div>' +
+    (sal ? '<p class="help">Earned so far counts only days up to today, the same way the app works out the payslip. The final figure is on the employee\'s payslip in the app.</p>' : '') + '</section>';
+  return h;
+}
 function punchRegister() {
   const E = pEmps(), ym = pMonth();
   let h = pBanner() + '<div class="toolbar"><label class="mini" for="pm-month">Month</label><input id="pm-month" type="month" style="width:auto" value="' + ym + '"><button class="btn small" type="button" data-pa="csv">Download CSV</button>' + (pCan(P_HR) && S.data.staff ? '<button class="btn small" type="button" data-pa="copyatt">Copy into Employees › Attendance</button>' : '') + '</div>';
@@ -2902,11 +2963,11 @@ function pNet(v) { const pf = v.pfMode === 'fix' ? num(v.pf) : Math.round(num(v.
 function punchSalary() {
   if (!pCan(P_SALV)) return '<div class="empty">Salary is visible to HR manager and HR head only.</div>';
   const E = pEmps(), ed = pCan(P_SALE); if (!E.length) return pBanner() + pNoEmp();
-  let h = pBanner() + (ed ? '' : '<div class="banner info">You can see salaries. Only HR head changes them.</div>') + '<div class="tablewrap"><table><thead><tr><th>Name</th><th>ID</th><th class="num">Gross / month</th><th class="num">Take-home / month</th><th>Hikes</th><th></th></tr></thead><tbody>';
+  let h = pBanner() + (ed ? '' : '<div class="banner info">You can see salaries. Only HR head changes them.</div>') + '<div class="tablewrap"><table><thead><tr><th>Name</th><th>ID</th><th class="num">Gross / month</th><th class="num">Take-home / month</th><th class="num">Earned this month so far</th><th>Hikes</th><th></th></tr></thead><tbody>';
   E.forEach(e => { const v = pPay(e._id) || {}, open = S.pSal === e._id;
-    h += '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td class="num">' + money2(pGross(v)) + '</td><td class="num">' + money2(pNet(v)) + '</td><td>' + esc((v.hikes || []).map(x => x.p + '% from ' + x.f).join(', ')) + '</td><td><button class="btn small" type="button" data-pa="sal" data-x="' + esc(e._id) + '">' + (open ? 'Close' : ed ? 'Edit' : 'View') + '</button></td></tr>';
+    h += '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td class="num">' + money2(pGross(v)) + '</td><td class="num">' + money2(pNet(v)) + '</td><td class="num">' + (pPay(e._id) ? money2(pEarn(e, today().slice(0, 7)).gross) : '—') + '</td><td>' + esc((v.hikes || []).map(x => x.p + '% from ' + x.f).join(', ')) + '</td><td><button class="btn small" type="button" data-pa="sal" data-x="' + esc(e._id) + '">' + (open ? 'Close' : ed ? 'Edit' : 'View') + '</button></td></tr>';
     if (open) { const hk = (v.hikes || []).concat([{ p: '', f: '' }, { p: '', f: '' }]).slice(0, Math.max(2, (v.hikes || []).length + 1));
-      h += '<tr><td colspan="6"><div class="formgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">' + P_PF.map(([k, l]) => '<label class="mini">' + l + '<input data-ps="' + k + '" type="number" step="0.01" value="' + esc(v[k] == null ? (k === 'pfPct' ? 12 : k === 'pt' ? 200 : '') : v[k]) + '"' + (ed ? '' : ' disabled') + '></label>').join('') +
+      h += '<tr><td colspan="7"><div class="formgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">' + P_PF.map(([k, l]) => '<label class="mini">' + l + '<input data-ps="' + k + '" type="number" step="0.01" value="' + esc(v[k] == null ? (k === 'pfPct' ? 12 : k === 'pt' ? 200 : '') : v[k]) + '"' + (ed ? '' : ' disabled') + '></label>').join('') +
         '<label class="mini">PF calculation<select data-ps="pfMode"' + (ed ? '' : ' disabled') + '><option value="pct"' + (v.pfMode !== 'fix' ? ' selected' : '') + '>% of earned Basic</option><option value="fix"' + (v.pfMode === 'fix' ? ' selected' : '') + '>Fixed amount</option></select></label>' +
         '<label class="mini">Days basis<select data-ps="basis"' + (ed ? '' : ' disabled') + '>' + [['cal', 'Calendar days'], ['work', 'Working days'], ['26', 'Fixed 26'], ['30', 'Fixed 30']].map(([a, b]) => '<option value="' + a + '"' + ((v.basis || 'cal') === a ? ' selected' : '') + '>' + b + '</option>').join('') + '</select></label></div>' +
         '<p class="mini" style="margin:10px 0 4px">Hikes (each raises Basic, HRA, Conveyance and Special from that month)</p>' + hk.map((x, i) => '<div class="toolbar"><input data-ph="' + i + '|p" type="number" step="0.01" placeholder="%" value="' + esc(x.p) + '" style="width:90px"' + (ed ? '' : ' disabled') + '><span>% from</span><input data-ph="' + i + '|f" type="month" value="' + esc(x.f) + '" style="width:auto"' + (ed ? '' : ' disabled') + '></div>').join('') +
@@ -3018,6 +3079,10 @@ document.addEventListener('change', async e => {
 });
 
 const NAV = [
+  { id: 'punch', label: 'Team live', icon: 'clock', dept: 'hr', top: true, sub: () => 'Live attendance from the Punch app · ' + fmtDate(today()),
+    get tabs() { return [{ id: 'live', label: 'Live', view: punchLive }, { id: 'reg', label: 'Attendance register', view: punchRegister },
+      { id: 'req', label: 'Requests', view: punchRequests, n: () => (S.data.punch_req || []).filter(r => r.s === 'Pending').length }]
+      .concat(pCan(P_SALV) ? [{ id: 'sal', label: 'Salary', view: punchSalary }] : []).concat([{ id: 'emp', label: 'Employees', view: punchEmployees }]); } },
   { id: 'dashboard', label: 'Dashboard', icon: 'dash', dept: 'overview', sub: () => 'Everything at a glance · ' + fmtDate(today()), tabs: [{ id: 'main', label: 'Overview', view: dashboard }] },
   { id: 'shipments', label: 'Shipments', icon: 'truck', dept: 'ops', sub: () => 'Book, track and price every consignment', tabs: [
     { id: 'board', label: 'Board', view: boardView }, { id: 'list', label: 'All shipments', view: L('shipments'), n: () => S.data.shipments.length },
@@ -3065,10 +3130,6 @@ const NAV = [
     { id: 'req', label: 'Leave requests', view: L('leaves'), n: () => S.data.leaves.filter(l => stageOf('leaves', l) === 'Applied').length }, { id: 'bal', label: 'Balances', view: leaveBalances }] },
   { id: 'payroll', label: 'Payroll', icon: 'pay', dept: 'hr', sub: () => 'Monthly payroll from attendance and leave, PF / ESI / PT, payslips', tabs: [
     { id: 'run', label: 'Payroll run', view: payrollRun }, { id: 'slips', label: 'Payslips', view: L('payroll'), n: () => S.data.payroll.filter(p => stageOf('payroll', p) !== 'Paid').length }] },
-  { id: 'punch', label: 'Punch app', icon: 'clock', dept: 'hr', sub: () => 'Check-ins from the Punch app, approvals and salary set-up',
-    get tabs() { return [{ id: 'today', label: 'Today', view: punchToday }, { id: 'reg', label: 'Attendance register', view: punchRegister },
-      { id: 'req', label: 'Requests', view: punchRequests, n: () => (S.data.punch_req || []).filter(r => r.s === 'Pending').length }]
-      .concat(pCan(P_SALV) ? [{ id: 'sal', label: 'Salary set-up', view: punchSalary }] : []).concat([{ id: 'emp', label: 'Employees', view: punchEmployees }]); } },
   { id: 'fleet', label: 'Fleet', icon: 'bus', dept: 'ops', sub: () => 'Vehicles, papers, maintenance and fuel mileage', tabs: [
     { id: 'vehicles', label: 'Vehicles', view: L('vehicles') }, { id: 'vtypes', label: 'Vehicle types', view: vtypesView, n: () => S.data.vtypes.length }, { id: 'mnt', label: 'Maintenance', view: L('maintenance') }, { id: 'fuel', label: 'Fuel log', view: L('fuel') }] },
   { id: 'me', label: 'My access', icon: 'key', dept: 'overview', always: true, sub: () => 'Your role and what it lets you do', tabs: [{ id: 'main', label: 'My access', view: myAccessView }] },
@@ -3105,8 +3166,9 @@ function renderNav() {
       (isOpen ? '<div class="subs">' + m.tabs.map(t => { const c = t.n ? t.n() : 0; return '<button type="button" class="sub" data-go="' + m.id + '" data-gotab="' + t.id + '"' + (m.id === cm.id && cur.id === t.id ? ' aria-current="page"' : '') + '><span>' + esc(t.label) + '</span>' + (c ? '<span class="n">' + c + '</span>' : '') + '</button>'; }).join('') + '</div>' : '');
   };
   const w = whoAmI();
-  $('#nav').innerHTML = DEPTS.map(d => {
-    const ms = NAV.filter(m => m.dept === d.id && lvl(m.id) >= 1);
+  const tops = NAV.filter(m => m.top && lvl(m.id) >= 1);
+  $('#nav').innerHTML = (tops.length ? '<div class="dept overview">' + tops.map(modHtml).join('') + '</div>' : '') + DEPTS.map(d => {
+    const ms = NAV.filter(m => m.dept === d.id && !m.top && lvl(m.id) >= 1);
     if (!ms.length) return '';
     if (d.id === 'overview') return '<div class="dept overview">' + ms.map(modHtml).join('') + '</div>';
     const isCur = ms.some(m => m.id === cm.id), isOpen = open[d.id] != null ? open[d.id] : isCur;

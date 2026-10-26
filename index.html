@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Movana Logistics – full truckload, part load, first and last mile, reverse logistics across India. Instant freight estimate and pickup booking."><meta name="theme-color" content="#0c0d0f"><title>Movana Logistics</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Movana Logistics – Punch attendance app with live team view for HR, plus full truckload, part load and last-mile freight across India."><meta name="theme-color" content="#0c0d0f"><title>Movana Logistics · Punch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
@@ -150,24 +150,118 @@ td.best { white-space: normal; color: var(--ink-2); min-width: 220px; }
 footer { padding-block: 34px; color: var(--ink-2); font-size: .84rem; }
 footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: space-between; }
 @media (prefers-reduced-motion: no-preference) { .lr { animation: rise .6s ease-out both; } @keyframes rise { from { transform: translateY(10px); } to { transform: none; } } }
+
+/* ===== Punch-first layout ===== */
+.hero .wrap.ph { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); }
+@media (max-width: 900px) { .hero .wrap.ph { grid-template-columns: minmax(0, 1fr); } .phone { width: min(260px, 100%); } }
+.phone { justify-self: center; width: min(300px, 100%); aspect-ratio: 9 / 18.5; background: #f2f3f7; border-radius: 38px; border: 10px solid #1b1c1f; box-shadow: 0 40px 80px -30px rgba(0,0,0,.8); padding: 18px 14px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; color: #101828; font-family: var(--body); position: relative; overflow: hidden; }
+.phone::before { content: ""; position: absolute; top: 8px; left: 50%; width: 70px; height: 6px; border-radius: 6px; background: #1b1c1f; transform: translateX(-50%); }
+.ph-top { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.ph-logo { width: 30px; height: 30px; border-radius: 9px; background: #0c9b76; color: #fff; display: grid; place-items: center; font: 700 .78rem var(--body); }
+.ph-top b { font-size: .92rem; } .ph-top small { display: block; font-size: .66rem; color: #6b7280; }
+.ph-card { background: #fff; border-radius: 16px; padding: 14px; display: grid; gap: 4px; box-shadow: 0 1px 2px rgba(16,24,40,.06); }
+.ph-card .t { font: 700 1.9rem var(--body); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.ph-card .m { font-size: .74rem; color: #6b7280; }
+.ph-btn { justify-self: center; align-self: center; width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #25cf9f, #0c9b76); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; font: 700 1.05rem/1.2 var(--body); box-shadow: 0 0 0 10px rgba(12,155,118,.14), 0 18px 30px -12px rgba(12,155,118,.7); }
+.ph-btn small { display: block; font-weight: 500; font-size: .7rem; opacity: .85; }
+.ph-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ph-row span { background: #fff; border-radius: 10px; padding: 7px 4px; text-align: center; font-size: .62rem; color: #6b7280; } .ph-row b { display: block; font-size: .9rem; color: #101828; }
+.livestrip { margin-top: 26px; border: 1px solid var(--band-rule); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; font-size: .86rem; color: var(--band-sub); }
+.livestrip .lh { display: flex; align-items: center; gap: 8px; color: var(--band-ink); font-weight: 600; }
+.ldot { width: 8px; height: 8px; border-radius: 50%; background: #6b6b6b; flex: none; } .ldot.on { background: #2fd1a0; box-shadow: 0 0 0 4px rgba(47,209,160,.18); }
+.livestrip .nums { display: flex; flex-wrap: wrap; gap: 6px 16px; } .livestrip .nums b { color: var(--band-ink); font-variant-numeric: tabular-nums; }
+.livestrip a { color: #d4a64a; }
+.steps4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.steps4 .card b.n { font: 600 .78rem var(--mono); color: var(--gold); }
+@media (max-width: 900px) { .steps4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .steps4 { grid-template-columns: minmax(0, 1fr); } }
+.livegrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .livegrid { grid-template-columns: minmax(0, 1fr); } }
+.feat { display: grid; gap: 14px; } .feat div { display: grid; gap: 3px; border-left: 3px solid var(--gold); padding-left: 14px; } .feat b { font-family: var(--display); font-size: 1.06rem; } .feat span { color: var(--ink-2); font-size: .92rem; }
+.demo { display: grid; gap: 8px; } .demo .dc { background: var(--paper); border: 1px solid var(--rule); border-left: 4px solid #0c9b76; border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; gap: 10px; font-size: .9rem; } .demo .dc.o { border-left-color: #f26a1b; } .demo .dc.n { border-left-color: #c2410c; border-left-color: #b42a24; } .demo .dc span { color: var(--ink-2); font-size: .82rem; white-space: nowrap; }
+.roles td { white-space: normal; }
+.freight-band { background: var(--band); color: var(--band-ink); border-bottom: 1px solid var(--rule); }
+.freight-band .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 48px; padding-block: 64px; align-items: center; }
+.freight-band h2 em { font-style: italic; color: #d4a64a; font-weight: 500; }
+.freight-band .lead { color: var(--band-sub); margin-top: 14px; }
+.freight-band .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; } .freight-band .btn { background: transparent; color: var(--band-ink); border-color: #3a3426; } .freight-band .btn.gold { background: #b8862b; border-color: #b8862b; color: #fff; }
+@media (max-width: 900px) { .freight-band .wrap { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-block: 44px; } }
 </style>
 
 </head><body><header class="top">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="Movana Logistics home"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg></span><span><b>Movana Logistics</b><small>Pan-India freight</small></span></a>
-    <nav aria-label="Sections"><a href="#services">Services</a><a href="#fleet">Fleet</a><a href="#coverage">Coverage</a><a href="#app">Mobile app</a><a href="#contact">Contact</a></nav>
+    <a class="brand" href="#top" aria-label="Movana Logistics home"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg></span><span><b>Movana Logistics</b><small>Punch · Freight</small></span></a>
+    <nav aria-label="Sections"><a href="#how">How Punch works</a><a href="#live">Team live</a><a href="#app">Download</a><a href="#freight">Freight</a><a href="#contact">Contact</a></nav>
     <a class="btn login" id="loginBtn" href="https://naveen5531.github.io/portal/" target="_blank" rel="noopener">Staff login</a>
   </div>
 </header>
 
 <main id="top">
   <section class="hero">
+    <div class="wrap ph">
+      <div>
+        <p class="eyebrow" style="color:#d4a64a">Punch · attendance app for Movana teams</p>
+        <h1 style="margin-top:16px">Check in at the gate, <em>HR sees it live.</em></h1>
+        <p class="lead">Staff check in and out on their phone at the workplace. Leave, comp off and attendance changes go to HR from the app. The staff portal shows who is in right now, requests to approve, the month's attendance and salary earned so far, updating by itself.</p>
+        <div class="cta"><a class="btn gold" href="Punch.apk" download>Download Punch</a><a class="btn" href="https://naveen5531.github.io/portal/#punch" target="_blank" rel="noopener">Open Team live</a></div>
+        <div class="livestrip" id="liveStrip" aria-live="polite"><div class="lh"><span class="ldot"></span><span>Team live</span></div><div id="liveBody">HR staff signed in to the portal on this browser see their team's live count here.</div></div>
+      </div>
+      <div class="phone" aria-label="Punch app check-in screen">
+        <div class="ph-top"><span class="ph-logo">ML</span><div><b>Punch</b><small>Movana Logistics</small></div></div>
+        <div class="ph-card"><span class="m">Today · DC Isnapur</span><span class="t" id="phClock">09:00</span><span class="m">Within 150 m of the workplace</span></div>
+        <div class="ph-btn">Check in<small>tap at the workplace</small></div>
+        <div class="ph-row"><span><b>22</b>Present</span><span><b>1</b>Leave</span><span><b>2</b>Comp off</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="how">
+    <div class="wrap">
+      <div class="sec-head"><p class="eyebrow">How Punch works</p><h2>From the phone to the payslip, one record</h2><p class="lead">Each step lands in the same database the staff portal reads, so HR never re-types attendance.</p></div>
+      <div class="steps4">
+        <div class="card"><b class="n">01</b><h3>Check in at work</h3><p class="lead">The app checks the phone is within the workplace radius, then records in and out times with location.</p></div>
+        <div class="card"><b class="n">02</b><h3>Ask from the app</h3><p class="lead">Leave, comp off and attendance corrections go to HR with a reason. Comp off is used up as soon as it is applied.</p></div>
+        <div class="card"><b class="n">03</b><h3>HR decides live</h3><p class="lead">Requests appear in the portal the moment they are sent. Approve and the employee's app updates straight away.</p></div>
+        <div class="card"><b class="n">04</b><h3>Payslip every month</h3><p class="lead">Pay days and salary are worked out from attendance. Employees see their net pay; HR sees the full working.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="live">
+    <div class="wrap">
+      <div class="sec-head"><p class="eyebrow">Team live · staff portal</p><h2>Your team, right now</h2><p class="lead">Team live is the first screen of the staff portal. It updates on its own as people punch in and out, with no refresh.</p></div>
+      <div class="livegrid">
+        <div class="feat">
+          <div><b>Who's in and out today</b><span>In since, hours so far and a map pin for everyone checked in; who has not come in; who is off or on leave.</span></div>
+          <div><b>Requests waiting</b><span>Leave, comp off and attendance changes show up instantly, with Approve and Reject on the same screen.</span></div>
+          <div><b>The month so far</b><span>Present, half days, absent, leave, comp off, week offs and hours for every employee.</span></div>
+          <div><b>Salary earned so far</b><span>Pay days and earnings to date, worked out the same way as the payslip. Only roles allowed to see salary get this.</span></div>
+        </div>
+        <div>
+          <div class="demo" aria-label="Example of the Team live board">
+            <div class="dc"><b>Arun · Driver</b><span>In since 8:52 am · 3h 10m</span></div>
+            <div class="dc"><b>Chitra · Clerk</b><span>In since 9:05 am · 2h 57m</span></div>
+            <div class="dc o"><b>Ravi · Loader</b><span>Out at 11:40 am</span></div>
+            <div class="dc n"><b>Bala · Loader</b><span>Not checked in</span></div>
+          </div>
+          <div class="tablewrap roles" style="margin-top:16px"><table><thead><tr><th>Role</th><th>What they get</th></tr></thead><tbody>
+            <tr><td><b>HR head</b></td><td>Everything, including changing salary</td></tr>
+            <tr><td><b>HR manager</b></td><td>Live board, approvals, salary view (no changes)</td></tr>
+            <tr><td><b>HR executive</b></td><td>Live board and attendance</td></tr>
+            <tr><td><b>Employee</b></td><td>Only their own attendance and payslip, in the app</td></tr>
+          </tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="freight-band" id="freight">
     <div class="wrap">
       <div>
-        <p class="eyebrow" style="color:#d4a64a">Full truck · Part load · Last mile · Returns</p>
-        <h1 style="margin-top:16px">Pincode to pincode, <em>every handover on record.</em></h1>
+        <p class="eyebrow" style="color:#d4a64a">Movana freight · Full truck · Part load · Last mile · Returns</p>
+        <h2 style="margin-top:16px">Pincode to pincode, <em>every handover on record.</em></h2>
         <p class="lead">We pick up from your warehouse, run the linehaul, deliver to the door and bring returns back. Each consignment carries one LR from pickup to proof of delivery, so your invoice matches what actually moved.</p>
-        <div class="cta"><a class="btn gold" href="#contact">Book a pickup</a><a class="btn" href="#app">Get the mobile app</a></div>
+        <div class="cta"><a class="btn gold" href="#contact">Book a pickup</a><a class="btn" href="#services">Our services</a></div>
         <div class="lanes" aria-label="Example lanes"><span><b>HYD 500001 → WGL 506002</b> · 17 ft · same day</span><span><b>BLR 560001 → CHE 600001</b> · 32 ft MXL · overnight</span><span><b>DEL 110001 → GHY 781001</b> · 22 ft · NE surcharge applies</span></div>
       </div>
       <form class="lr" id="est" aria-label="Freight estimate" onsubmit="return false">
@@ -232,19 +326,19 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: 
 
   <section class="block" id="app">
     <div class="wrap">
-      <div class="sec-head"><p class="eyebrow">Mobile app</p><h2>The control tower in your pocket</h2><p class="lead">Staff use the Movana app to book pickups, assign vehicles, close runsheets, approve requests and raise tickets. It opens the same portal as the desktop, with the username and password your administrator gives you.</p></div>
+      <div class="sec-head"><p class="eyebrow">Download</p><h2>Punch for staff, the control tower for the office</h2><p class="lead">Punch is the attendance app for everyone. The Movana app and the staff portal are for HR and operations; they sign in with the same username and password, or with Google once an admin approves their Gmail.</p></div>
       <div class="app">
-        <div class="card">
-          <span class="os">Android</span>
-          <h3>Download the app</h3>
-          <div class="row"><button class="btn gold" type="button" id="dlAndroid">Download for Android</button><span class="status" id="dlStatus"></span></div>
-          <ol><li>The file arrives as <b>Movana-Logistics-Android.zip</b>. Open it in Files and tap <b>Movana.apk</b>.</li><li>If Android asks, allow installs from Files (or your browser) for this one time.</li><li>Open <b>Movana</b> and tap <b>Open control tower</b>. Sign in with your username and password.</li></ol>
-        </div>
         <div class="card">
           <span class="os">Android · staff attendance</span>
           <h3>Punch – attendance app</h3>
           <div class="row"><a class="btn gold" id="dlPunch" href="Punch.apk" download>Download Punch</a></div>
           <ol><li>Tap <b>Download Punch</b> and open <b>Punch.apk</b>. If Android asks, allow installs this one time.</li><li>Sign in with the same username and password as the staff portal.</li><li>Allow location <b>All the time</b> so check-in and check-out happen at your workplace. Leave, comp off and payslips are in the app.</li></ol>
+        </div>
+        <div class="card">
+          <span class="os">Android</span>
+          <h3>Download the app</h3>
+          <div class="row"><button class="btn gold" type="button" id="dlAndroid">Download for Android</button><span class="status" id="dlStatus"></span></div>
+          <ol><li>The file arrives as <b>Movana-Logistics-Android.zip</b>. Open it in Files and tap <b>Movana.apk</b>.</li><li>If Android asks, allow installs from Files (or your browser) for this one time.</li><li>Open <b>Movana</b> and tap <b>Open control tower</b>. Sign in with your username and password.</li></ol>
         </div>
         <div class="card">
           <span class="os">iPhone &amp; iPad</span>
@@ -437,6 +531,48 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: 
     else if (SITE.email) location.href = 'mailto:' + SITE.email + '?subject=' + encodeURIComponent('Pickup / quote request') + '&body=' + text;
     else msg.textContent = 'Use Copy enquiry and send it to us.';
   });
+})();
+</script>
+<script>
+/* Phone clock + Team live strip. The strip loads Firebase only after the page has loaded and shows numbers only to
+   HR staff already signed in to the staff portal on this browser; everyone else sees the plain note. */
+(function () {
+  const clk = document.getElementById('phClock');
+  const tick = () => { if (clk) clk.textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }); };
+  tick(); setInterval(tick, 15000);
+  const body = document.getElementById('liveBody'), dot = document.querySelector('#liveStrip .ldot');
+  const HR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_exec'], SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const load = src => new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+  const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  async function start() {
+    try {
+      await load('portal/firebase-config.js?v=1'); const cfg = window.MOVANA_FIREBASE_CONFIG; if (!cfg || !cfg.apiKey) return;
+      await load(SDK + 'firebase-app-compat.js'); await load(SDK + 'firebase-auth-compat.js'); await load(SDK + 'firebase-firestore-compat.js');
+      const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(cfg), fs = app.firestore(); let un = [];
+      app.auth().onAuthStateChanged(async u => {
+        un.forEach(f => f()); un = []; dot.classList.remove('on');
+        if (!u) { body.innerHTML = 'HR staff signed in to the <a href="portal/#punch">staff portal</a> on this browser see their team\'s live count here.'; return; }
+        let role = '';
+        try { const [m, o] = await Promise.all([fs.doc('members/' + u.uid).get(), fs.doc('settings/owner').get().catch(() => null)]);
+          role = o && o.exists && o.data().uid === u.uid ? 'superadmin' : (m.exists && m.data().status !== 'Suspended' ? m.data().role : ''); } catch (e) {}
+        if (!HR.includes(role)) { body.innerHTML = 'You are signed in. Team live is for HR roles; your own attendance is in the Punch app.'; return; }
+        const now = new Date(), ym = ymd(now).slice(0, 7), td = ymd(now), D = { emp: [], att: [], req: [] };
+        const draw = () => {
+          const att = id => D.att.find(a => a.id === id + '_' + ym);
+          const inNow = D.emp.filter(e => { const a = att(e.id); return a && a.open && ymd(new Date(a.open.t)) === td; });
+          const done = D.emp.filter(e => { const a = att(e.id); return !(a && a.open) && a && (a.logs || []).some(l => ymd(new Date(l.in)) === td); });
+          const notIn = D.emp.length - inNow.length - done.length;
+          dot.classList.add('on');
+          body.innerHTML = '<div class="nums"><span><b>' + inNow.length + '</b> in now</span><span><b>' + done.length + '</b> done for today</span><span><b>' + Math.max(0, notIn) + '</b> not in / off</span><span><b>' + D.req.length + '</b> request' + (D.req.length === 1 ? '' : 's') + ' waiting</span></div>' +
+            (inNow.length ? '<div>In: ' + inNow.slice(0, 6).map(e => esc(e.name)).join(', ') + (inNow.length > 6 ? ' +' + (inNow.length - 6) : '') + '</div>' : '') + '<div><a href="portal/#punch">Open Team live</a></div>';
+        };
+        const sub = (q, k) => un.push(q.onSnapshot(sn => { D[k] = sn.docs.map(d => Object.assign({ id: d.id }, d.data())); draw(); }, () => {}));
+        sub(fs.collection('punch_emp'), 'emp'); sub(fs.collection('punch_att').where('ym', '==', ym), 'att'); sub(fs.collection('punch_req').where('s', '==', 'Pending'), 'req');
+      });
+    } catch (e) { /* no connection: keep the plain note */ }
+  }
+  if (document.readyState === 'complete') setTimeout(start, 300); else addEventListener('load', () => setTimeout(start, 300));
 })();
 </script>
 </body></html>
