@@ -439,7 +439,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261026l"></script><script>
+<script src="fb.js?v=20261026m"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -619,6 +619,9 @@ async function setDoc(k, id, body) {
   try { await S.db.collection(k).doc(id).set(Object.assign({}, body, { updatedAt: Date.now() })); return true; } catch (e) { writeErr(e, k); return false; }
 }
 async function remove(k, id, auditText) {
+  // an HR employee who is on Punch: remove them from Punch too, or the record comes back from their Punch profile
+  const pr = k === 'staff' ? (S.data.staff || []).find(x => x._id === id) : null;
+  if (pr && pr.puid) { try { await S.db.collection('punch_emp').doc(pr.puid).delete(); } catch (e) { toast('Only HR can remove a Punch employee.'); return false; } }
   try { await S.db.collection(k).doc(id).delete(); if (auditText) audit(k, auditText); return true; } catch (e) { toast('Could not delete. Try again.'); return false; }
 }
 // Audit trail: one document per day, newest 400 entries kept.
@@ -924,7 +927,7 @@ const SCHEMA = {
       F('tds', 'TDS %', 'select', { opts: ['0', '1', '2', '10'] }), F('due', 'Due date', 'date'), F('trip', 'Linked trip no'), F('notes', 'Notes', 'textarea')],
     cols: ['no', 'vendor', 'billNo', 'billDate', 'amount', 'gross', 'due', 'stage'] },
   journal: { label: 'Journal', noun: 'journal', code: 'vno', noForm: true, fields: [F('vno', 'Voucher'), F('date', 'Date', 'date'), F('narration', 'Narration'), F('source', 'Source'), F('amount', 'Amount', 'money')], cols: ['date', 'vno', 'narration', 'source', 'amount'] },
-  tickets: { label: 'IT tickets', noun: 'ticket', code: 'no', prefix: 'TKT', stages: ['Open', 'In progress', 'Waiting on user', 'Resolved', 'Closed'], doneStages: ['Resolved', 'Closed'],
+  tickets: { label: 'IT tickets', noun: 'ticket', code: 'no', prefix: 'TKT', stages: ['Open', 'In progress', 'Waiting on user', 'Resolved', 'Closed'], extraStages: ['Cancelled'], doneStages: ['Resolved', 'Closed', 'Cancelled'],
     fields: [F('no', 'Ticket no', 'code'), F('title', 'Problem', 'text', { req: 1 }), F('category', 'Category', 'select', { req: 1, opts: ['Hardware', 'Software', 'Network', 'Access / login', 'Scanner / handheld', 'Printer', 'Email', 'Other'] }),
       F('priority', 'Priority', 'select', { req: 1, opts: ['P1 Critical', 'P2 High', 'P3 Normal', 'P4 Low'] }), F('location', 'Hub / location', 'text', { list: 'hubs' }), F('raisedBy', 'Raised by', 'text', { list: 'staff' }),
       F('assignee', 'Assigned to (auto by category)', 'text', { list: 'staff' }), F('asset', 'Asset tag', 'text', { list: 'assets' }), F('resolution', 'Resolution', 'textarea'), F('notes', 'Details', 'textarea')],
@@ -934,11 +937,11 @@ const SCHEMA = {
       F('model', 'Make / model'), F('serial', 'Serial / IMEI'), F('assignedTo', 'Issued to', 'text', { list: 'staff' }), F('location', 'Hub / location', 'text', { list: 'hubs' }),
       F('purchased', 'Purchase date', 'date'), F('warranty', 'Warranty till', 'date'), F('cost', 'Cost', 'money'), F('life', 'Useful life (years)', 'number'), F('notes', 'Notes', 'textarea')],
     cols: ['tag', 'type', 'model', 'assignedTo', 'location', 'warranty', 'book', 'stage'] },
-  access: { label: 'Access requests', noun: 'access request', code: 'no', prefix: 'ACC', stages: ['Requested', 'Approved', 'Provisioned', 'Revoked'], extraStages: ['Rejected'], doneStages: ['Provisioned', 'Revoked', 'Rejected'],
+  access: { label: 'Access requests', noun: 'access request', code: 'no', prefix: 'ACC', stages: ['Requested', 'Approved', 'Provisioned', 'Revoked'], extraStages: ['Rejected', 'Cancelled'], doneStages: ['Provisioned', 'Revoked', 'Rejected', 'Cancelled'],
     fields: [F('no', 'Request no', 'code'), F('person', 'For person', 'text', { req: 1, list: 'staff' }), F('system', 'System', 'select', { req: 1, opts: ['TMS / portal', 'WMS', 'ERP / accounts', 'Email', 'VPN', 'Handheld app', 'Shared drive', 'Other'] }),
       F('level', 'Access level', 'select', { opts: ['Read only', 'User', 'Supervisor', 'Admin'] }), F('approver', 'Approver', 'text', { list: 'staff' }), F('till', 'Valid till', 'date'), F('reason', 'Reason', 'textarea')],
     cols: ['no', 'person', 'system', 'level', 'approver', 'till', 'stage'] },
-  approvals: { label: 'Approvals', noun: 'request', code: 'no', prefix: 'APR', stages: ['Pending L1', 'Pending L2', 'Approved'], extraStages: ['Rejected'], doneStages: ['Approved', 'Rejected'], noBulk: true,
+  approvals: { label: 'Approvals', noun: 'request', code: 'no', prefix: 'APR', stages: ['Pending L1', 'Pending L2', 'Approved'], extraStages: ['Rejected', 'Cancelled'], doneStages: ['Approved', 'Rejected', 'Cancelled'], noBulk: true,
     fields: [F('no', 'Request no', 'code'), F('title', 'Request', 'text', { req: 1 }), F('kind', 'Type', 'select', { req: 1, opts: ['Expense claim', 'Purchase', 'Advance', 'Leave', 'Vehicle repair', 'Rate change', 'Other'] }),
       F('amount', 'Amount', 'money'), F('requestedBy', 'Requested by', 'text', { req: 1, list: 'staff' }), F('center', 'Hub / department', 'text', { list: 'hubs' }), F('due', 'Needed by', 'date'), F('notes', 'Details', 'textarea')],
     cols: ['no', 'title', 'kind', 'amount', 'requestedBy', 'levels', 'due', 'stage'] },
@@ -1114,12 +1117,14 @@ const SECTIONS = {
   returns: [['Return', ['rma', 'type', 'awb', 'customer', 'item', 'qty', 'value', 'reason', 'pickupDate']], ['QC & refund', ['qc', 'refund', 'notes']]],
   rates: [['Rates ₹/kg', ['customer', 'rLocal', 'rRegional', 'rMetro', 'rNational', 'rSpecial', 'minCharge', 'fuelPct', 'validTill']], ['Delivery days', ['tLocal', 'tRegional', 'tMetro', 'tNational', 'tSpecial']]]
 };
+/** Fields some roles must not see: an employee's salary is only for roles allowed to see salaries. */
+const hiddenField = (k, key) => k === 'staff' && key === 'salary' && !hasRoleAny(P_SALV);
 function sectionsOf(k) {
-  const sc = SCHEMA[k]; const def = SECTIONS[k];
-  if (!def) return [['Details', sc.fields.map(f => f.k)]];
+  const sc = SCHEMA[k]; const def = SECTIONS[k], ok = key => !hiddenField(k, key);
+  if (!def) return [['Details', sc.fields.map(f => f.k).filter(ok)]];
   const used = new Set(def.flatMap(x => x[1]));
-  const rest = sc.fields.map(f => f.k).filter(x => !used.has(x));
-  return def.map(x => [x[0], x[1].filter(key => sc.fields.some(f => f.k === key))]).concat(rest.length ? [['More', rest]] : []);
+  const rest = sc.fields.map(f => f.k).filter(x => !used.has(x) && ok(x));
+  return def.map(x => [x[0], x[1].filter(key => ok(key) && sc.fields.some(f => f.k === key))]).filter(x => x[1].length).concat(rest.length ? [['More', rest]] : []);
 }
 const sideTabs = (list, cur, attr) => '<nav class="rec-tabs" role="tablist" aria-orientation="vertical">' + list.map(([id, label, n]) => '<button type="button" role="tab" ' + attr + '="' + esc(id) + '" aria-selected="' + (id === cur) + '"><span>' + esc(label) + '</span>' + (n ? '<span class="n">' + esc(n) + '</span>' : '') + '</button>').join('') + '</nav>';
 function factValue(f, v) { return f.type === 'money' ? money2(v) : f.type === 'date' ? esc(fmtDate(v)) : esc(v); }
@@ -1143,7 +1148,7 @@ function drawDrawer(keepScroll) {
         panel += '<div class="actions">' + pill(statusOf(D.k, r)) + (HOOK.title[D.k] ? HOOK.title[D.k](r) : '') + '</div>';
         if (sc.stages && !sc.freeStage) { const idx = sc.stages.indexOf(stageOf(D.k, r)); panel += '<div class="stepper" aria-label="Progress">' + sc.stages.map((x, i) => '<span class="' + (i < idx ? 'done' : i === idx ? 'now' : '') + '">' + esc(x) + '</span>').join('') + '</div>'; }
       }
-      if (writable(D.k)) panel += (HOOK.actions[D.k] ? HOOK.actions[D.k](r) : defaultActions(D.k, r));
+      if (writable(D.k)) panel += isReq(D.k) && !reqHandler(D.k) ? ownerActions(D.k, r) : (HOOK.actions[D.k] ? HOOK.actions[D.k](r) : defaultActions(D.k, r)) + (isReq(D.k) && myReq(D.k, r) && !reqDone(D.k, r) ? ownerActions(D.k, r) : '');
       if (HOOK.detail[D.k]) panel += HOOK.detail[D.k](r);
       const keyFacts = (secs[0] ? secs[0][1] : []).map(key => sc.fields.find(f => f.k === key)).filter(f => f && r[f.k] !== undefined && r[f.k] !== '' && r[f.k] !== null && f.type !== 'textarea');
       if (keyFacts.length) panel += '<h4 class="section-title">' + esc(secs[0][0]) + '</h4><dl class="facts">' + keyFacts.map(f => '<div><dt>' + esc(f.label) + '</dt><dd>' + factValue(f, r[f.k]) + '</dd></div>').join('') + '</dl>';
@@ -1154,11 +1159,11 @@ function drawDrawer(keepScroll) {
       const sec = secs.find(x => 's:' + x[0] === cur);
       const fs = sec[1].map(key => sc.fields.find(f => f.k === key)).filter(Boolean);
       panel += '<h4 class="section-title">' + esc(sec[0]) + '</h4><dl class="facts">' + fs.map(f => '<div' + (f.type === 'textarea' ? ' style="grid-column:1/-1"' : '') + '><dt>' + esc(f.label) + '</dt><dd>' + (r[f.k] === undefined || r[f.k] === '' || r[f.k] === null ? '<span class="mini">—</span>' : factValue(f, r[f.k])) + '</dd></div>').join('') + '</dl>' +
-        (writable(D.k) && !sc.noForm ? '<p><button class="btn small" type="button" data-act="edit" data-sec="' + esc(sec[0]) + '">Edit ' + esc(sec[0].toLowerCase()) + '</button></p>' : '');
+        (writable(D.k) && !sc.noForm && !(isReq(D.k) && !reqHandler(D.k)) ? '<p><button class="btn small" type="button" data-act="edit" data-sec="' + esc(sec[0]) + '">Edit ' + esc(sec[0].toLowerCase()) + '</button></p>' : '');
     }
-    if (D.confirmDelete) panel += '<div class="confirm">Delete this ' + esc(sc.noun) + ' for everyone? <button class="btn small danger solid" type="button" data-act="delete-yes">Delete</button><button class="btn small" type="button" data-act="delete-no">Keep</button></div>';
+    if (D.confirmDelete) panel += '<div class="confirm">Delete this ' + esc(sc.noun) + ' for everyone?' + (D.k === 'staff' && r && r.puid ? ' They are also removed from the Punch app (their login and attendance history stay).' : '') + ' <button class="btn small danger solid" type="button" data-act="delete-yes">Delete</button><button class="btn small" type="button" data-act="delete-no">Keep</button></div>';
     body = '<div class="rec">' + sideTabs(tabs, cur, 'data-vtab') + '<div class="rec-body">' + panel + '</div></div>';
-    if (writable(D.k)) foot = (canDelete(D.k) ? '<button class="btn danger" type="button" data-act="delete">Delete</button>' : '') + (sc.noForm ? '' : '<button class="btn primary" type="button" data-act="edit">Edit</button>');
+    if (writable(D.k) && !(isReq(D.k) && !reqHandler(D.k))) foot = (canDelete(D.k) ? '<button class="btn danger" type="button" data-act="delete">Delete</button>' : '') + (sc.noForm ? '' : '<button class="btn primary" type="button" data-act="edit">Edit</button>');
   } else if (D.mode === 'edit' || D.mode === 'new') {
     const r = D.mode === 'edit' ? rec(D.k, D.id) || {} : (D.draft || {});
     head = D.mode === 'new' ? 'New ' + esc(sc.noun) : 'Edit ' + esc(r[sc.titleField || sc.code] || sc.noun);
@@ -1172,7 +1177,7 @@ function drawDrawer(keepScroll) {
       secs.map(x => '<fieldset class="fsec" data-sec="' + esc(x[0]) + '"' + (x[0] === cur || secs.length === 1 ? '' : ' hidden') + '><legend class="section-title">' + esc(x[0]) + '</legend><div class="form">' + x[1].map(key => fieldOrStage(key, r)).join('') + '</div></fieldset>').join('') +
       '<p class="foot" id="formErr" style="color:var(--bad)" role="alert"></p></form>' + (D.k === 'shipments' ? '<div id="livePrice"></div>' : '') + (D.k === 'pickups' ? '<div id="liveCost"></div>' : '') +
       (secs.length > 1 ? '<div class="actions sec-nav">' + (secs.findIndex(x => x[0] === cur) > 0 ? '<button class="btn small" type="button" data-act="sec-prev">‹ Previous</button>' : '') + (secs.findIndex(x => x[0] === cur) < secs.length - 1 ? '<button class="btn small" type="button" data-act="sec-next">Next: ' + esc(secs[secs.findIndex(x => x[0] === cur) + 1][0]) + ' ›</button>' : '') + '</div>' : '') + '</div></div>';
-    foot = '<button class="btn" type="button" data-act="cancel">Cancel</button><button class="btn primary" type="button" data-act="save">' + (D.mode === 'new' ? 'Add ' + esc(sc.noun) : 'Save changes') + '</button>';
+    foot = '<button class="btn" type="button" data-act="cancel">Cancel</button><button class="btn primary" type="button" data-act="save">' + (D.mode === 'new' ? (isReq(D.k) ? 'Submit request' : 'Add ' + esc(sc.noun)) : 'Save changes') + '</button>';
   } else if (D.mode === 'import') {
     head = 'Import ' + esc(sc.label.toLowerCase()); sub = esc(sc.label);
     body = '<p class="help">Choose a CSV file (in Excel: File → Save as → CSV). Columns are matched by heading, in any order. Headings this page knows:</p><p class="code" style="font-size:.78rem;line-height:1.7">' + sc.fields.map(f => esc(f.label)).join(' · ') + (sc.stages ? ' · Status' : '') + '</p>' +
@@ -1247,6 +1252,17 @@ function datalists() {
   let html = '';
   Object.keys(lists).forEach(k => { html += '<datalist id="dl-' + k + '">' + uniq(lists[k]).map(v => '<option value="' + esc(v) + '">').join('') + '</datalist>'; });
   const holder = document.createElement('div'); holder.hidden = true; holder.innerHTML = html; $('#layer').appendChild(holder);
+}
+/* Requests (IT tickets, access, approvals, leave): the person who raised one can only submit it and revoke it; status changes are for admins (and IT for IT tickets / access). */
+const IT_HANDLERS = ['it_manager', 'it_support'].concat(['exec', 'sr', 'tl', 'am', 'srm', 'gm', 'sgm', 'avp', 'vp', 'svp'].map(g => 'itd_' + g));
+const isReq = k => !!TICKET_COLLS[k];
+function reqHandler(k) { if (hasRoleAny(['superadmin', 'admin_head'])) return true; if (k === 'tickets' || k === 'access') return hasRoleAny(IT_HANDLERS); if (k === 'leaves') return lvl('leave') >= 3; if (k === 'approvals') return lvl('admin') >= 3; return false; }
+function myReq(k, r) { if (!S.me) return false; if (r.createdBy === S.me.id) return true; const who = r[TICKET_COLLS[k].who]; return !!who && lc(who) === lc((S.me.name || '').replace(/ \(you\)$/, '')); }
+const reqDone = (k, r) => (SCHEMA[k].doneStages || []).concat(['Cancelled']).includes(stageOf(k, r));
+function ownerActions(k, r) {
+  if (reqDone(k, r)) return '<p class="help">This request is ' + esc(lc(stageOf(k, r))) + '.</p>';
+  if (!myReq(k, r)) return '<p class="help">Only the person who raised this request can revoke it.</p>';
+  return '<div class="actions"><button class="btn small danger" type="button" data-act="req-revoke">Revoke request</button><span class="help">Status is updated by the team handling it.</span></div>';
 }
 function defaultActions(k, r) {
   const sc = SCHEMA[k]; if (sc.noStage || !sc.stages) return '';
@@ -1428,7 +1444,7 @@ function livePrice() {
   const b = readForm('shipments');
   const old = D.mode === 'edit' ? rec('shipments', D.id) : {};
   const p = priceOf(Object.assign({}, old, b));
-  box.innerHTML = priceTable(p, num(b.manualFreight));
+  box.innerHTML = PRICE_ADMIN() ? priceTable(p, num(b.manualFreight)) : ''; box.hidden = !PRICE_ADMIN();
 }
 function priceTable(p, manual) {
   if (manual) return '<div class="calc"><div><span>Freight override</span><b>' + money2(manual) + '</b></div><div><span>GST ' + SET().gstPct + '%</span><span>' + money2(manual * SET().gstPct / 100) + '</span></div><div class="tot"><span>Total</span><span>' + money2(manual * (1 + SET().gstPct / 100)) + '</span></div></div>';
@@ -1444,7 +1460,9 @@ function priceTable(p, manual) {
     '<div class="tot"><span>Total charge</span><span>' + money2(p.total) + '</span></div></div>';
 }
 HOOK.title.shipments = r => (isLate(r) ? pill('Past promised date', 'bad') : '') + (r.mode === 'COD' ? pill('COD ' + money(r.cod), 'warn') : '') + (r.invoiceNo ? pill('Billed ' + r.invoiceNo, 'neutral') : '') + (r.tripNo ? pill('Trip ' + r.tripNo, 'neutral') : '') + (r.drsNo ? pill('DRS ' + r.drsNo, 'neutral') : '');
-HOOK.detail.shipments = r => HOOK.detail.shipments_chain(r) + '<h4 class="section-title">Charges</h4>' + priceTable(shipPrice(r), num(r.manualFreight)) + (r.ndrReason ? '<p class="banner">Last failed attempt: ' + esc(r.ndrReason) + ' · attempts ' + (r.attempts || 0) + ' of ' + SET().maxAttempts + '</p>' : '');
+/** The price working (zone, freight, surcharges, GST) is for admins only; others book and the price is worked out in the background. */
+const PRICE_ADMIN = () => hasRoleAny(['superadmin', 'admin_head']);
+HOOK.detail.shipments = r => HOOK.detail.shipments_chain(r) + (PRICE_ADMIN() ? '<h4 class="section-title">Charges</h4>' + priceTable(shipPrice(r), num(r.manualFreight)) : '') + (r.ndrReason ? '<p class="banner">Last failed attempt: ' + esc(r.ndrReason) + ' · attempts ' + (r.attempts || 0) + ' of ' + SET().maxAttempts + '</p>' : '');
 HOOK.actions.shipments = r => {
   const s = stageOf('shipments', r);
   const i = SHIP_STAGES.indexOf(s);
@@ -1519,7 +1537,7 @@ function rateCalc() {
     inp('customer', 'Customer', 'text', 'customers') + inp('originCity', 'Origin city') + inp('destCity', 'Destination city') + inp('destState', 'Destination state', 'text', 'states') +
     inp('pieces', 'Boxes', 'number') + inp('weight', 'Actual weight (kg)', 'number') + inp('l', 'Length (cm)', 'number') + inp('w', 'Width (cm)', 'number') + inp('h', 'Height (cm)', 'number') +
     '<label>Payment<select id="calc-mode">' + ['Prepaid', 'COD'].map(o => '<option' + (c.mode === o ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></label>' + inp('cod', 'COD amount', 'number') +
-    '</div></section><section class="panel"><h2>Price</h2>' + priceTable(p) + (writable() ? '<p style="margin:12px 0 0"><button class="btn primary" type="button" data-act="calc-book">Book this shipment</button></p>' : '') + '</section></div>' +
+    '</div></section>' + (PRICE_ADMIN() ? '<section class="panel"><h2>Price</h2>' + priceTable(p) : '<section class="panel">') + (writable() ? '<p style="margin:12px 0 0"><button class="btn primary" type="button" data-act="calc-book">Book this shipment</button></p>' : '') + '</section></div>' +
     '<datalist id="dl-customers">' + uniq(S.data.customers.map(r => r.name)).map(v => '<option value="' + esc(v) + '">').join('') + '</datalist><datalist id="dl-states">' + STATES.map(v => '<option value="' + esc(v) + '">').join('') + '</datalist>';
 }
 
@@ -2805,6 +2823,7 @@ document.addEventListener('click', async e => {
     case 'mem-add': { if (!S.memPick) return; const role = $('#mem-role').value, staff = $('#mem-staff').value; if (await saveMember(S.memPick, { role, staff, status: 'Active' })) { toast(nameOf(S.memPick) + ' → ' + roleById(role).name); S.memPick = null; render(); } return; }
     case 'dir-open': { S.dirSel = x; render(); window.scrollTo(0, 0); return; }
     case 'dir-close': { S.dirSel = null; render(); return; }
+    case 'req-revoke': { if (!D || !confirm('Revoke this request?')) return; await setStage(D.k, D.id, 'Cancelled', 'Revoked by the person who raised it'); toast('Request revoked'); return; }
     case 'perm-tabs': { S.permOpen = S.permOpen || {}; S.permOpen[x] = !S.permOpen[x]; render(); return; }
     case 'mem-rdel': { const m = memberOf(x), rr = t.dataset.r; if (!m || rr === m.role) return; await saveMember(x, { roles: rolesOfMember(m).filter(y => y !== rr) }); toast(roleById(rr).name + ' removed'); return; }
     case 'mem-susp': { const m = memberOf(x); if (m) await saveMember(x, { status: m.status === 'Suspended' ? 'Active' : 'Suspended' }); return; }
