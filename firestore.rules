@@ -92,6 +92,26 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ----- People (HR system at /hr) -----
+    // Shared lists: everyone signed in reads them, HR keeps them.
+    match /hr_posts/{id} { allow read: if isMember(); allow write: if hrAll(); }
+    match /hr_holidays/{id} { allow read: if isMember(); allow write: if hrAll(); }
+    match /hr_jobs/{id} { allow read: if isMember(); allow write: if hrAll(); }
+    match /hr_training/{id} { allow read: if isMember(); allow write: if hrAll(); }
+    // Candidates are HR only.
+    match /hr_cands/{id} { allow read, write: if hrAll(); }
+    // Each person's own records (goals, reviews, training sign-ups, expenses, resignation, HR helpdesk): the person creates and reads their own,
+    // can change them only while still open, and cannot close or approve them; HR reads and decides all.
+    function hrOwnColl(c) { return c in ['hr_goals', 'hr_reviews', 'hr_enrol', 'hr_expenses', 'hr_exits', 'hr_help']; }
+    function closedSt() { return ['Approved', 'Rejected', 'Paid', 'Closed', 'Completed', 'Final', 'Resolved']; }
+    match /{coll}/{id} {
+      allow read: if hrOwnColl(coll) && ((signedIn() && resource.data.uid == request.auth.uid) || hrAll());
+      allow create: if hrOwnColl(coll) && ((signedIn() && request.resource.data.uid == request.auth.uid && !(request.resource.data.get('s', '') in closedSt())) || hrAll());
+      allow update: if hrOwnColl(coll) && (hrAll() || (signedIn() && resource.data.uid == request.auth.uid && request.resource.data.uid == request.auth.uid
+        && !(resource.data.get('s', '') in closedSt()) && !(request.resource.data.get('s', '') in closedSt())));
+      allow delete: if hrOwnColl(coll) && (hrAll() || (signedIn() && resource.data.uid == request.auth.uid && !(resource.data.get('s', '') in closedSt())));
+    }
+
     // "Is the portal set up yet?" – readable before login so the first screen knows what to show.
     match /public/{d} {
       allow read: if true;
@@ -147,8 +167,8 @@ service cloud.firestore {
     // Everything else: shipments, pickups, trips, invoices, payments, staff, leave, payroll, tickets …
     // Punch employees are kept out of all of this; Punch data has its own rules above.
     match /{coll}/{id} {
-      allow read: if isMember() && !isEmpOnly() && !punchColl(coll);
-      allow write: if canWrite() && !isEmpOnly() && !punchColl(coll)
+      allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*');
+      allow write: if canWrite() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*')
         && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail']);
     }
   }

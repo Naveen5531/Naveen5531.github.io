@@ -3435,7 +3435,7 @@ function renderNav() {
     const n = ms.reduce((a, m) => a + cnt(m), 0);
     return '<div class="dept' + (isCur ? ' cur' : '') + '"><button type="button" class="dept-h" data-dept="' + d.id + '" aria-expanded="' + !!isOpen + '">' + svg(d.icon) + '<span>' + esc(d.label) + '</span>' + (n && !isOpen ? '<span class="count">' + n + '</span>' : '') + chev + '</button>' +
       (isOpen ? '<div class="dept-b">' + ms.map(modHtml).join('') + '</div>' : '') + '</div>';
-  }).join('') + (w.role !== '_loading' ? '<button type="button" class="role-chip" data-go="me" data-gotab="main"><span class="mini">Signed in as</span><b>' + esc(roleById(w.role).name) + '</b></button>' : '');
+  }).join('') + (w.role !== '_loading' ? '<div class="dept overview"><a class="mod" href="../hr/" style="text-decoration:none">' + svg('people') + '<span>Movana People (HR)</span></a></div>' : '') + (w.role !== '_loading' ? '<button type="button" class="role-chip" data-go="me" data-gotab="main"><span class="mini">Signed in as</span><b>' + esc(roleById(w.role).name) + '</b></button>' : '');
 }
 function appearanceView() {
   const sk = currentSkin();

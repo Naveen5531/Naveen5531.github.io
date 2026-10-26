@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><title>Movana People</title><link rel="icon" href="../portal/icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&display=swap">
+<style>
+/* Movana People – HR for Movana Logistics. Same look as the Punch app: light grey canvas, white rounded cards, green for "in", orange for "out". */
+:root{--bg:#f2f3f7;--card:#fff;--ink:#101828;--ink2:#344054;--mute:#6b7280;--line:#e9ebf1;--soft:#f3f4f8;--in:#0c9b76;--in2:#25cf9f;--out:#f26a1b;--bad:#d92d20;--warn:#b54708;--info:#3557b5;
+  --sh:0 1px 2px rgba(16,24,40,.05),0 8px 24px -12px rgba(16,24,40,.12);--r:20px;--disp:"Bricolage Grotesque",-apple-system,system-ui,sans-serif;--body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#090b0f;--card:#15181e;--ink:#f3f4f6;--ink2:#d0d5dd;--mute:#9aa1ad;--line:#252a33;--soft:#1d2129;--in:#2fd1a0;--in2:#6ff0c8;--out:#ff8a4c;--sh:0 1px 2px rgba(0,0,0,.4);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#090b0f;--card:#15181e;--ink:#f3f4f6;--ink2:#d0d5dd;--mute:#9aa1ad;--line:#252a33;--soft:#1d2129;--in:#2fd1a0;--in2:#6ff0c8;--out:#ff8a4c;--sh:0 1px 2px rgba(0,0,0,.4);color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--ink);font:14.5px/1.5 var(--body);-webkit-font-smoothing:antialiased}[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}a{color:var(--in)}
+h1,h2,h3{font-family:var(--disp);font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.15}h1{font-size:1.6rem}h2{font-size:1.15rem}h3{font-size:1rem}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 18px;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;flex:none}.mk{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--in2),var(--in));color:#fff;display:grid;place-items:center;font:800 .85rem var(--disp)}
+.brand b{font:800 1.05rem var(--disp)}.brand small{display:block;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.search{flex:1;max-width:460px;margin-left:auto;position:relative}.search input{width:100%;border:1px solid var(--line);background:var(--soft);border-radius:999px;padding:9px 14px 9px 36px}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--mute)}
+.hits{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:6px;display:grid;gap:2px;max-height:320px;overflow:auto}
+.hits button{display:flex;gap:10px;align-items:center;border:0;background:none;text-align:left;padding:8px 10px;border-radius:10px}.hits button:hover{background:var(--soft)}
+.ib{border:0;background:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;position:relative;color:var(--ink2)}.ib:hover{background:var(--soft)}.ib svg{width:20px;height:20px}
+.dot{position:absolute;top:5px;right:5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--out);color:#fff;font-size:.66rem;font-weight:700;display:grid;place-items:center}
+.who{display:flex;align-items:center;gap:8px;border:0;background:none;padding:4px;border-radius:999px}.who:hover{background:var(--soft)}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 .78rem var(--body);flex:none;background:linear-gradient(135deg,#7c3aed,#c026d3)}.av.lg{width:64px;height:64px;font-size:1.2rem;border-radius:20px;background:linear-gradient(135deg,var(--in2),var(--in))}
+.menu{position:absolute;right:14px;top:58px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 50px -20px rgba(0,0,0,.35);padding:6px;min-width:230px;display:grid;gap:2px;z-index:30}
+.menu .h{padding:10px 12px;border-bottom:1px solid var(--line);margin-bottom:4px}.menu .h span{display:block;font-size:.76rem;color:var(--mute)}
+.menu a,.menu button{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;border:0;background:none;text-decoration:none;color:var(--ink);font-weight:600;text-align:left}.menu a:hover,.menu button:hover{background:var(--soft)}.menu .out{color:var(--bad)}
+.shell{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:calc(100vh - 57px)}
+.nav{position:sticky;top:57px;height:calc(100vh - 57px);overflow:auto;padding:14px 10px 30px;border-right:1px solid var(--line);background:var(--card)}
+.nav .g{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:16px 10px 6px}.nav .g:first-child{margin-top:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;color:var(--ink2);text-decoration:none;font-weight:600}.nav a svg{width:18px;height:18px;flex:none;color:var(--mute)}
+.nav a:hover{background:var(--soft)}.nav a[aria-current="page"]{background:color-mix(in srgb,var(--in) 12%,transparent);color:var(--in)}.nav a[aria-current="page"] svg{color:var(--in)}.nav a .n{margin-left:auto;background:var(--out);color:#fff;border-radius:9px;font-size:.7rem;padding:0 6px}
+.nav a.ext::after{content:"↗";margin-left:auto;color:var(--mute);font-size:.8rem}
+main{padding:22px clamp(14px,3vw,30px) 60px;min-width:0}.ph{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}.ph p{margin:4px 0 0;color:var(--mute)}.ph .act{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))}.g4{grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr))}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:18px;min-width:0}.card>h2{margin-bottom:12px;display:flex;align-items:center;gap:8px}.card>h2 .more{margin-left:auto;font:600 .82rem var(--body)}.card>h2 svg{width:20px;height:20px;flex:none;color:var(--in)}
+.hero{background:linear-gradient(135deg,color-mix(in srgb,var(--in) 92%,#000),var(--in2));color:#fff}.hero p{color:rgba(255,255,255,.85);margin:4px 0 0}.hero .tiles .t{background:rgba(255,255,255,.14);color:#fff}.hero .tiles .t span{color:rgba(255,255,255,.8)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(130px,100%),1fr));gap:10px}.t{background:var(--soft);border-radius:14px;padding:12px;display:grid;gap:2px;text-decoration:none;color:inherit;border:0;text-align:left}
+.t b{font:800 1.45rem var(--disp);letter-spacing:-.02em}.t span{font-size:.78rem;color:var(--mute)}button.t:hover,a.t:hover{outline:2px solid var(--in)}
+.qa{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(120px,100%),1fr));gap:10px}.qa a,.qa button{display:grid;justify-items:center;gap:8px;text-align:center;padding:14px 8px;border-radius:16px;background:var(--soft);border:0;text-decoration:none;color:var(--ink);font-weight:600;font-size:.82rem}
+.qa svg{width:24px;height:24px;color:var(--in)}.qa a:hover,.qa button:hover{background:color-mix(in srgb,var(--in) 12%,var(--soft))}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;font-weight:600;text-decoration:none;color:var(--ink)}.btn:hover{border-color:var(--in)}
+.btn.p{background:var(--in);border-color:var(--in);color:#fff}.btn.d{color:var(--bad)}.btn.s{padding:5px 11px;font-size:.84rem}.btn[disabled]{opacity:.55;cursor:default}
+.tw{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}table{border-collapse:collapse;width:100%;font-size:.9rem}th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top}
+th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:700;background:var(--soft)}tr:last-child td{border-bottom:0}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}td.w{white-space:normal;min-width:220px}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 10px;font-size:.76rem;font-weight:600;background:var(--soft);color:var(--ink2)}
+.pill.good{background:color-mix(in srgb,var(--in) 14%,transparent);color:var(--in)}.pill.warn{background:color-mix(in srgb,#f59e0b 18%,transparent);color:var(--warn)}.pill.bad{background:color-mix(in srgb,var(--bad) 13%,transparent);color:var(--bad)}.pill.info{background:color-mix(in srgb,var(--info) 13%,transparent);color:var(--info)}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(200px,100%),1fr));gap:12px 14px}.form label{display:grid;gap:5px;font-size:.78rem;font-weight:600;color:var(--mute);min-width:0}.form .wide{grid-column:1/-1}
+.form input,.form select,.form textarea{width:100%;min-width:0;border:1px solid var(--line);background:var(--soft);border-radius:12px;padding:9px 11px;color:var(--ink);font-weight:500}.form textarea{min-height:76px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mt{margin-top:12px}.mute{color:var(--mute)}.small{font-size:.82rem}.empty{padding:26px;text-align:center;color:var(--mute);background:var(--soft);border-radius:14px}
+.feed{display:grid;gap:12px}.post{border-left:3px solid var(--in);padding:2px 0 2px 12px}.post b{display:block}.post p{margin:4px 0;color:var(--ink2);white-space:pre-wrap}.post small{color:var(--mute)}
+.list{display:grid;gap:8px}.li{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:14px;background:var(--soft)}.li .g1{flex:1;min-width:0}.li .g1 span{display:block;font-size:.8rem;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.cal .h{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);text-align:center;font-weight:700}
+.cal .d{min-height:66px;border-radius:12px;background:var(--soft);padding:6px 7px;font-size:.72rem;display:grid;align-content:space-between;border:2px solid transparent}.cal .d b{font-size:.85rem}.cal .d.today{border-color:var(--in)}
+.cal .P{background:color-mix(in srgb,var(--in) 16%,var(--soft))}.cal .A{background:color-mix(in srgb,var(--bad) 13%,var(--soft))}.cal .H{background:color-mix(in srgb,#f59e0b 20%,var(--soft))}.cal .L{background:color-mix(in srgb,var(--info) 15%,var(--soft))}.cal .O{background:var(--card);color:var(--mute)}
+.kan{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,1fr);gap:12px;overflow-x:auto;padding-bottom:6px}.kan .col{background:var(--soft);border-radius:16px;padding:10px;display:grid;gap:8px;align-content:start}.kan .col h3{font-size:.85rem;display:flex;justify-content:space-between}
+.kc{background:var(--card);border-radius:12px;padding:10px;box-shadow:var(--sh);display:grid;gap:4px;font-size:.84rem}.kc select{border:1px solid var(--line);border-radius:8px;padding:4px;background:var(--soft)}
+.org{display:grid;gap:8px}.org ul{list-style:none;margin:0;padding-left:22px;border-left:2px solid var(--line);display:grid;gap:8px}.org>ul{border:0;padding:0}.oc{display:inline-flex;gap:10px;align-items:center;background:var(--card);box-shadow:var(--sh);border-radius:14px;padding:8px 12px}.oc span{display:block;font-size:.76rem;color:var(--mute)}
+.bar{height:8px;border-radius:5px;background:var(--line);overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--in2),var(--in));border-radius:5px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:60;font-weight:600;max-width:calc(100% - 32px)}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(190px,100%),1fr));gap:10px}.kv div{background:var(--soft);border-radius:12px;padding:10px 12px;display:grid;gap:2px}.kv span{font-size:.74rem;color:var(--mute)}
+.burger{display:none}
+@media (max-width:900px){.shell{grid-template-columns:minmax(0,1fr)}.nav{position:fixed;left:0;top:57px;bottom:0;width:min(280px,86vw);z-index:25;transform:translateX(-105%);transition:transform .2s;box-shadow:var(--sh)}body.navopen .nav{transform:none}.burger{display:grid}.brand small{display:none}.search{max-width:none}}
+@media (max-width:560px){.brand b{display:none}#whoName{display:none}}
+@media print{.top,.nav,.noprint{display:none!important}.shell{display:block}main{padding:0}.card{box-shadow:none;border:1px solid #ddd}}
+</style>
+<script>window.MOVANA_APP_TITLE = 'Movana People'; window.MOVANA_APP_SUB = 'HR for Movana Logistics · same login as the staff portal and Punch';</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="../portal/firebase-config.js"></script>
+</head><body>
+<header class="top">
+  <button class="ib burger" type="button" id="burger" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="brand" href="#/home"><span class="mk">ML</span><span><b>Movana People</b><small>HR · Movana Logistics</small></span></a>
+  <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search people by name or employee ID" autocomplete="off" aria-label="Search people"><div class="hits" id="hits" hidden></div></div>
+  <button class="ib" type="button" id="bell" aria-label="Things waiting for you"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot" id="bellN" hidden></span></button>
+  <button class="who" type="button" id="who" aria-haspopup="menu" aria-label="Profile menu"><span class="av" id="whoAv">·</span><span id="whoName"></span></button>
+</header>
+<div class="menu" id="menu" role="menu" hidden></div>
+<div class="shell"><nav class="nav" id="nav" aria-label="People"></nav><main id="main"><div class="empty">Loading…</div></main></div>
+<script src="../portal/fb.js?v=20261026q"></script>
+<script src="../portal/offer.js?v=3"></script>
+<script>
+(async function () {
+'use strict';
+/* ================= basics ================= */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+const r2 = v => Math.round(num(v) * 100) / 100;
+const money = v => '₹' + num(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const lc = s => String(s || '').toLowerCase();
+const pad = n => String(n).padStart(2, '0');
+const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const today = () => iso(new Date());
+const ymNow = () => today().slice(0, 7);
+const fmtD = k => k ? new Date(String(k).slice(0, 10) + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+const fmtT = ms => ms ? new Date(ms).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+const tm = ms => ms ? new Date(ms).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '';
+const hm = ms => { const m = Math.floor(num(ms) / 6e4); return Math.floor(m / 60) + 'h ' + pad(m % 60) + 'm'; };
+const MN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const ymLabel = ym => MN[+ym.slice(5) - 1] + ' ' + ym.slice(0, 4);
+const ini = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+let toastT; const toast = m => { let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 3000); };
+const I = { home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  cal: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>', pay: '<rect x="2" y="6" width="20" height="13" rx="3"/><path d="M2 11h20M6 15h4"/>', req: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
+  exp: '<path d="M4 4h16v16l-3-2-3 2-3-2-3 2-3-2-1 1z"/><path d="M8 9h8M8 13h5"/>', goal: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>', learn: '<path d="M2 8l10-5 10 5-10 5z"/><path d="M6 10v5c3 2 9 2 12 0v-5"/>',
+  doc: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h6"/>', help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/>', exit: '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>',
+  people: '<circle cx="9" cy="8" r="4"/><path d="M2 21c1-4 4-6 7-6s6 2 7 6M16 4a4 4 0 0 1 0 8M22 21c-.6-2.6-2-4.3-4-5.2"/>', org: '<rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="16" width="6" height="5" rx="1"/><rect x="16" y="16" width="6" height="5" rx="1"/><path d="M12 7v4M5 16v-3h14v3"/>',
+  mega: '<path d="M3 11v2a2 2 0 0 0 2 2h1l4 4V5L6 9H5a2 2 0 0 0-2 2zM14 8a5 5 0 0 1 0 8M17 5a9 9 0 0 1 0 14"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', brief: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M2 13h20"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>', key: '<circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 9.2-9.2M17 6l3 3M14 9l2 2"/>', cog: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  tower: '<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>' };
+const svg = k => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (I[k] || '') + '</svg>';
+
+/* ================= roles (same as the portal and Punch) ================= */
+const G = ['exec', 'sr', 'tl', 'am', 'mgr', 'srm', 'gm', 'sgm', 'avp', 'vp', 'svp'];
+const HR_ALL = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_exec', 'hr_sr', 'hr_tl', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
+const HR_APPR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_tl', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
+const SAL_V = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
+const ADMIN = ['superadmin', 'admin_head'];
+const S = { uid: null, me: {}, roles: [], d: {}, open: {}, q: {}, ym: ymNow(), f: {} };
+const has = list => S.roles.some(r => list.includes(r));
+const isHR = () => has(HR_ALL), canAppr = () => has(HR_APPR), canSal = () => has(SAL_V), isAdmin = () => has(ADMIN);
+
+/* ================= sign in (shared with the portal) ================= */
+await window.claude.use('user');
+const auth = firebase.auth(), fs = firebase.firestore(), U = auth.currentUser;
+S.uid = U.uid;
+{ const [m, o, u] = await Promise.all([fs.doc('members/' + U.uid).get().catch(() => null), fs.doc('settings/owner').get().catch(() => null), fs.doc('users/' + U.uid).get().catch(() => null)]);
+  const md = m && m.exists ? m.data() : null, owner = o && o.exists && o.data().uid === U.uid;
+  S.roles = owner ? ['superadmin'] : (md && md.status !== 'Suspended' ? [md.role].concat(md.roles || []).filter(Boolean) : ['none']);
+  S.me = { name: (u && u.exists && u.data().name) || String(U.email || '').split('@')[0], email: U.email }; }
+$('#whoAv').textContent = ini(S.me.name); $('#whoName').textContent = S.me.name;
+
+/* ================= live data ================= */
+const D = S.d; ['emp', 'att', 'mark', 'req', 'bal', 'pay', 'offer', 'users', 'posts', 'hol', 'jobs', 'cands', 'train', 'enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => D[k] = []);
+let rq = false; const later = () => { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); }); };
+const live = (k, q) => q.onSnapshot(s => { D[k] = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); later(); }, () => { later(); });
+const liveDoc = (k, ref) => ref.onSnapshot(d => { D[k] = d.exists ? [Object.assign({ _id: d.id }, d.data())] : []; later(); }, () => { D[k] = []; later(); });
+const col = n => fs.collection(n), mineQ = n => col(n).where('uid', '==', S.uid);
+live('emp', col('punch_emp')); live('users', col('users')); live('posts', col('hr_posts')); live('hol', col('hr_holidays')); live('jobs', col('hr_jobs')); live('train', col('hr_training'));
+if (isHR()) { live('att', col('punch_att')); live('mark', col('punch_mark')); live('req', col('punch_req')); live('bal', col('punch_bal')); live('cands', col('hr_cands'));
+  ['enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => live(k, col({ enrol: 'hr_enrol', goals: 'hr_goals', reviews: 'hr_reviews', exp: 'hr_expenses', exits: 'hr_exits', help: 'hr_help' }[k]))); }
+else { live('att', mineQ('punch_att')); live('mark', mineQ('punch_mark')); live('req', mineQ('punch_req')); liveDoc('bal', fs.doc('punch_bal/' + S.uid));
+  ['enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => live(k, mineQ({ enrol: 'hr_enrol', goals: 'hr_goals', reviews: 'hr_reviews', exp: 'hr_expenses', exits: 'hr_exits', help: 'hr_help' }[k]))); }
+if (canSal()) { live('pay', col('punch_pay')); live('offer', col('punch_offer')); }
+else { liveDoc('pay', fs.doc('punch_pay/' + S.uid)); liveDoc('offer', fs.doc('punch_offer/' + S.uid)); }
+const mine = arr => arr.filter(x => x.uid === S.uid);
+const empOf = uid => D.emp.find(e => e._id === uid);
+const meEmp = () => empOf(S.uid) || { _id: S.uid, name: S.me.name, wo: [0] };
+const payOf = uid => D.pay.find(p => p._id === uid);
+const balOf = uid => D.bal.find(b => b._id === uid);
+const nameOf = uid => (empOf(uid) || {}).name || ((D.users.find(u => u._id === uid) || {}).name) || 'Someone';
+const save = async (path, body, msg) => { try { await fs.doc(path).set(body); if (msg) toast(msg); return true; } catch (e) { toast(e && e.code === 'permission-denied' ? 'Your role is not allowed to do this.' : 'Could not save. Check the connection.'); return false; } };
+const del = async path => { try { await fs.doc(path).delete(); return true; } catch (e) { toast('Could not delete.'); return false; } };
+const newId = p => p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+/* ================= attendance & pay, worked out the same way as Punch / the portal ================= */
+const ML = { present: 'Present', weekoff: 'Week off', holiday: 'Holiday', compoff: 'Comp off', absent: 'Absent', holpresent: 'Holiday + Present', leave: 'Leave' };
+const attDoc = (uid, ym) => D.att.find(a => a._id === uid + '_' + ym), markDoc = (uid, ym) => D.mark.find(m => m._id === uid + '_' + ym);
+function dayOf(e, ym, d) {
+  const k = ym + '-' + pad(d), mk = markDoc(e._id, ym), at = attDoc(e._id, ym), day = at && at.days && at.days[pad(d)], base = { k, a: day && day.a, b: day && day.b, ms: day ? num(day.ms) : 0 };
+  if (e.join && k < e.join) return Object.assign(base, { st: 'Not joined', c: 'O' });
+  const m = mk && mk.marks && mk.marks[k];
+  if (m) return Object.assign(base, { st: m === 'leave' ? 'Leave' + (mk.lt && mk.lt[k] ? ' (' + mk.lt[k] + ')' : '') : (ML[m] || m), c: m === 'present' || m === 'holpresent' ? 'P' : m === 'absent' ? 'A' : (m === 'leave' || m === 'compoff') ? 'L' : 'O' });
+  if (day && day.st) return Object.assign(base, { st: day.st, c: day.st === 'Half day' ? 'H' : ['Full day', 'Shift completed', 'Marked present'].includes(day.st) ? 'P' : day.st === 'Absent' ? 'A' : '' });
+  if ((e.wo || [0]).includes(new Date(k + 'T00:00:00').getDay())) return Object.assign(base, { st: 'Week off', c: 'O' });
+  if (k >= today()) return Object.assign(base, { st: k === today() ? 'Not yet' : '', c: '' });
+  return Object.assign(base, { st: 'Absent', c: 'A' });
+}
+const daysIn = ym => new Date(+ym.slice(0, 4), +ym.slice(5), 0).getDate();
+const monthDays = (e, ym) => Array.from({ length: daysIn(ym) }, (_, i) => dayOf(e, ym, i + 1));
+function monthSum(e, ym) { const D2 = monthDays(e, ym), c = f => D2.filter(f).length; return { p: c(d => d.c === 'P'), h: c(d => d.c === 'H'), a: c(d => d.c === 'A'), l: c(d => /^Leave/.test(d.st)), co: c(d => d.st === 'Comp off'), wo: c(d => d.st === 'Week off'), hol: c(d => d.st === 'Holiday'), ms: D2.reduce((t, d) => t + d.ms, 0), D: D2 }; }
+/** One month's pay from the salary set-up and attendance (days up to today only for the current month) – same rules as the portal and Punch. */
+function payslip(e, v, ym) {
+  if (!v) return null;
+  const hf = (v.hikes || []).filter(h => num(h.p) && h.f && ym >= h.f).reduce((f, h) => f * (1 + num(h.p) / 100), 1), amt = k => num(v[k]) * hf;
+  const full = { b: amt('basicAmt'), h: amt('hraAmt'), c: amt('convAmt'), s: amt('splAmt') }, sal = full.b + full.h + full.c + full.s;
+  const x = monthSum(e, ym), basis = v.basis || 'cal', dim = daysIn(ym), base = basis === 'cal' ? dim : basis === 'work' ? dim - x.wo : num(basis);
+  let pd = x.p + x.h / 2 + x.co + (v.leavePaid === false ? 0 : x.D.filter(d => /^Leave/.test(d.st) && !/LOP/.test(d.st)).length) + (v.holPaid === false ? 0 : x.hol) + (basis === 'cal' || basis === '30' ? x.wo : 0);
+  if (basis === '26' || basis === '30') pd = Math.min(pd, base);
+  const k = base ? pd / base : 0, E = { basic: r2(full.b * k), hra: r2(full.h * k), conv: r2(full.c * k), spl: r2(full.s * k) }, gross = r2(E.basic + E.hra + E.conv + E.spl);
+  const pf = v.pfMode === 'fix' ? num(v.pf) : Math.round(E.basic * num(v.pfPct == null ? 12 : v.pfPct) / 100), ded = { pf, pt: num(v.pt), vpf: num(v.vpf), esi: num(v.esi), oth: num(v.oth) }, td = r2(Object.values(ded).reduce((a, b) => a + b, 0));
+  return { sal: r2(sal), pd: r2(pd), base, E, gross, ded, td, net: r2(gross - td), x };
+}
+
+/* ================= navigation (only what the person's roles allow) ================= */
+const V = [];
+const add = (id, g, label, icon, render, ok, n) => V.push({ id, g, label, icon, render, ok: ok || (() => true), n });
+const ext = (g, label, icon, href, ok) => V.push({ id: null, g, label, icon, href, ok: ok || (() => true) });
+let route = '';
+function go(h) { location.hash = '#/' + h; }
+addEventListener('hashchange', () => { document.body.classList.remove('navopen'); render(); window.scrollTo(0, 0); });
+function navHtml() {
+  const vis = V.filter(v => v.ok()); let g0 = '';
+  return vis.map(v => { const gh = v.g !== g0 ? '<div class="g">' + esc(v.g) + '</div>' : ''; g0 = v.g; const n = v.n ? v.n() : 0;
+    return gh + (v.href ? '<a class="ext" href="' + esc(v.href) + '">' + svg(v.icon) + '<span>' + esc(v.label) + '</span></a>' : '<a href="#/' + v.id + '"' + (v.id === route ? ' aria-current="page"' : '') + '>' + svg(v.icon) + '<span>' + esc(v.label) + '</span>' + (n ? '<span class="n">' + n + '</span>' : '') + '</a>'); }).join('');
+}
+const ph = (t, sub, act) => '<div class="ph"><div><h1>' + esc(t) + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (act ? '<div class="act">' + act + '</div>' : '') + '</div>';
+const pill = (t, k) => '<span class="pill ' + (k || '') + '">' + esc(t) + '</span>';
+const stPill = s => pill(s, { Pending: 'warn', Open: 'warn', Applied: 'warn', Released: 'warn', Approved: 'good', Accepted: 'good', Paid: 'good', Resolved: 'good', Completed: 'good', Hired: 'good', Final: 'good', Active: 'info', Submitted: 'info', Enrolled: 'info', Rejected: 'bad', Cancelled: 'bad', Withdrawn: 'bad', Closed: '' }[s] || '');
+const tbl = (heads, rows, empty) => rows.length ? '<div class="tw"><table><thead><tr>' + heads.map(h => '<th' + (h.startsWith('#') ? ' class="n"' : '') + '>' + esc(h.replace(/^#/, '')) + '</th>').join('') + '</tr></thead><tbody>' + rows.join('') + '</tbody></table></div>' : '<div class="empty">' + esc(empty || 'Nothing here yet.') + '</div>';
+const fld = (id, label, type, val, extra) => '<label' + (type === 'textarea' ? ' class="wide"' : '') + '>' + esc(label) + (type === 'textarea' ? '<textarea id="' + id + '"' + (extra || '') + '>' + esc(val || '') + '</textarea>' : type && type.startsWith('select:') ? '<select id="' + id + '"' + (extra || '') + '>' + type.slice(7).split('|').map(o => '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>' : '<input id="' + id + '" type="' + (type || 'text') + '" value="' + esc(val == null ? '' : val) + '"' + (extra || '') + '>') + '</label>';
+const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+
+/* ================= Home ================= */
+function vHome() {
+  const e = meEmp(), ym = ymNow(), at = attDoc(S.uid, ym), dd = today().slice(8), d = at && at.days && at.days[dd], open = at && at.open && iso(new Date(at.open.t)) === today() ? at.open : null, b = balOf(S.uid), h = new Date().getHours();
+  const st = open ? 'Checked in at ' + tm(open.t) : d && d.a ? 'Today ' + tm(d.a) + ' – ' + (d.b ? tm(d.b) : '…') + ' · ' + hm(d.ms) : 'Not checked in yet today';
+  let x = '<div class="grid g2"><section class="card hero"><div class="row" style="align-items:center;gap:14px"><span class="av lg" style="background:rgba(255,255,255,.2)">' + esc(ini(e.name)) + '</span><div><h1 style="color:#fff">Good ' + (h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening') + ', ' + esc(String(e.name || S.me.name).split(' ')[0]) + '</h1><p>' + esc([e.desg, e.eid].filter(Boolean).join(' · ') || 'Welcome to Movana People') + '</p></div></div>' +
+    '<div class="tiles mt"><a class="t" href="#/attendance"><span>Today</span><b style="font-size:1rem">' + esc(st) + '</b></a>' + (b ? ['PL', 'SL', 'CL'].map(t => '<a class="t" href="#/leave"><span>' + { PL: 'Privilege', SL: 'Sick', CL: 'Casual' }[t] + ' leave</span><b>' + r2((b.lv || {})[t] ? b.lv[t].b : 0) + '</b></a>').join('') + '<a class="t" href="#/leave"><span>Comp off</span><b>' + r2((b.co || {}).b) + '</b></a>' : '<a class="t" href="#/leave"><span>Leave balance</span><b style="font-size:1rem">Open Punch once to load it</b></a>') + '</div></section>';
+  x += '<section class="card"><h2>Quick actions</h2><div class="qa">' + [['leave', 'cal', 'Apply leave'], ['requests', 'req', 'Attendance request'], ['payslips', 'pay', 'Payslips'], ['expenses', 'exp', 'Claim expense'], ['helpdesk', 'help', 'Ask HR'], ['documents', 'doc', 'My documents'], ['goals', 'goal', 'My goals'], ['learning', 'learn', 'Training']].map(([r, i, l]) => '<a href="#/' + r + '">' + svg(i) + l + '</a>').join('') + '</div></section></div>';
+  if (isHR()) { const P = pend(); x += '<section class="card mt"><h2>Waiting for HR <a class="more" href="#/approvals">Open approvals</a></h2><div class="tiles">' + [['Leave & attendance', P.req, 'approvals'], ['Expenses', P.exp, 'hr-expenses'], ['Helpdesk', P.help, 'hr-helpdesk'], ['Resignations', P.exits, 'hr-exits'], ['Candidates in pipeline', P.cands, 'recruitment'], ['Offers awaiting acceptance', P.offers, 'onboarding']].map(([l, n, r]) => '<a class="t" href="#/' + r + '"><span>' + l + '</span><b>' + n + '</b></a>').join('') + '</div></section>'; }
+  const posts = D.posts.slice().sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || num(b.at) - num(a.at)).slice(0, 6);
+  const up = D.hol.filter(o => o.date >= today()).sort((a, b) => a.date < b.date ? -1 : 1).slice(0, 5);
+  const ann = D.emp.filter(o => o.join && o.join.slice(5) >= today().slice(5) && o.join.slice(0, 4) < today().slice(0, 4)).sort((a, b) => a.join.slice(5) < b.join.slice(5) ? -1 : 1).slice(0, 5);
+  const nj = D.emp.filter(o => o.join && o.join >= iso(new Date(Date.now() - 30 * 864e5))).sort((a, b) => a.join < b.join ? 1 : -1).slice(0, 6);
+  x += '<div class="grid g2 mt"><section class="card"><h2>' + svg('mega') + ' Announcements' + (isHR() ? '<a class="more" href="#/announcements">Manage</a>' : '') + '</h2>' + (posts.length ? '<div class="feed">' + posts.map(p => '<div class="post"><b>' + (p.pin ? '📌 ' : '') + esc(p.title) + '</b><p>' + esc(p.body || '') + '</p><small>' + esc(p.byName || '') + ' · ' + fmtT(p.at) + '</small></div>').join('') + '</div>' : '<div class="empty">No announcements yet.</div>') + '</section>' +
+    '<div class="grid"><section class="card"><h2>' + svg('sun') + ' Upcoming holidays</h2>' + (up.length ? '<div class="list">' + up.map(o => '<div class="li"><div class="g1"><b>' + esc(o.name) + '</b><span>' + esc(fmtD(o.date)) + ' · ' + new Date(o.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long' }) + '</span></div></div>').join('') + '</div>' : '<div class="empty">No holidays listed.</div>') + '</section>' +
+    '<section class="card"><h2>' + svg('people') + ' People</h2><div class="list">' + nj.map(o => '<div class="li"><span class="av">' + esc(ini(o.name)) + '</span><div class="g1"><b>' + esc(o.name) + '</b><span>Joined ' + esc(fmtD(o.join)) + (o.desg ? ' · ' + esc(o.desg) : '') + '</span></div>' + pill('New joiner', 'good') + '</div>').join('') + ann.map(o => '<div class="li"><span class="av">' + esc(ini(o.name)) + '</span><div class="g1"><b>' + esc(o.name) + '</b><span>Work anniversary · ' + esc(fmtD(today().slice(0, 4) + o.join.slice(4))) + '</span></div>' + pill((+today().slice(0, 4) - +o.join.slice(0, 4)) + ' yr', 'info') + '</div>').join('') + (nj.length || ann.length ? '' : '<div class="empty">No new joiners or anniversaries coming up.</div>') + '</div></section></div></div>';
+  return x;
+}
+function pend() { return { req: D.req.filter(r => r.s === 'Pending').length, exp: D.exp.filter(r => r.s === 'Pending').length, help: D.help.filter(r => r.s === 'Open').length, exits: D.exits.filter(r => r.s === 'Pending').length, cands: D.cands.filter(c => !['Hired', 'Rejected'].includes(c.stage)).length, offers: D.offer.filter(o => o.status === 'Released').length }; }
+
+/* ================= Me ================= */
+function vProfile() {
+  const e = meEmp(), u = D.users.find(x => x._id === S.uid) || {};
+  return ph('My profile', 'Kept by HR. Ask HR through the helpdesk to change anything.') + '<section class="card"><div class="row" style="gap:16px;margin-bottom:14px"><span class="av lg">' + esc(ini(e.name)) + '</span><div><h2>' + esc(e.name || S.me.name) + '</h2><div class="mute">' + esc([e.desg, e.grade && 'Grade ' + e.grade].filter(Boolean).join(' · ')) + '</div><div class="row mt">' + S.roles.map(r => pill(roleName(r), 'info')).join('') + '</div></div></div>' +
+    '<div class="kv">' + [['Employee ID', e.eid], ['Designation', e.desg], ['Grade', e.grade], ['Department', e.cat], ['Workplace', (e.wp || {}).name], ['Date of joining', fmtD(e.join)], ['Weekly off', (e.wo || []).map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ')], ['Login', u.username || S.me.email]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>';
+}
+const ROLE_N = { superadmin: 'Super admin', admin_head: 'Admin head', hr_head: 'HR head', hr_manager: 'HR manager', hr_exec: 'HR executive', employee: 'Employee', none: 'No role yet' };
+const roleName = r => ROLE_N[r] || r.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+function calHtml(e, ym) {
+  const days = monthDays(e, ym), first = new Date(ym + '-01T00:00:00').getDay();
+  return '<div class="cal">' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => '<div class="h">' + d + '</div>').join('') + '<div></div>'.repeat(first) +
+    days.map(d => '<div class="d ' + (d.c || '') + (d.k === today() ? ' today' : '') + '" title="' + esc(d.st) + '"><b>' + (+d.k.slice(8)) + '</b><span>' + esc(d.st === 'Not yet' ? '' : d.st.replace('Shift completed', 'Present').replace('Full day', 'Present')) + '</span>' + (d.a ? '<span class="mute">' + tm(d.a) + (d.b ? '–' + tm(d.b) : '') + '</span>' : '') + '</div>').join('') + '</div>';
+}
+const monthPick = (id, v) => '<input type="month" id="' + id + '" value="' + v + '" class="btn" style="padding:6px 10px">';
+function vAttendance() {
+  const e = meEmp(), x = monthSum(e, S.ym);
+  return ph('My attendance', 'From your Punch check-ins and HR marks.', monthPick('ym', S.ym) + '<a class="btn p" href="#/requests">Request a correction</a>') +
+    '<div class="tiles" style="margin-bottom:14px">' + [['Present', x.p], ['Half day', x.h], ['Absent', x.a], ['Leave', x.l], ['Comp off', x.co], ['Week off', x.wo], ['Hours', hm(x.ms)]].map(([l, v]) => '<div class="t"><span>' + l + '</span><b>' + v + '</b></div>').join('') + '</div><section class="card">' + calHtml(e, S.ym) + '</section>';
+}
+const LT = [['PL', 'Privilege leave'], ['SL', 'Sick leave'], ['CL', 'Casual leave'], ['CO', 'Comp off']];
+function vLeave() {
+  const b = balOf(S.uid), R = mine(D.req).filter(r => r.kind === 'leave').sort((a, b2) => num(b2.at) - num(a.at));
+  let x = ph('Leave', 'Same balances and requests as your Punch app.');
+  x += '<div class="tiles" style="margin-bottom:14px">' + (b ? LT.map(([t, n]) => { const v = t === 'CO' ? (b.co || {}).b : ((b.lv || {})[t] || {}).b; const u = t === 'CO' ? (b.co || {}).u : ((b.lv || {})[t] || {}).used; return '<div class="t"><span>' + n + '</span><b>' + r2(v) + '</b><span>Used ' + r2(u) + '</span></div>'; }).join('') : '<div class="t"><span>Balances</span><b style="font-size:1rem">Open the Punch app once to load them</b></div>') + '</div>';
+  x += '<div class="grid g2"><section class="card"><h2>Apply for leave</h2><div class="form">' + fld('lv-t', 'Type', 'select:' + LT.map(l => l[1]).join('|')) + fld('lv-a', 'From', 'date', today()) + fld('lv-b', 'To', 'date', today()) + fld('lv-why', 'Reason', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="lv-send">Send to HR</button><span class="mute small">Week offs are skipped.</span></div></section>' +
+    '<section class="card"><h2>My leave requests</h2>' + reqList(R) + '</section></div>';
+  return x;
+}
+function reqLabel(r) { return r.kind === 'leave' ? (r.t === 'CO' ? 'Comp off' : (LT.find(l => l[0] === r.t) || [0, r.t])[1]) : (String(r.v).startsWith('leave:') ? 'Leave · ' + r.v.slice(6) : r.v === '-' ? 'Clear mark' : (ML[r.v] || r.v)); }
+function reqDays(r) { const d = (r.days || []).slice().sort(); return d.length ? fmtD(d[0]) + (d.length > 1 ? ' – ' + fmtD(d[d.length - 1]) + ' (' + d.length + ' days)' : '') : ''; }
+function reqList(R) { return R.length ? '<div class="list">' + R.map(r => '<div class="li"><div class="g1"><b>' + esc(reqLabel(r)) + '</b><span>' + esc(reqDays(r)) + (r.why ? ' · ' + esc(r.why) : '') + '</span></div>' + stPill(r.s) + (r.s === 'Pending' && r.uid === S.uid ? '<button class="btn s d" type="button" data-a="req-cancel" data-x="' + esc(r._id) + '">Cancel</button>' : '') + '</div>').join('') + '</div>' : '<div class="empty">No requests yet.</div>'; }
+function rangeDays(a, b, wo) { const out = []; if (!a || !b || b < a) return out; for (let d = new Date(a + 'T00:00:00'); iso(d) <= b && out.length < 62; d.setDate(d.getDate() + 1)) if (!(wo || []).includes(d.getDay())) out.push(iso(d)); return out; }
+function vRequests() {
+  const R = mine(D.req).filter(r => r.kind !== 'leave').sort((a, b) => num(b.at) - num(a.at));
+  return ph('Attendance requests', 'Missed a check-in or need a day corrected? HR approves it and your Punch app updates.') + '<div class="grid g2"><section class="card"><h2>New request</h2><div class="form">' + fld('ar-v', 'Mark the day(s) as', 'select:Present|Week off|Holiday|Holiday + Present|Absent') + fld('ar-a', 'From', 'date', today()) + fld('ar-b', 'To', 'date', today()) + fld('ar-why', 'Reason', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="ar-send">Send to HR</button></div></section><section class="card"><h2>My requests</h2>' + reqList(R) + '</section></div>';
+}
+function slipHtml(e, p, ym) {
+  return '<div class="card" id="slipCard"><div class="row" style="justify-content:space-between;align-items:flex-start"><div class="row"><span class="mk" style="width:44px;height:44px">ML</span><div><h2>Movana Logistics</h2><div class="mute small">Salary slip · ' + ymLabel(ym) + '</div></div></div><button class="btn s noprint" type="button" data-a="print">Print / PDF</button></div>' +
+    '<div class="kv mt">' + [['Name', e.name], ['Employee ID', e.eid], ['Designation', e.desg], ['Paid days', p.pd + ' of ' + p.base]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div>' +
+    '<div class="grid g2 mt"><div>' + tbl(['Earnings', '#Amount'], [['Basic', p.E.basic], ['HRA', p.E.hra], ['Conveyance', p.E.conv], ['Special allowance', p.E.spl]].filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="n">' + money(r[1]) + '</td></tr>').concat(['<tr><td><b>Gross</b></td><td class="n"><b>' + money(p.gross) + '</b></td></tr>'])) + '</div><div>' +
+    tbl(['Deductions', '#Amount'], [['Provident Fund', p.ded.pf], ['Professional tax', p.ded.pt], ['VPF', p.ded.vpf], ['ESI', p.ded.esi], ['Other', p.ded.oth]].filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="n">' + money(r[1]) + '</td></tr>').concat(['<tr><td><b>Total deductions</b></td><td class="n"><b>' + money(p.td) + '</b></td></tr>'])) + '</div></div>' +
+    '<div class="t mt" style="background:color-mix(in srgb,var(--in) 12%,var(--soft))"><span>Net pay</span><b>' + money(p.net) + '</b></div><p class="mute small mt">Worked out from your salary set-up and attendance. ' + (ym === ymNow() ? 'This month counts days up to today. ' : '') + 'Your Punch app has the full payslip.</p></div>';
+}
+function vPayslips() {
+  const e = meEmp(), v = payOf(S.uid);
+  if (!v) return ph('Payslips') + '<div class="empty">Your salary is not set up yet. HR sets it in the package.</div>';
+  const start = (e.join || ymNow()).slice(0, 7), list = []; for (let d = new Date(ymNow() + '-01T00:00:00'); iso(d).slice(0, 7) >= start && list.length < 24; d.setMonth(d.getMonth() - 1)) list.push(iso(d).slice(0, 7));
+  if (!list.includes(S.ym)) S.ym = list[0];
+  return ph('Payslips', 'Select a month.', '<select id="ym-sel" class="btn">' + list.map(m => '<option value="' + m + '"' + (m === S.ym ? ' selected' : '') + '>' + ymLabel(m) + '</option>').join('') + '</select>') + slipHtml(e, payslip(e, v, S.ym), S.ym);
+}
+function vExpenses() {
+  const R = mine(D.exp).sort((a, b) => num(b.at) - num(a.at));
+  return ph('Expenses', 'Claim travel, fuel, food and other work expenses. HR approves and pays them.') + '<div class="grid g2"><section class="card"><h2>New claim</h2><div class="form">' + fld('ex-date', 'Date', 'date', today()) + fld('ex-cat', 'Category', 'select:Travel|Fuel|Food|Mobile|Lodging|Vehicle repair|Other') + fld('ex-amt', 'Amount (₹)', 'number') + fld('ex-note', 'Details', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="ex-send">Submit claim</button></div></section>' +
+    '<section class="card"><h2>My claims</h2>' + (R.length ? '<div class="list">' + R.map(r => '<div class="li"><div class="g1"><b>' + esc(r.cat) + ' · ' + money(r.amount) + '</b><span>' + esc(fmtD(r.date)) + (r.note ? ' · ' + esc(r.note) : '') + (r.hrNote ? ' · HR: ' + esc(r.hrNote) : '') + '</span></div>' + stPill(r.s) + (r.s === 'Pending' ? '<button class="btn s d" type="button" data-a="own-del" data-c="hr_expenses" data-x="' + esc(r._id) + '">Withdraw</button>' : '') + '</div>').join('') + '</div>' : '<div class="empty">No claims yet.</div>') + '</section></div>';
+}
+function goalCard(g, own) {
+  return '<div class="li" style="align-items:flex-start"><div class="g1"><b>' + esc(g.title) + '</b><span>' + esc([g.metric, g.target && 'Target ' + g.target, g.weight && g.weight + '% weight', g.due && 'Due ' + fmtD(g.due)].filter(Boolean).join(' · ')) + '</span><div class="bar mt"><i style="width:' + Math.min(100, num(g.progress)) + '%"></i></div><span>' + num(g.progress) + '% done' + (own ? '' : ' · ' + esc(g.name || '')) + '</span></div>' + stPill(g.s || 'Active') +
+    (own && g.s !== 'Completed' ? '<input type="number" min="0" max="100" value="' + num(g.progress) + '" data-gp="' + esc(g._id) + '" aria-label="Progress %" style="width:72px" class="btn s">' : '') + (!own && isHR() && g.s !== 'Completed' ? '<button class="btn s" type="button" data-a="goal-done" data-x="' + esc(g._id) + '">Mark complete</button>' : '') + '</div>';
+}
+function vGoals() {
+  const G2 = mine(D.goals), Rv = mine(D.reviews).sort((a, b) => num(b.at) - num(a.at));
+  return ph('Goals & reviews', 'Set your goals, update progress and write your self review.') + '<div class="grid g2"><section class="card"><h2>My goals</h2>' + (G2.length ? '<div class="list">' + G2.map(g => goalCard(g, true)).join('') + '</div>' : '<div class="empty">No goals yet.</div>') +
+    '<h3 class="mt">Add a goal</h3><div class="form mt">' + fld('gl-title', 'Goal', 'text') + fld('gl-metric', 'How it is measured', 'text') + fld('gl-target', 'Target', 'text') + fld('gl-weight', 'Weight %', 'number', '25') + fld('gl-due', 'Due date', 'date') + '</div><div class="row mt"><button class="btn p" type="button" data-a="gl-add">Add goal</button></div></section>' +
+    '<section class="card"><h2>Self review</h2><div class="form">' + fld('rv-cycle', 'Review cycle', 'select:' + cycles().join('|')) + fld('rv-rate', 'My rating (1–5)', 'select:5|4|3|2|1', '3') + fld('rv-text', 'What I achieved, and what I will improve', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="rv-send">Submit review</button></div>' +
+    (Rv.length ? '<div class="list mt">' + Rv.map(r => '<div class="li"><div class="g1"><b>' + esc(r.cycle) + '</b><span>Self ' + esc(r.self && r.self.rating) + '/5' + (r.mgr && r.mgr.rating ? ' · Manager ' + esc(r.mgr.rating) + '/5' : '') + (r.mgr && r.mgr.text ? ' · ' + esc(r.mgr.text) : '') + '</span></div>' + stPill(r.s) + '</div>').join('') + '</div>' : '') + '</section></div>';
+}
+function cycles() { const y = new Date().getFullYear(), h = new Date().getMonth() < 6 ? 1 : 2; return ['H' + h + ' ' + y, (h === 1 ? 'H2 ' + (y - 1) : 'H1 ' + y), 'Annual ' + y]; }
+function vLearning() {
+  const T = D.train.filter(t => t.s !== 'Closed').sort((a, b) => String(a.date) < String(b.date) ? -1 : 1), me = mine(D.enrol);
+  return ph('Training', 'Sign up for training sessions run by HR.') + (T.length ? '<div class="grid g3">' + T.map(t => { const en = me.find(x => x.course === t._id), cnt = D.enrol.filter(x => x.course === t._id).length;
+    return '<section class="card"><h2>' + esc(t.title) + '</h2><p class="mute small">' + esc([fmtD(t.date), t.mode, t.trainer].filter(Boolean).join(' · ')) + '</p><p>' + esc(t.desc || '') + '</p><div class="row mt">' + (en ? stPill(en.s) + (en.s === 'Enrolled' ? '<button class="btn s d" type="button" data-a="own-del" data-c="hr_enrol" data-x="' + esc(en._id) + '">Withdraw</button>' : '') : '<button class="btn p s" type="button" data-a="tr-join" data-x="' + esc(t._id) + '">Sign up</button>') + (isHR() ? '<span class="mute small">' + cnt + (t.seats ? ' / ' + t.seats : '') + ' signed up</span>' : '') + '</div></section>'; }).join('') + '</div>' : '<div class="empty">No training scheduled.</div>');
+}
+function vDocuments() {
+  const o = D.offer.find(x => x._id === S.uid), ok = o && ['Released', 'Accepted'].includes(o.status);
+  return ph('My documents') + '<div class="grid g2"><section class="card"><h2>Offer letter</h2>' + (ok ? '<p>' + (o.status === 'Accepted' ? 'You accepted this offer on ' + esc(fmtT(o.acceptedAt)) + '.' : 'Released by HR. Please read and accept it.') + '</p><div class="row"><button class="btn" type="button" data-a="of-view">' + (S.ofView ? 'Hide' : 'View') + '</button><button class="btn" type="button" data-a="of-print">Print / PDF</button>' + (o.status === 'Released' ? '<button class="btn p" type="button" data-a="of-accept">Accept offer</button>' : '') + '</div>' : '<div class="empty">No offer letter released to you.</div>') + '</section>' +
+    '<section class="card"><h2>Payslips</h2><p>Monthly salary slips worked out from your attendance.</p><a class="btn" href="#/payslips">Open payslips</a></section></div>' + (ok && S.ofView && window.OfferLetter ? '<div class="card mt" style="overflow-x:auto">' + OfferLetter.html(o, { name: 'Movana Logistics' }) + '</div>' : '');
+}
+function vHelpdesk() {
+  const R = mine(D.help).sort((a, b) => num(b.at) - num(a.at));
+  return ph('Ask HR', 'Questions about salary, leave, documents, policies – or refer a friend for an open job.') + '<div class="grid g2"><section class="card"><h2>New query</h2><div class="form">' + fld('hd-cat', 'Category', 'select:Salary & payslip|Leave & attendance|Documents & letters|Policy|Profile change|Referral|Other') + fld('hd-sub', 'Subject', 'text') + fld('hd-text', 'Details', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="hd-send">Send to HR</button></div></section>' +
+    '<section class="card"><h2>My queries</h2>' + (R.length ? '<div class="list">' + R.map(r => '<div class="li" style="align-items:flex-start"><div class="g1"><b>' + esc(r.subject) + '</b><span>' + esc(r.cat) + ' · ' + esc(fmtT(r.at)) + '</span>' + (r.reply ? '<span style="white-space:normal;color:var(--ink2)">HR: ' + esc(r.reply) + '</span>' : '') + '</div>' + stPill(r.s) + (r.s === 'Open' ? '<button class="btn s d" type="button" data-a="own-del" data-c="hr_help" data-x="' + esc(r._id) + '">Withdraw</button>' : '') + '</div>').join('') + '</div>' : '<div class="empty">No queries yet.</div>') + '</section></div>';
+}
+function vSeparation() {
+  const R = mine(D.exits).sort((a, b) => num(b.at) - num(a.at)), open = R.find(r => r.s === 'Pending');
+  return ph('Resignation', 'Submit your resignation. HR confirms your last working day.') + '<div class="grid g2"><section class="card"><h2>' + (open ? 'Your resignation is with HR' : 'Submit resignation') + '</h2>' + (open ? '<p>Asked last working day: <b>' + esc(fmtD(open.lwdAsked)) + '</b></p><button class="btn d" type="button" data-a="own-del" data-c="hr_exits" data-x="' + esc(open._id) + '">Withdraw resignation</button>' :
+    '<div class="form">' + fld('sx-lwd', 'Last working day you ask for', 'date') + fld('sx-why', 'Reason', 'select:Better opportunity|Higher studies|Personal|Relocation|Health|Other') + fld('sx-text', 'Comments', 'textarea') + '</div><div class="row mt"><button class="btn d" type="button" data-a="sx-send">Submit resignation</button></div>') + '</section>' +
+    '<section class="card"><h2>History</h2>' + (R.length ? '<div class="list">' + R.map(r => '<div class="li"><div class="g1"><b>' + esc(r.reason) + '</b><span>Asked ' + esc(fmtD(r.lwdAsked)) + (r.lwd ? ' · Agreed ' + esc(fmtD(r.lwd)) : '') + (r.hrNote ? ' · ' + esc(r.hrNote) : '') + '</span></div>' + stPill(r.s) + '</div>').join('') + '</div>' : '<div class="empty">Nothing submitted.</div>') + '</section></div>';
+}
+
+/* ================= Company ================= */
+function vPeople() {
+  const q = lc(S.q.people || ''), E = D.emp.filter(e => !q || lc([e.name, e.eid, e.desg, e.cat].join(' ')).includes(q)).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), cur = S.open.person && empOf(S.open.person);
+  return ph('People', D.emp.length + ' employees', '<input id="q-people" type="search" class="btn" placeholder="Name, ID or designation" value="' + esc(S.q.people || '') + '" style="min-width:min(260px,100%)">') +
+    (cur ? '<section class="card" style="margin-bottom:14px"><div class="row" style="gap:14px"><span class="av lg">' + esc(ini(cur.name)) + '</span><div><h2>' + esc(cur.name) + '</h2><div class="mute">' + esc([cur.desg, cur.grade].filter(Boolean).join(' · ')) + '</div></div><button class="btn s" type="button" data-a="pp-close" style="margin-left:auto">Close</button></div><div class="kv mt">' + [['Employee ID', cur.eid], ['Department', cur.cat], ['Workplace', (cur.wp || {}).name], ['Reporting manager', cur.mgr], ['Date of joining', fmtD(cur.join)]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>' : '') +
+    '<div class="grid g3">' + E.map(e => '<button type="button" class="card li" style="border:0;text-align:left;background:var(--card)" data-a="pp-open" data-x="' + esc(e._id) + '"><span class="av">' + esc(ini(e.name)) + '</span><div class="g1"><b>' + esc(e.name) + '</b><span>' + esc([e.eid, e.desg].filter(Boolean).join(' · ')) + '</span></div></button>').join('') + '</div>';
+}
+function vOrg() {
+  const E = D.emp.slice(), byName = n => E.find(e => lc(e.name) === lc(n)), kids = {}, roots = [];
+  E.forEach(e => { const m = e.mgr && byName(e.mgr); if (m && m._id !== e._id) (kids[m._id] = kids[m._id] || []).push(e); else roots.push(e); });
+  const node = (e, seen) => seen.has(e._id) ? '' : (seen.add(e._id), '<li><div class="oc"><span class="av">' + esc(ini(e.name)) + '</span><div><b>' + esc(e.name) + '</b><span>' + esc([e.desg, e.cat].filter(Boolean).join(' · ')) + '</span></div></div>' + (kids[e._id] ? '<ul>' + kids[e._id].map(k => node(k, seen)).join('') + '</ul>' : '') + '</li>');
+  const depts = {}; roots.forEach(r => (depts[r.cat || 'Other'] = depts[r.cat || 'Other'] || []).push(r)); const seen = new Set();
+  return ph('Org chart', 'Built from each employee\'s reporting manager and department (set in the package / offer).') + (E.length ? '<div class="grid g2">' + Object.keys(depts).sort().map(d => '<section class="card"><h2>' + esc(d) + '</h2><div class="org"><ul>' + depts[d].map(r => node(r, seen)).join('') + '</ul></div></section>').join('') + '</div>' : '<div class="empty">No employees yet.</div>');
+}
+function vAnnouncements() {
+  const P = D.posts.slice().sort((a, b) => num(b.at) - num(a.at)), H = D.hol.slice().sort((a, b) => a.date < b.date ? -1 : 1);
+  return ph('Announcements & holidays') + '<div class="grid g2"><section class="card"><h2>Announcements</h2>' + (isHR() ? '<div class="form">' + fld('an-title', 'Title', 'text') + fld('an-body', 'Message', 'textarea') + '<label>Pin to top<select id="an-pin"><option value="">No</option><option value="1">Yes</option></select></label></div><div class="row mt"><button class="btn p" type="button" data-a="an-add">Post</button></div>' : '') +
+    (P.length ? '<div class="feed mt">' + P.map(p => '<div class="post"><b>' + (p.pin ? '📌 ' : '') + esc(p.title) + '</b><p>' + esc(p.body) + '</p><small>' + esc(p.byName || '') + ' · ' + fmtT(p.at) + (isHR() ? ' · <a href="#" data-a="del" data-p="hr_posts/' + esc(p._id) + '">Delete</a>' : '') + '</small></div>').join('') + '</div>' : '<div class="empty mt">No announcements.</div>') + '</section>' +
+    '<section class="card"><h2>Holidays ' + new Date().getFullYear() + '</h2>' + (isHR() ? '<div class="form">' + fld('ho-date', 'Date', 'date') + fld('ho-name', 'Holiday', 'text') + '</div><div class="row mt"><button class="btn p" type="button" data-a="ho-add">Add holiday</button></div>' : '') +
+    tbl(['Date', 'Day', 'Holiday', ''], H.map(h => '<tr><td>' + esc(fmtD(h.date)) + '</td><td>' + new Date(h.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' }) + '</td><td>' + esc(h.name) + '</td><td>' + (isHR() ? '<button class="btn s d" type="button" data-a="del" data-p="hr_holidays/' + esc(h._id) + '">Remove</button>' : '') + '</td></tr>'), 'No holidays listed.') + '</section></div>';
+}
+function vCareers() {
+  const J = D.jobs.filter(j => j.s !== 'Closed');
+  return ph('Careers', 'Open roles at Movana Logistics. Know someone good? Refer them through Ask HR (category Referral).') + (J.length ? '<div class="grid g3">' + J.map(j => '<section class="card"><h2>' + esc(j.title) + '</h2><p class="mute small">' + esc([j.dept, j.loc, j.type, j.openings && j.openings + ' opening(s)'].filter(Boolean).join(' · ')) + '</p><p>' + esc(j.desc || '') + '</p><a class="btn s" href="#/helpdesk">Refer someone</a></section>').join('') + '</div>' : '<div class="empty">No open roles right now.</div>');
+}
+
+/* ================= HR ================= */
+function vHrEmployees() {
+  const E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = ymNow();
+  return ph('Employees', E.length + ' on Punch', '<a class="btn p" href="../portal/#punch">＋ New joiner / edit (portal)</a>') + tbl(['Name', 'ID', 'Designation', 'Department', 'Joined', '#Present this month', 'Offer'], E.map(e => { const o = D.offer.find(x => x._id === e._id); return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + esc(e.cat || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td class="n">' + monthSum(e, ym).p + '</td><td>' + (o ? stPill(o.status) : canSal() ? '<span class="mute">—</span>' : '') + '</td></tr>'; }));
+}
+function vOnboarding() {
+  const E = D.emp.filter(e => !e.join || e.join >= iso(new Date(Date.now() - 90 * 864e5))).sort((a, b) => String(b.join) < String(a.join) ? -1 : 1);
+  return ph('Onboarding', 'New joiners in the last 90 days and upcoming joiners, with their offer letter status.', '<a class="btn p" href="../portal/#punch">＋ New joiner (create Punch login)</a>') +
+    tbl(['Name', 'ID', 'Designation', 'Joining', 'Offer letter', 'Punch app'], E.map(e => { const o = D.offer.find(x => x._id === e._id), at = D.att.some(a => a.uid === e._id); return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (o ? stPill(o.status) : pill('Not prepared')) + '</td><td>' + (at ? pill('Using', 'good') : pill('Not yet', 'warn')) + '</td></tr>'; }), 'No new joiners.') +
+    '<p class="mute small mt">Packages and offer letters are prepared and released in the portal: Team live › Package &amp; offer letter.</p>';
+}
+function vTeamAtt() {
+  const E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = S.ym, dd = today().slice(8);
+  return ph('Team attendance', 'Live from Punch.', monthPick('ym', S.ym) + '<a class="btn" href="../portal/#punch">Live board (portal)</a>') +
+    tbl(['Name', 'Today', '#Present', '#Half', '#Absent', '#Leave', '#Week off', '#Hours'], E.map(e => { const x = monthSum(e, ym), at = attDoc(e._id, ymNow()), open = at && at.open && iso(new Date(at.open.t)) === today(), d = at && at.days && at.days[dd];
+      return '<tr><td>' + esc(e.name) + '</td><td>' + (open ? pill('In since ' + tm(at.open.t), 'good') : d && d.a ? pill(tm(d.a) + '–' + (d.b ? tm(d.b) : '…'), 'info') : pill(dayOf(e, ymNow(), +dd).st || 'Not in', 'warn')) + '</td><td class="n">' + x.p + '</td><td class="n">' + x.h + '</td><td class="n">' + x.a + '</td><td class="n">' + x.l + '</td><td class="n">' + x.wo + '</td><td class="n">' + hm(x.ms) + '</td></tr>'; }));
+}
+function vApprovals() {
+  const P = D.req.filter(r => r.s === 'Pending').sort((a, b) => num(a.at) - num(b.at)), done = D.req.filter(r => r.s !== 'Pending').sort((a, b) => num(b.decidedAt || b.at) - num(a.decidedAt || a.at)).slice(0, 20);
+  return ph('Leave & attendance approvals', canAppr() ? 'Approve and the employee\'s Punch app updates straight away.' : 'HR team lead and above approve.') + '<section class="card"><h2>Waiting (' + P.length + ')</h2>' +
+    tbl(['Employee', 'Request', 'Days', 'Reason', 'Sent', ''], P.map(r => '<tr><td>' + esc(r.name || nameOf(r.uid)) + '</td><td>' + esc(reqLabel(r)) + '</td><td>' + esc(reqDays(r)) + '</td><td class="w">' + esc(r.why || '') + '</td><td>' + esc(fmtT(r.at)) + '</td><td>' + (canAppr() ? '<button class="btn s p" type="button" data-a="ap-ok" data-x="' + esc(r._id) + '">Approve</button> <button class="btn s d" type="button" data-a="ap-no" data-x="' + esc(r._id) + '">Reject</button>' : '') + '</td></tr>'), 'Nothing waiting.') + '</section>' +
+    '<section class="card mt"><h2>Recently decided</h2>' + tbl(['Employee', 'Request', 'Days', 'Status', 'By'], done.map(r => '<tr><td>' + esc(r.name || nameOf(r.uid)) + '</td><td>' + esc(reqLabel(r)) + '</td><td>' + esc(reqDays(r)) + '</td><td>' + stPill(r.s) + '</td><td>' + esc(r.byName || '') + '</td></tr>'), 'Nothing yet.') + '</section>';
+}
+async function decide(id, ok) {
+  const r = D.req.find(x => x._id === id); if (!r || !canAppr()) return; const by = {}; (r.days || []).forEach(k => (by[k.slice(0, 7)] = by[k.slice(0, 7)] || []).push(k));
+  if (ok) for (const ym of Object.keys(by)) { const cur = markDoc(r.uid, ym) || {}, marks = Object.assign({}, cur.marks), lt = Object.assign({}, cur.lt);
+    by[ym].forEach(k => { if (r.kind === 'leave') { if (r.t === 'CO') { marks[k] = 'compoff'; delete lt[k]; } else { marks[k] = 'leave'; lt[k] = r.t; } } else { const v = String(r.v); if (v === '-') { delete marks[k]; delete lt[k]; } else if (v.startsWith('leave:')) { marks[k] = 'leave'; lt[k] = v.slice(6); } else { marks[k] = v; delete lt[k]; } } });
+    if (!(await save('punch_mark/' + r.uid + '_' + ym, { uid: r.uid, ym, marks, lt, by: S.uid, updatedAt: Date.now() }))) return; }
+  const b = Object.assign({}, r); delete b._id; if (await save('punch_req/' + id, Object.assign(b, { s: ok ? 'Approved' : 'Rejected', by: S.uid, byName: S.me.name, decidedAt: Date.now() }), ok ? 'Approved' : 'Rejected')) {}
+}
+function vPayroll() {
+  if (!canSal()) return ph('Payroll') + '<div class="empty">Payroll is for HR manager, HR head and admins.</div>';
+  const E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), rows = E.map(e => ({ e, p: payslip(e, payOf(e._id), S.ym) })), T = k => rows.reduce((t, r) => t + (r.p ? num(k(r.p)) : 0), 0);
+  return ph('Payroll', ymLabel(S.ym) + (S.ym === ymNow() ? ' · days up to today' : ''), monthPick('ym', S.ym) + '<a class="btn" href="../portal/#payroll">Payroll runs (portal)</a>') +
+    '<div class="tiles" style="margin-bottom:14px"><div class="t"><span>Employees paid</span><b>' + rows.filter(r => r.p).length + '</b></div><div class="t"><span>Gross</span><b>' + money(T(p => p.gross)) + '</b></div><div class="t"><span>Deductions</span><b>' + money(T(p => p.td)) + '</b></div><div class="t"><span>Net pay</span><b>' + money(T(p => p.net)) + '</b></div></div>' +
+    tbl(['Name', 'ID', '#Paid days', '#Monthly salary', '#Gross', '#PF', '#PT', '#Other', '#Net pay'], rows.map(({ e, p }) => p ? '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td class="n">' + p.pd + ' / ' + p.base + '</td><td class="n">' + money(p.sal) + '</td><td class="n">' + money(p.gross) + '</td><td class="n">' + money(p.ded.pf) + '</td><td class="n">' + money(p.ded.pt) + '</td><td class="n">' + money(p.ded.vpf + p.ded.esi + p.ded.oth) + '</td><td class="n"><b>' + money(p.net) + '</b></td></tr>' : '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td colspan="7" class="mute">Salary not set up – set the package in the portal</td></tr>'));
+}
+const STG = ['Applied', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
+function vRecruit() {
+  const J = D.jobs.slice().sort((a, b) => num(b.at) - num(a.at)), C = D.cands;
+  return ph('Recruitment', 'Open roles and the candidate pipeline. Hired? Create their Punch login and offer letter.', '<a class="btn p" href="../portal/#punch">＋ New joiner (portal)</a>') +
+    '<div class="grid g2"><section class="card"><h2>Job openings</h2><div class="form">' + fld('jb-title', 'Role', 'text') + fld('jb-dept', 'Department', 'select:Operations|Finance|HR|Admin|IT|Transport|Other') + fld('jb-loc', 'Location', 'text', 'DC Isnapur') + fld('jb-n', 'Openings', 'number', '1') + fld('jb-type', 'Type', 'select:Full-time|Contract|Intern') + fld('jb-desc', 'Description', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="jb-add">Post opening</button></div>' +
+    tbl(['Role', 'Dept', '#Open', '#Candidates', 'Status', ''], J.map(j => '<tr><td>' + esc(j.title) + '</td><td>' + esc(j.dept || '') + '</td><td class="n">' + esc(j.openings || '') + '</td><td class="n">' + C.filter(c => c.job === j._id).length + '</td><td>' + stPill(j.s || 'Open') + '</td><td><button class="btn s" type="button" data-a="jb-toggle" data-x="' + esc(j._id) + '">' + (j.s === 'Closed' ? 'Reopen' : 'Close') + '</button></td></tr>'), 'No openings.') + '</section>' +
+    '<section class="card"><h2>Add candidate</h2><div class="form">' + fld('cd-name', 'Name', 'text') + fld('cd-mob', 'Mobile', 'tel') + fld('cd-email', 'Email', 'email') + '<label>For role<select id="cd-job">' + J.filter(j => j.s !== 'Closed').map(j => '<option value="' + esc(j._id) + '">' + esc(j.title) + '</option>').join('') + '</select></label>' + fld('cd-src', 'Source', 'select:Referral|Job portal|Walk-in|Agency|Campus|Other') + fld('cd-note', 'Notes', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="cd-add"' + (J.length ? '' : ' disabled') + '>Add candidate</button></div></section></div>' +
+    '<section class="card mt"><h2>Pipeline</h2><div class="kan">' + STG.map(st => { const L = C.filter(c => (c.stage || 'Applied') === st); return '<div class="col"><h3>' + st + '<span class="mute">' + L.length + '</span></h3>' + L.map(c => '<div class="kc"><b>' + esc(c.name) + '</b><span class="mute">' + esc((D.jobs.find(j => j._id === c.job) || {}).title || '') + (c.mob ? ' · ' + esc(c.mob) : '') + '</span>' + (c.note ? '<span>' + esc(c.note) + '</span>' : '') + '<select data-cs="' + esc(c._id) + '" aria-label="Stage">' + STG.map(s2 => '<option' + (s2 === st ? ' selected' : '') + '>' + s2 + '</option>').join('') + '</select></div>').join('') + '</div>'; }).join('') + '</div></section>';
+}
+function vPerf() {
+  const G2 = D.goals.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), R = D.reviews.slice().sort((a, b) => num(b.at) - num(a.at));
+  return ph('Performance', 'Everyone\'s goals and reviews.') + '<div class="grid g2"><section class="card"><h2>Goals</h2>' + (G2.length ? '<div class="list">' + G2.map(g => goalCard(g, false)).join('') + '</div>' : '<div class="empty">No goals yet.</div>') + '</section>' +
+    '<section class="card"><h2>Reviews</h2>' + (R.length ? '<div class="list">' + R.map(r => '<div class="li" style="align-items:flex-start"><div class="g1"><b>' + esc(r.name) + ' · ' + esc(r.cycle) + '</b><span style="white-space:normal">Self ' + esc(r.self && r.self.rating) + '/5 – ' + esc(r.self && r.self.text) + '</span>' + (r.s !== 'Final' ? '<div class="row mt"><select data-mr="' + esc(r._id) + '" class="btn s" aria-label="Manager rating">' + [5, 4, 3, 2, 1].map(n => '<option' + (r.mgr && +r.mgr.rating === n ? ' selected' : '') + '>' + n + '</option>').join('') + '</select><input data-mt="' + esc(r._id) + '" class="btn s" placeholder="Manager comment" value="' + esc(r.mgr && r.mgr.text || '') + '" style="flex:1;min-width:140px"><button class="btn s p" type="button" data-a="rv-final" data-x="' + esc(r._id) + '">Finalise</button></div>' : '<span>Manager ' + esc(r.mgr && r.mgr.rating) + '/5 – ' + esc(r.mgr && r.mgr.text || '') + '</span>') + '</div>' + stPill(r.s) + '</div>').join('') + '</div>' : '<div class="empty">No reviews yet.</div>') + '</section></div>';
+}
+function vTrainAdmin() {
+  const T = D.train.slice().sort((a, b) => String(b.date) < String(a.date) ? -1 : 1);
+  return ph('Training admin') + '<div class="grid g2"><section class="card"><h2>New session</h2><div class="form">' + fld('tr-title', 'Title', 'text') + fld('tr-date', 'Date', 'date') + fld('tr-mode', 'Mode', 'select:Classroom|Online|On the job') + fld('tr-trainer', 'Trainer', 'text') + fld('tr-seats', 'Seats', 'number') + fld('tr-desc', 'About', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="tr-add">Add session</button></div></section>' +
+    '<section class="card"><h2>Sessions</h2>' + tbl(['Title', 'Date', '#Signed up', 'Status', ''], T.map(t => { const en = D.enrol.filter(x => x.course === t._id); return '<tr><td>' + esc(t.title) + '<div class="mute small">' + esc(en.map(x => x.name).join(', ')) + '</div></td><td>' + esc(fmtD(t.date)) + '</td><td class="n">' + en.length + (t.seats ? ' / ' + t.seats : '') + '</td><td>' + stPill(t.s || 'Open') + '</td><td><button class="btn s" type="button" data-a="tr-toggle" data-x="' + esc(t._id) + '">' + (t.s === 'Closed' ? 'Reopen' : 'Close') + '</button>' + (en.length && t.s !== 'Closed' ? ' <button class="btn s p" type="button" data-a="tr-complete" data-x="' + esc(t._id) + '">Mark attended</button>' : '') + '</td></tr>'; }), 'No sessions.') + '</section></div>';
+}
+function vHrExpenses() {
+  const R = D.exp.slice().sort((a, b) => (a.s === 'Pending' ? 0 : 1) - (b.s === 'Pending' ? 0 : 1) || num(b.at) - num(a.at));
+  return ph('Expense claims') + tbl(['Employee', 'Date', 'Category', '#Amount', 'Details', 'Status', ''], R.map(r => '<tr><td>' + esc(r.name) + '</td><td>' + esc(fmtD(r.date)) + '</td><td>' + esc(r.cat) + '</td><td class="n">' + money(r.amount) + '</td><td class="w">' + esc(r.note || '') + '</td><td>' + stPill(r.s) + '</td><td>' + (r.s === 'Pending' && canAppr() ? '<button class="btn s p" type="button" data-a="st" data-c="hr_expenses" data-x="' + esc(r._id) + '" data-v="Approved">Approve</button> <button class="btn s d" type="button" data-a="st" data-c="hr_expenses" data-x="' + esc(r._id) + '" data-v="Rejected">Reject</button>' : r.s === 'Approved' && canAppr() ? '<button class="btn s" type="button" data-a="st" data-c="hr_expenses" data-x="' + esc(r._id) + '" data-v="Paid">Mark paid</button>' : '') + '</td></tr>'), 'No claims.');
+}
+function vHrHelp() {
+  const R = D.help.slice().sort((a, b) => (a.s === 'Open' ? 0 : 1) - (b.s === 'Open' ? 0 : 1) || num(b.at) - num(a.at));
+  return ph('HR helpdesk') + (R.length ? '<div class="list">' + R.map(r => '<div class="card"><div class="row"><b>' + esc(r.subject) + '</b>' + stPill(r.s) + '<span class="mute small" style="margin-left:auto">' + esc(r.name) + ' · ' + esc(r.cat) + ' · ' + esc(fmtT(r.at)) + '</span></div><p style="white-space:pre-wrap">' + esc(r.detail || '') + '</p>' + (r.s === 'Open' ? '<div class="form"><label class="wide">Reply<textarea data-hr="' + esc(r._id) + '"></textarea></label></div><div class="row mt"><button class="btn s p" type="button" data-a="hd-reply" data-x="' + esc(r._id) + '">Reply & resolve</button></div>' : '<p class="mute">HR: ' + esc(r.reply || '') + '</p>') + '</div>').join('') + '</div>' : '<div class="empty">No queries.</div>');
+}
+function vHrExits() {
+  const R = D.exits.slice().sort((a, b) => (a.s === 'Pending' ? 0 : 1) - (b.s === 'Pending' ? 0 : 1) || num(b.at) - num(a.at));
+  return ph('Separations', 'Resignations and exits.') + tbl(['Employee', 'Reason', 'Asked LWD', 'Agreed LWD', 'Comments', 'Status', ''], R.map(r => '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.reason) + '</td><td>' + esc(fmtD(r.lwdAsked)) + '</td><td>' + (r.s === 'Pending' && canAppr() ? '<input type="date" data-lwd="' + esc(r._id) + '" value="' + esc(r.lwdAsked || '') + '" class="btn s">' : esc(fmtD(r.lwd))) + '</td><td class="w">' + esc(r.text || '') + '</td><td>' + stPill(r.s) + '</td><td>' + (r.s === 'Pending' && canAppr() ? '<button class="btn s p" type="button" data-a="sx-ok" data-x="' + esc(r._id) + '">Accept</button> <button class="btn s d" type="button" data-a="st" data-c="hr_exits" data-x="' + esc(r._id) + '" data-v="Rejected">Reject</button>' : r.s === 'Approved' && canAppr() ? '<button class="btn s" type="button" data-a="st" data-c="hr_exits" data-x="' + esc(r._id) + '" data-v="Closed">Exit completed</button>' : '') + '</td></tr>'), 'No resignations.');
+}
+
+/* ================= routes ================= */
+const E_ = () => true;
+add('home', 'Home', 'Home', 'home', vHome);
+add('profile', 'Me', 'My profile', 'user', vProfile);
+add('attendance', 'Me', 'Attendance', 'clock', vAttendance);
+add('leave', 'Me', 'Leave', 'cal', vLeave, E_, () => mine(D.req).filter(r => r.kind === 'leave' && r.s === 'Pending').length);
+add('requests', 'Me', 'Attendance requests', 'req', vRequests);
+add('payslips', 'Me', 'Payslips', 'pay', vPayslips);
+add('expenses', 'Me', 'Expenses', 'exp', vExpenses);
+add('goals', 'Me', 'Goals & reviews', 'goal', vGoals);
+add('learning', 'Me', 'Training', 'learn', vLearning);
+add('documents', 'Me', 'Documents', 'doc', vDocuments, E_, () => D.offer.filter(o => o._id === S.uid && o.status === 'Released').length);
+add('helpdesk', 'Me', 'Ask HR', 'help', vHelpdesk);
+add('separation', 'Me', 'Resignation', 'exit', vSeparation);
+add('people', 'Company', 'People', 'people', vPeople);
+add('org', 'Company', 'Org chart', 'org', vOrg);
+add('announcements', 'Company', 'Announcements & holidays', 'mega', vAnnouncements);
+add('careers', 'Company', 'Careers', 'brief', vCareers);
+add('hr-employees', 'HR', 'Employees', 'people', vHrEmployees, isHR);
+add('onboarding', 'HR', 'Onboarding', 'user', vOnboarding, isHR, () => pend().offers);
+add('team-attendance', 'HR', 'Team attendance', 'clock', vTeamAtt, isHR);
+add('approvals', 'HR', 'Leave & attendance approvals', 'check', vApprovals, isHR, () => pend().req);
+add('payroll', 'HR', 'Payroll', 'pay', vPayroll, canSal);
+add('recruitment', 'HR', 'Recruitment', 'brief', vRecruit, isHR);
+add('performance', 'HR', 'Performance', 'goal', vPerf, isHR);
+add('training-admin', 'HR', 'Training admin', 'learn', vTrainAdmin, isHR);
+add('hr-expenses', 'HR', 'Expense claims', 'exp', vHrExpenses, isHR, () => pend().exp);
+add('hr-helpdesk', 'HR', 'HR helpdesk', 'help', vHrHelp, isHR, () => pend().help);
+add('hr-exits', 'HR', 'Separations', 'exit', vHrExits, isHR, () => pend().exits);
+ext('Admin', 'Roles & access', 'key', '../portal/#access', isAdmin);
+ext('Admin', 'Package & offer letters', 'doc', '../portal/#punch', canSal);
+ext('Apps', 'Control tower (portal)', 'tower', '../portal/', () => !S.roles.every(r => r === 'employee'));
+ext('Apps', 'Website', 'home', '../', E_);
+
+/* ================= render ================= */
+function render() {
+  const h = (location.hash.match(/^#\/([\w-]+)/) || [])[1] || 'home', vis = V.filter(v => v.id && v.ok()), cur = vis.find(v => v.id === h) || vis[0];
+  route = cur.id; $('#nav').innerHTML = navHtml();
+  const P = isHR() ? pend() : null, bn = P ? P.req + P.exp + P.help + P.exits : D.offer.filter(o => o._id === S.uid && o.status === 'Released').length; $('#bellN').hidden = !bn; $('#bellN').textContent = bn;
+  const ae = document.activeElement, keep = ae && ae.id && $('#main').contains(ae) ? [ae.id, ae.selectionStart] : null;
+  try { $('#main').innerHTML = cur.render(); } catch (e) { console.error(e); $('#main').innerHTML = '<div class="empty">This page hit an error: ' + esc(e.message) + '</div>'; }
+  document.title = cur.label + ' · Movana People';
+  if (keep) { const el = document.getElementById(keep[0]); if (el) { el.focus(); try { el.setSelectionRange(keep[1], keep[1]); } catch (x) {} } }
+}
+render();
+
+/* ================= actions ================= */
+const busy = new Set();
+document.addEventListener('click', async ev => {
+  const t = ev.target.closest('[data-a]');
+  if (ev.target.closest('#burger')) { document.body.classList.toggle('navopen'); return; }
+  if (ev.target.closest('#who')) { const m = $('#menu'); m.innerHTML = '<div class="h"><b>' + esc(S.me.name) + '</b><span>' + esc(S.roles.map(roleName).join(' · ')) + '</span></div><a href="#/profile">' + svg('user') + 'My profile</a><a href="../portal/#account">' + svg('cog') + 'Settings (password, Google)</a><button type="button" class="out" id="logout">' + svg('exit') + 'Log out</button>'; m.hidden = !m.hidden; return; }
+  if (ev.target.closest('#logout')) { window.MOVANA_FB.signOut(); return; }
+  if (ev.target.closest('#bell')) { go(isHR() ? 'approvals' : 'documents'); return; }
+  if (!ev.target.closest('#menu')) $('#menu').hidden = true;
+  const hit = ev.target.closest('[data-hit]'); if (hit) { S.open.person = hit.dataset.hit; $('#hits').hidden = true; $('#q').value = ''; go('people'); return; }
+  if (!ev.target.closest('.search')) $('#hits').hidden = true;
+  if (!t) return; const a = t.dataset.a, x = t.dataset.x; if (a !== 'del') ev.preventDefault();
+  if (busy.has(a + x)) return; busy.add(a + x); try { await act(a, x, t); } finally { busy.delete(a + x); }
+});
+async function act(a, x, t) {
+  const now = Date.now(), e = meEmp(), base = { uid: S.uid, name: e.name || S.me.name, eid: e.eid || '', at: now };
+  switch (a) {
+    case 'print': window.print(); return;
+    case 'lv-send': { const tn = val('lv-t'), tc = (LT.find(l => l[1] === tn) || ['PL'])[0], A = val('lv-a'), B = val('lv-b'), days = rangeDays(A, B, e.wo || [0]); if (!days.length) { toast('Pick valid dates (week offs are skipped).'); return; }
+      const id = String(now); if (await save('punch_req/' + id, Object.assign({}, base, { kind: 'leave', t: tc, a: A, b: B, n: days.length, days, why: val('lv-why'), s: 'Pending' }), 'Leave request sent to HR')) render(); return; }
+    case 'ar-send': { const vn = val('ar-v'), v = { Present: 'present', 'Week off': 'weekoff', Holiday: 'holiday', 'Holiday + Present': 'holpresent', Absent: 'absent' }[vn], days = rangeDays(val('ar-a'), val('ar-b'), []); if (!days.length) { toast('Pick valid dates.'); return; }
+      await save('punch_req/' + now, Object.assign({}, base, { kind: 'att', v, days, why: val('ar-why'), s: 'Pending' }), 'Request sent to HR'); return; }
+    case 'req-cancel': { const r = D.req.find(z => z._id === x); if (!r || !confirm('Cancel this request?')) return; const b = Object.assign({}, r); delete b._id; await save('punch_req/' + x, Object.assign(b, { s: 'Cancelled', updatedAt: now }), 'Cancelled'); return; }
+    case 'ex-send': { if (!(num(val('ex-amt')) > 0)) { toast('Enter the amount.'); return; } await save('hr_expenses/' + newId('ex'), Object.assign({}, base, { date: val('ex-date'), cat: val('ex-cat'), amount: num(val('ex-amt')), note: val('ex-note'), s: 'Pending' }), 'Claim submitted'); return; }
+    case 'own-del': { if (!confirm('Withdraw this?')) return; if (await del(t.dataset.c + '/' + x)) toast('Withdrawn'); return; }
+    case 'gl-add': { if (!val('gl-title')) { toast('Write the goal.'); return; } await save('hr_goals/' + newId('gl'), Object.assign({}, base, { title: val('gl-title'), metric: val('gl-metric'), target: val('gl-target'), weight: num(val('gl-weight')), due: val('gl-due'), progress: 0, s: 'Active' }), 'Goal added'); return; }
+    case 'rv-send': { const cyc = val('rv-cycle'), id = 'rv_' + S.uid + '_' + cyc.replace(/\s+/g, ''), old = D.reviews.find(r => r._id === id); if (old && old.s === 'Final') { toast('This review is already final.'); return; }
+      await save('hr_reviews/' + id, Object.assign({}, base, { cycle: cyc, self: { rating: num(val('rv-rate')), text: val('rv-text') }, mgr: (old && old.mgr) || null, s: 'Submitted' }), 'Review submitted'); return; }
+    case 'tr-join': { const c = D.train.find(z => z._id === x); await save('hr_enrol/' + x + '_' + S.uid, Object.assign({}, base, { course: x, courseTitle: c ? c.title : '', s: 'Enrolled' }), 'Signed up'); return; }
+    case 'hd-send': { if (!val('hd-sub')) { toast('Write a subject.'); return; } await save('hr_help/' + newId('hd'), Object.assign({}, base, { cat: val('hd-cat'), subject: val('hd-sub'), detail: val('hd-text'), s: 'Open' }), 'Sent to HR'); return; }
+    case 'sx-send': { if (!val('sx-lwd')) { toast('Pick your last working day.'); return; } if (!confirm('Submit your resignation to HR?')) return; await save('hr_exits/' + newId('sx'), Object.assign({}, base, { lwdAsked: val('sx-lwd'), reason: val('sx-why'), text: val('sx-text'), s: 'Pending' }), 'Resignation submitted'); return; }
+    case 'of-view': S.ofView = !S.ofView; render(); return;
+    case 'of-print': { const o = D.offer.find(z => z._id === S.uid); if (o && window.OfferLetter) OfferLetter.print(o, { name: 'Movana Logistics' }); return; }
+    case 'of-accept': { const o = D.offer.find(z => z._id === S.uid); if (!o || !confirm('Accept this offer on the terms in the letter?')) return; const b = Object.assign({}, o); delete b._id; b.status = 'Accepted'; b.acceptedAt = now; await save('punch_offer/' + S.uid, b, 'Offer accepted'); return; }
+    case 'pp-open': S.open.person = x; render(); window.scrollTo(0, 0); return;
+    case 'pp-close': S.open.person = null; render(); return;
+    case 'an-add': { if (!val('an-title')) { toast('Write a title.'); return; } await save('hr_posts/' + newId('an'), { title: val('an-title'), body: val('an-body'), pin: !!val('an-pin'), by: S.uid, byName: S.me.name, at: now }, 'Posted'); return; }
+    case 'ho-add': { if (!val('ho-date') || !val('ho-name')) { toast('Enter the date and holiday.'); return; } await save('hr_holidays/' + val('ho-date'), { date: val('ho-date'), name: val('ho-name'), by: S.uid, at: now }, 'Holiday added'); return; }
+    case 'del': { if (!confirm('Delete this?')) return; await del(t.dataset.p); return; }
+    case 'ap-ok': case 'ap-no': if (a === 'ap-no' && !confirm('Reject this request?')) return; await decide(x, a === 'ap-ok'); return;
+    case 'jb-add': { if (!val('jb-title')) { toast('Enter the role.'); return; } await save('hr_jobs/' + newId('jb'), { title: val('jb-title'), dept: val('jb-dept'), loc: val('jb-loc'), openings: num(val('jb-n')) || 1, type: val('jb-type'), desc: val('jb-desc'), s: 'Open', by: S.uid, at: now }, 'Opening posted'); return; }
+    case 'jb-toggle': { const j = D.jobs.find(z => z._id === x); if (!j) return; const b = Object.assign({}, j); delete b._id; b.s = j.s === 'Closed' ? 'Open' : 'Closed'; await save('hr_jobs/' + x, b); return; }
+    case 'cd-add': { if (!val('cd-name')) { toast('Enter the name.'); return; } await save('hr_cands/' + newId('cd'), { name: val('cd-name'), mob: val('cd-mob'), email: val('cd-email'), job: val('cd-job'), source: val('cd-src'), note: val('cd-note'), stage: 'Applied', by: S.uid, at: now }, 'Candidate added'); return; }
+    case 'goal-done': { const g = D.goals.find(z => z._id === x); if (!g) return; const b = Object.assign({}, g); delete b._id; b.s = 'Completed'; b.progress = 100; await save('hr_goals/' + x, b, 'Marked complete'); return; }
+    case 'rv-final': { const r = D.reviews.find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; b.mgr = { rating: num(document.querySelector('[data-mr="' + x + '"]').value), text: document.querySelector('[data-mt="' + x + '"]').value.trim(), by: S.uid, byName: S.me.name }; b.s = 'Final'; await save('hr_reviews/' + x, b, 'Review finalised'); return; }
+    case 'tr-add': { if (!val('tr-title')) { toast('Enter a title.'); return; } await save('hr_training/' + newId('tr'), { title: val('tr-title'), date: val('tr-date'), mode: val('tr-mode'), trainer: val('tr-trainer'), seats: num(val('tr-seats')), desc: val('tr-desc'), s: 'Open', by: S.uid, at: now }, 'Session added'); return; }
+    case 'tr-toggle': { const c = D.train.find(z => z._id === x); if (!c) return; const b = Object.assign({}, c); delete b._id; b.s = c.s === 'Closed' ? 'Open' : 'Closed'; await save('hr_training/' + x, b); return; }
+    case 'tr-complete': { for (const en of D.enrol.filter(z => z.course === x && z.s === 'Enrolled')) { const b = Object.assign({}, en); delete b._id; b.s = 'Completed'; await save('hr_enrol/' + en._id, b); } toast('Marked attended'); return; }
+    case 'st': { const c = t.dataset.c, k = { hr_expenses: 'exp', hr_exits: 'exits', hr_help: 'help' }[c], r = D[k].find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; b.s = t.dataset.v; b.by = S.uid; b.byName = S.me.name; b.decidedAt = now; await save(c + '/' + x, b, b.s); return; }
+    case 'sx-ok': { const r = D.exits.find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; const l = document.querySelector('[data-lwd="' + x + '"]'); b.lwd = (l && l.value) || r.lwdAsked; b.s = 'Approved'; b.by = S.uid; b.decidedAt = now; await save('hr_exits/' + x, b, 'Resignation accepted'); return; }
+    case 'hd-reply': { const r = D.help.find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; b.reply = document.querySelector('[data-hr="' + x + '"]').value.trim(); if (!b.reply) { toast('Write a reply.'); return; } b.s = 'Resolved'; b.by = S.uid; b.byName = S.me.name; b.decidedAt = now; await save('hr_help/' + x, b, 'Replied'); return; }
+  }
+}
+document.addEventListener('change', async ev => {
+  const t = ev.target;
+  if (t.id === 'ym' || t.id === 'ym-sel') { S.ym = t.value || ymNow(); render(); return; }
+  if (t.dataset.gp) { const g = D.goals.find(z => z._id === t.dataset.gp); if (!g) return; const b = Object.assign({}, g); delete b._id; b.progress = Math.max(0, Math.min(100, num(t.value))); await save('hr_goals/' + g._id, b, 'Progress saved'); return; }
+  if (t.dataset.cs) { const c = D.cands.find(z => z._id === t.dataset.cs); if (!c) return; const b = Object.assign({}, c); delete b._id; b.stage = t.value; b.updatedAt = Date.now(); await save('hr_cands/' + c._id, b, 'Moved to ' + t.value); if (t.value === 'Hired') toast('Hired – create their Punch login and offer letter in the portal (New joiner).'); return; }
+});
+document.addEventListener('input', ev => {
+  const t = ev.target;
+  if (t.id === 'q-people') { S.q.people = t.value; render(); return; }
+  if (t.id === 'q') { const q = lc(t.value.trim()), h = $('#hits'); if (!q) { h.hidden = true; return; } const L = D.emp.filter(e => lc([e.name, e.eid, e.desg].join(' ')).includes(q)).slice(0, 8);
+    h.innerHTML = L.length ? L.map(e => '<button type="button" data-hit="' + esc(e._id) + '"><span class="av">' + esc(ini(e.name)) + '</span><span><b>' + esc(e.name) + '</b><br><span class="mute small">' + esc([e.eid, e.desg].filter(Boolean).join(' · ')) + '</span></span></button>').join('') : '<div class="mute small" style="padding:10px">No one found</div>'; h.hidden = false; }
+});
+addEventListener('keydown', ev => { if (ev.key === 'Escape') { $('#menu').hidden = true; $('#hits').hidden = true; document.body.classList.remove('navopen'); } });
+})();
+</script>
+</body></html>
