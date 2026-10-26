@@ -445,7 +445,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261026n"></script><script>
+<script src="fb.js?v=20261026o"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -651,7 +651,13 @@ async function postJournal(date, narration, lines, source, link) {
   if (!clean.length || Math.abs(dr - cr) > 0.01) { toast('Journal not posted: debits and credits differ.'); return false; }
   return save('journal', null, { vno: nextCode('JV'), date: date || today(), narration, lines: clean, source: source || 'Manual', link: link || '', amount: dr });
 }
+/** Next employee ID: 8 digits, the lowest number from 10000000 up that no HR or Punch employee has yet. */
+function nextEmpId() {
+  const ids = (S.data.staff || []).map(r => r.empId).concat((S.data.punch_emp || []).map(e => e.eid)).map(x => String(x || '').trim()).filter(x => /^\d{8}$/.test(x)).map(Number);
+  const used = new Set(ids); let n = 10000000; while (used.has(n)) n++; return String(n);
+}
 function nextCode(prefix, k, field) {
+  if (k === 'staff' && field === 'empId') return nextEmpId();
   const d = new Date(); const y = String(d.getFullYear()).slice(2) + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
   const used = k ? new Set(S.data[k].map(r => r[field])) : null;
   let c; do { c = prefix + y + String(Math.floor(Math.random() * 90000) + 10000); } while (used && used.has(c));
@@ -2144,6 +2150,9 @@ const punchOfName = name => punchOfStaff((S.data.staff || []).find(s => s.name =
 let syncBusy = false, syncSig = '';
 async function syncPunchStaff() {
   if (syncBusy || !S.db || S.dbState !== 'ok' || !S.loaded.staff || !S.loaded.punch_emp || anyLvl('people') < 2) return;
+  // a Punch employee without an employee ID gets the next one (HR only)
+  if (hasRoleAny(P_HR)) { const miss = (S.data.punch_emp || []).filter(e => !String(e.eid || '').trim()).sort((a, b) => num(a.createdAt) - num(b.createdAt))[0];
+    if (miss && !syncBusy) { syncBusy = true; try { const o = Object.assign({}, miss); delete o._id; o.eid = nextEmpId(); o.updatedAt = Date.now(); await S.db.collection('punch_emp').doc(miss._id).set(o); } catch (e) {} finally { syncBusy = false; } return; } }
   const E = S.data.punch_emp || [], sal = hasRoleAny(P_SALV), jobs = [];
   E.forEach(e => {
     const st = (S.data.staff || []).find(s => s.puid === e._id) || (S.data.staff || []).find(s => !s.puid && ((e.eid && s.empId === e.eid) || lc(s.name) === lc(e.name || '')));
@@ -3149,7 +3158,7 @@ function punchEmployees() {
     if (add === 'done') h += '<section class="panel"><h2>Login created</h2><p>Give these to the employee. They sign in to the Punch app with them.</p><p>Username: <b>' + esc(S.pAddDone.user) + '</b><br>Temporary password: <b>' + esc(S.pAddDone.pw) + '</b></p><p><button class="btn small" type="button" data-pa="addclose">Done</button></p></section>';
     else if (add === 'link') { const have = new Set(E.map(e => e._id)), M = (S.data.members || []).filter(m => !have.has(m._id) && m.status !== 'Suspended');
       h += '<section class="panel"><h2>Add an existing portal login to Punch</h2>' + (M.length ? '<div class="toolbar"><select id="pl-uid"><option value="">Choose a person</option>' + M.map(m => '<option value="' + esc(m._id) + '">' + esc(nameOf(m._id)) + ' · ' + esc(roleById(m.role).name) + '</option>').join('') + '</select><button class="btn small primary" type="button" data-pa="linkgo">Add</button><button class="btn small" type="button" data-pa="addclose">Cancel</button></div>' : '<p>Everyone with a login is already on Punch.</p>') + '</section>'; }
-    else h += '<section class="panel"><h2>New employee</h2><div class="pgrid"><label class="mini">Full name<input id="pa-name"></label><label class="mini">Username (login)<input id="pa-user" autocapitalize="none"></label><label class="mini">Temporary password (8+)<input id="pa-pw" value="' + esc(S.pAddPw || '') + '"></label><label class="mini">Employee ID<input id="pa-eid"></label><label class="mini">Designation<input id="pa-desg"></label><label class="mini">Date of joining<input id="pa-join" type="date"></label></div><p class="mini" id="pa-msg"></p><p><button class="btn small primary" type="button" data-pa="addgo">Create login and add</button> <button class="btn small" type="button" data-pa="addclose">Cancel</button></p><p class="help">Creates a portal login with the role "Employee (Punch app only)". They see only their own data in the app.</p></section>';
+    else h += '<section class="panel"><h2>New employee</h2><div class="pgrid"><label class="mini">Full name<input id="pa-name"></label><label class="mini">Username (login)<input id="pa-user" autocapitalize="none"></label><label class="mini">Temporary password (8+)<input id="pa-pw" value="' + esc(S.pAddPw || '') + '"></label><label class="mini">Employee ID<input id="pa-eid" inputmode="numeric" value="' + esc(nextEmpId()) + '"></label><label class="mini">Designation<input id="pa-desg"></label><label class="mini">Date of joining<input id="pa-join" type="date"></label></div><p class="mini" id="pa-msg"></p><p><button class="btn small primary" type="button" data-pa="addgo">Create login and add</button> <button class="btn small" type="button" data-pa="addclose">Cancel</button></p><p class="help">Creates a portal login with the role "Employee (Punch app only)". They see only their own data in the app.</p></section>';
   }
   if (cur) { const e = cur, wo = e.wo || [0];
     h += '<section class="panel"><h2>' + esc(e.name || nameOf(e._id)) + '</h2><div class="pgrid">' +
