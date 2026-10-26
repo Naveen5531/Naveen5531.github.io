@@ -29,6 +29,12 @@ button.who:hover { background: var(--surface-2); }
 .dir-av { width: 52px; height: 52px; border-radius: 16px; background: linear-gradient(135deg, #25cf9f, #0c9b76); color: #fff; display: grid; place-items: center; font: 800 1.05rem var(--display); flex: none; } .dir-av.sm { width: 36px; height: 36px; border-radius: 11px; font-size: .8rem; }
 .dir-top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; } .dir-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: 12px; }
 .dir-grid div { display: grid; gap: 2px; background: var(--surface-2); border-radius: 12px; padding: 10px 12px; } .dir-grid span { font-size: .75rem; color: var(--muted); }
+.pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr)); gap: 12px 14px; margin: 4px 0 8px; }
+.pgrid label, .hike-row label { display: grid; gap: 6px; font-size: .78rem; font-weight: 600; color: var(--muted); min-width: 0; }
+.pgrid input, .pgrid select, .hike-row input { width: 100%; min-width: 0; font: 500 .95rem var(--body); color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; box-sizing: border-box; }
+.pgrid input:disabled, .pgrid select:disabled { opacity: .7; }
+.hike-list { display: grid; gap: 10px; margin: 6px 0 12px; } .hike-row { display: grid; grid-template-columns: minmax(0, 140px) minmax(0, 220px); gap: 12px; }
+@media (max-width: 520px) { .hike-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 </style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><title>Movana Control Tower</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -439,7 +445,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261026m"></script><script>
+<script src="fb.js?v=20261026n"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -544,7 +550,7 @@ const ACCT_TYPE = Object.fromEntries(COA);
 const EXPENSE_ACCTS = COA.filter(a => a[1] === 'Expense').map(a => a[0]);
 
 // ================= state =================
-const COLLS = ['shipments', 'pickups', 'trips', 'drs', 'returns', 'invoices', 'payments', 'vendorbills', 'journal', 'tickets', 'assets', 'access', 'approvals', 'staff', 'attendance', 'vehicles', 'vtypes', 'maintenance', 'fuel', 'customers', 'hubs', 'rates', 'settings', 'audit', 'pins', 'leaves', 'payroll', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req'];
+const COLLS = ['shipments', 'pickups', 'trips', 'drs', 'returns', 'invoices', 'payments', 'vendorbills', 'journal', 'tickets', 'assets', 'access', 'approvals', 'staff', 'attendance', 'vehicles', 'vtypes', 'maintenance', 'fuel', 'customers', 'hubs', 'rates', 'settings', 'audit', 'pins', 'leaves', 'payroll', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal'];
 const S = { mod: 'punch', tab: {}, data: {}, loaded: {}, q: {}, filt: {}, sel: {}, db: null, me: null, canWrite: true, readonly: false, dbState: 'connecting', downloads: null, users: null,
   from: addDays(today(), -29), to: today(), month: today().slice(0, 7), attDate: today(), attHub: '' };
 COLLS.forEach(k => { S.data[k] = []; S.q[k] = ''; S.filt[k] = 'All'; S.sel[k] = new Set(); });
@@ -580,7 +586,7 @@ async function boot() {
   COLLS.forEach(k => {
     let q = db.collection(k);
     if (k === 'audit') q = q.orderBy('day', 'desc').limit(31);
-    else if (!['settings', 'attendance', 'pins', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req'].includes(k)) q = q.orderBy('createdAt', 'desc').limit(1000);
+    else if (!['settings', 'attendance', 'pins', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal'].includes(k)) q = q.orderBy('createdAt', 'desc').limit(1000);
     q.onSnapshot(snap => {
       S.data[k] = snap.docs.map(d => Object.assign({ _id: d.id }, d.data()));
       S.loaded[k] = true; scheduleRender();
@@ -2681,7 +2687,18 @@ async function markRange(name, a, b, code) {
     await setDoc('attendance', d, { marks });
   }
 }
+/** Leave balances use the Punch app's rules for Punch employees (privilege 1.75 / sick 1.25 / casual 1.25 a month from the opening balance, plus comp off),
+ *  exactly as their app shows them; staff not on Punch use the yearly quotas from Settings. */
 function leaveBalances() {
+  const y = today().slice(0, 4), people = S.data.staff.filter(s => stageOf('staff', s) !== 'Left');
+  if (!people.length) return '<div class="empty">Add employees first.</div>';
+  const T = [['PL', 'Privilege', 'Earned'], ['SL', 'Sick', 'Sick'], ['CL', 'Casual', 'Casual']], f = v => (Math.round(num(v) * 100) / 100).toString();
+  const rows = people.map(p => { const e = punchOfStaff(p), b = e && (S.data.punch_bal || []).find(x => x._id === e._id);
+    if (b) return '<tr><td>' + esc(p.name) + ' <span class="pill good" title="Same figures as the Punch app">Punch</span></td><td>' + esc(p.dept || '') + '</td>' + T.map(([t]) => { const x = (b.lv || {})[t] || {}; return '<td class="num">' + f(x.used) + '</td><td class="num ' + (num(x.b) < 0 ? 'bad-t' : '') + '"><b>' + f(x.b) + '</b></td>'; }).join('') + '<td class="num"><b>' + f((b.co || {}).b) + '</b></td><td class="num">' + punchLeaveUsed(p.name, 'Loss of pay', y) + '</td><td class="mini">From ' + esc(b.start || '') + ' · updated ' + esc(fmtTime(b.updatedAt)) + '</td></tr>';
+    return '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.dept || '') + '</td>' + T.map(([, , q]) => { const l = leaveLeft(p.name, q, y); return '<td class="num">' + leaveUsed(p.name, q, y) + '</td><td class="num ' + (l < 0 ? 'bad-t' : '') + '"><b>' + l + '</b></td>'; }).join('') + '<td class="num">—</td><td class="num">' + leaveUsed(p.name, 'Loss of pay', y) + '</td><td class="mini">' + (e ? 'Waiting for the Punch app' : 'Yearly quota ' + y) + '</td></tr>'; });
+  return '<p class="help">Punch employees show the same balances as their Punch app (monthly credit from the opening balance, approved leave, comp off). Others use the yearly quotas in Settings › HR & payroll.</p><div class="tablewrap"><table><thead><tr><th>Employee</th><th>Department</th>' + T.map(([, n]) => '<th class="num">' + n + ' used</th><th class="num">' + n + ' left</th>').join('') + '<th class="num">Comp off left</th><th class="num">Loss of pay</th><th></th></tr></thead><tbody>' + rows.join('') + '</tbody></table></div>';
+}
+function leaveBalancesOld() {
   const y = today().slice(0, 4);
   const people = S.data.staff.filter(s => stageOf('staff', s) !== 'Left');
   if (!people.length) return '<div class="empty">Add employees first.</div>';
@@ -3117,10 +3134,10 @@ function punchSalary() {
   E.forEach(e => { const v = pPay(e._id) || {}, open = S.pSal === e._id;
     h += '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td class="num">' + money2(pGross(v)) + '</td><td class="num">' + money2(pNet(v)) + '</td><td class="num">' + (pPay(e._id) ? money2(pEarn(e, today().slice(0, 7)).gross) : '—') + '</td><td>' + esc((v.hikes || []).map(x => x.p + '% from ' + x.f).join(', ')) + '</td><td><button class="btn small" type="button" data-pa="sal" data-x="' + esc(e._id) + '">' + (open ? 'Close' : ed ? 'Edit' : 'View') + '</button></td></tr>';
     if (open) { const hk = (v.hikes || []).concat([{ p: '', f: '' }, { p: '', f: '' }]).slice(0, Math.max(2, (v.hikes || []).length + 1));
-      h += '<tr><td colspan="7"><div class="formgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">' + P_PF.map(([k, l]) => ed ? '<label class="mini">' + l + '<input data-ps="' + k + '" type="number" step="0.01" value="' + esc(v[k] == null ? (k === 'pfPct' ? 12 : k === 'pt' ? 200 : '') : v[k]) + '"></label>' : roVal(l, v[k] == null ? (k === 'pfPct' ? 12 : k === 'pt' ? 200 : '') : (/Amt$|^pf$|^pt$|^vpf$|^esi$|^oth$/.test(k) ? money2(v[k]) : v[k]))).join('') +
+      h += '<tr><td colspan="7"><div class="pgrid">' + P_PF.map(([k, l]) => ed ? '<label class="mini">' + l + '<input data-ps="' + k + '" type="number" step="0.01" value="' + esc(v[k] == null ? (k === 'pfPct' ? 12 : k === 'pt' ? 200 : '') : v[k]) + '"></label>' : roVal(l, v[k] == null ? (k === 'pfPct' ? 12 : k === 'pt' ? 200 : '') : (/Amt$|^pf$|^pt$|^vpf$|^esi$|^oth$/.test(k) ? money2(v[k]) : v[k]))).join('') +
         '<label class="mini">PF calculation<select data-ps="pfMode"' + (ed ? '' : ' disabled') + '><option value="pct"' + (v.pfMode !== 'fix' ? ' selected' : '') + '>% of earned Basic</option><option value="fix"' + (v.pfMode === 'fix' ? ' selected' : '') + '>Fixed amount</option></select></label>' +
         '<label class="mini">Days basis<select data-ps="basis"' + (ed ? '' : ' disabled') + '>' + [['cal', 'Calendar days'], ['work', 'Working days'], ['26', 'Fixed 26'], ['30', 'Fixed 30']].map(([a, b]) => '<option value="' + a + '"' + ((v.basis || 'cal') === a ? ' selected' : '') + '>' + b + '</option>').join('') + '</select></label></div>' +
-        '<p class="mini" style="margin:10px 0 4px">Hikes (each raises Basic, HRA, Conveyance and Special from that month)</p>' + hk.map((x, i) => '<div class="toolbar"><input data-ph="' + i + '|p" type="number" step="0.01" placeholder="%" value="' + esc(x.p) + '" style="width:90px"' + (ed ? '' : ' disabled') + '><span>% from</span><input data-ph="' + i + '|f" type="month" value="' + esc(x.f) + '" style="width:auto"' + (ed ? '' : ' disabled') + '></div>').join('') +
+        '<p class="mini" style="margin:10px 0 4px">Hikes (each raises Basic, HRA, Conveyance and Special from that month)</p>' + '<div class="hike-list">' + hk.map((x, i) => '<div class="hike-row"><label>Hike %<input data-ph="' + i + '|p" type="number" step="0.01" min="0" placeholder="e.g. 10" value="' + esc(x.p) + '"' + (ed ? '' : ' disabled') + '></label><label>From month<input data-ph="' + i + '|f" type="month" value="' + esc(x.f) + '"' + (ed ? '' : ' disabled') + '></label></div>').join('') + '</div>' +
         (ed ? '<p><button class="btn small primary" type="button" data-pa="salsave" data-x="' + esc(e._id) + '">Save salary</button></p>' : '') + '</td></tr>'; } });
   return h + '</tbody></table></div><p class="help">The employee\'s Punch app works out each month\'s payslip from this set-up and their attendance.</p>';
 }
@@ -3132,10 +3149,10 @@ function punchEmployees() {
     if (add === 'done') h += '<section class="panel"><h2>Login created</h2><p>Give these to the employee. They sign in to the Punch app with them.</p><p>Username: <b>' + esc(S.pAddDone.user) + '</b><br>Temporary password: <b>' + esc(S.pAddDone.pw) + '</b></p><p><button class="btn small" type="button" data-pa="addclose">Done</button></p></section>';
     else if (add === 'link') { const have = new Set(E.map(e => e._id)), M = (S.data.members || []).filter(m => !have.has(m._id) && m.status !== 'Suspended');
       h += '<section class="panel"><h2>Add an existing portal login to Punch</h2>' + (M.length ? '<div class="toolbar"><select id="pl-uid"><option value="">Choose a person</option>' + M.map(m => '<option value="' + esc(m._id) + '">' + esc(nameOf(m._id)) + ' · ' + esc(roleById(m.role).name) + '</option>').join('') + '</select><button class="btn small primary" type="button" data-pa="linkgo">Add</button><button class="btn small" type="button" data-pa="addclose">Cancel</button></div>' : '<p>Everyone with a login is already on Punch.</p>') + '</section>'; }
-    else h += '<section class="panel"><h2>New employee</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"><label class="mini">Full name<input id="pa-name"></label><label class="mini">Username (login)<input id="pa-user" autocapitalize="none"></label><label class="mini">Temporary password (8+)<input id="pa-pw" value="' + esc(S.pAddPw || '') + '"></label><label class="mini">Employee ID<input id="pa-eid"></label><label class="mini">Designation<input id="pa-desg"></label><label class="mini">Date of joining<input id="pa-join" type="date"></label></div><p class="mini" id="pa-msg"></p><p><button class="btn small primary" type="button" data-pa="addgo">Create login and add</button> <button class="btn small" type="button" data-pa="addclose">Cancel</button></p><p class="help">Creates a portal login with the role "Employee (Punch app only)". They see only their own data in the app.</p></section>';
+    else h += '<section class="panel"><h2>New employee</h2><div class="pgrid"><label class="mini">Full name<input id="pa-name"></label><label class="mini">Username (login)<input id="pa-user" autocapitalize="none"></label><label class="mini">Temporary password (8+)<input id="pa-pw" value="' + esc(S.pAddPw || '') + '"></label><label class="mini">Employee ID<input id="pa-eid"></label><label class="mini">Designation<input id="pa-desg"></label><label class="mini">Date of joining<input id="pa-join" type="date"></label></div><p class="mini" id="pa-msg"></p><p><button class="btn small primary" type="button" data-pa="addgo">Create login and add</button> <button class="btn small" type="button" data-pa="addclose">Cancel</button></p><p class="help">Creates a portal login with the role "Employee (Punch app only)". They see only their own data in the app.</p></section>';
   }
   if (cur) { const e = cur, wo = e.wo || [0];
-    h += '<section class="panel"><h2>' + esc(e.name || nameOf(e._id)) + '</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">' +
+    h += '<section class="panel"><h2>' + esc(e.name || nameOf(e._id)) + '</h2><div class="pgrid">' +
       [['name', 'Full name'], ['eid', 'Employee ID'], ['desg', 'Designation'], ['grade', 'Grade'], ['cat', 'Department'], ['join', 'Date of joining', 'date']].map(([k, l, t]) => ed ? '<label class="mini">' + l + '<input data-pe="' + k + '" type="' + (t || 'text') + '" value="' + esc(e[k] || '') + '"></label>' : roVal(l, k === 'join' ? fmtDate(e[k]) : e[k])).join('') +
       (ed ? '<label class="mini">Workplace name<input data-pe="wp.name" value="' + esc((e.wp || {}).name || '') + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Workplace latitude<input data-pe="wp.lat" type="number" step="0.000001" value="' + esc((e.wp || {}).lat == null ? '' : e.wp.lat) + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Workplace longitude<input data-pe="wp.lng" type="number" step="0.000001" value="' + esc((e.wp || {}).lng == null ? '' : e.wp.lng) + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Check-in radius (m)<input data-pe="radius" type="number" value="' + esc(e.radius || 150) + '"' + (ed ? '' : ' disabled') + '></label></div>' +
       '<p class="mini" style="margin:10px 0 4px">Weekly off</p><div class="toolbar">' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => '<label class="mini" style="display:flex;gap:4px;align-items:center"><input type="checkbox" data-pwo="' + i + '"' + (wo.includes(i) ? ' checked' : '') + (ed ? '' : ' disabled') + '>' + d + '</label>').join('') + '</div>' +

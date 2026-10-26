@@ -40,7 +40,7 @@ service cloud.firestore {
     // Gmail sign-in: an admin approves an address (collection "gmail", document id = the address) with a role.
     function gmailDoc() { return /databases/$(db)/documents/gmail/$(request.auth.token.email.lower()); }
     function gmailOk(r) { return signedIn() && request.auth.token.email_verified == true && exists(gmailDoc()) && get(gmailDoc()).data.role == r; }
-    function punchColl(c) { return c in ['punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req']; }
+    function punchColl(c) { return c in ['punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal']; }
 
     // Employee profile for the app (designation, workplace, weekly offs …): HR keeps it, the employee reads their own.
     // Everyone signed in may read these basic profiles (Employee directory); salary is in punch_pay, not here.
@@ -63,6 +63,11 @@ service cloud.firestore {
     match /punch_mark/{id} {
       allow read: if ownKey(id) || (signedIn() && resource.data.uid == request.auth.uid) || hrAll();
       allow write: if hrAll();
+    }
+    // Leave and comp off balances as the employee's Punch app works them out: the app writes its own, HR reads all.
+    match /punch_bal/{uid} {
+      allow read: if mine(uid) || hrAll();
+      allow write: if (mine(uid) && request.resource.data.uid == request.auth.uid) || hrAll();
     }
     // Leave, comp off and attendance-change requests.
     match /punch_req/{id} {
