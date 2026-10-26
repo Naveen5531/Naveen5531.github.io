@@ -446,7 +446,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261026p"></script><script src="offer.js?v=1"></script><script>
+<script src="fb.js?v=20261026q"></script><script src="offer.js?v=1"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -3137,7 +3137,7 @@ document.addEventListener('click', async ev => {
   const t = ev.target.closest('[data-of]'); if (!t) return; const a = t.dataset.of, x = t.dataset.x;
   if (a === 'open') { S.pOff = S.pOff === x ? null : x; S.pOffPrev = false; render(); return; }
   if (a === 'gopkg') { S.pAdd = null; S.pOff = x; S.pOffPrev = false; go('punch', 'offer'); return; }
-  if (a === 'newjoin') { S.pAdd = 'new'; S.pEmp = null; S.pAddFromOffer = true; S.pAddPw = Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 8).toUpperCase(); go('punch', 'emp'); return; }
+  if (a === 'newjoin') { S.pAdd = 'new'; S.pEmp = null; S.pAddPre = null; S.pAddFromOffer = true; S.pAddPw = Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 8).toUpperCase(); go('punch', 'emp'); return; }
   if (a === 'preview') { if (pCan(P_SALE)) S.pOffDraft = readOffer(x); S.pOffPrev = !S.pOffPrev; render(); return; }
   if (a === 'print') { const o = pCan(P_SALE) ? readOffer(x) : offerOf((S.data.punch_emp || []).find(e => e._id === x) || { _id: x }); if (window.OfferLetter) OfferLetter.print(o, offerCompany()); return; }
   if (!pCan(P_SALE)) return;
@@ -3221,12 +3221,20 @@ function punchSalary() {
 const roVal = (l, v) => '<div class="mini" style="display:grid;gap:2px"><span>' + esc(l) + '</span><b style="font-size:.95rem;color:var(--ink)">' + (v === '' || v == null ? '—' : esc(v)) + '</b></div>';
 function punchEmployees() {
   const E = pEmps(), ed = pCan(P_HR), cur = S.pEmp ? (S.data.punch_emp || []).find(e => e._id === S.pEmp) || { _id: S.pEmp } : null, add = S.pAdd;
-  let h = pBanner() + (ed ? '<div class="toolbar"><button class="btn small primary" type="button" data-pa="add">Add employee (new Punch login)</button><button class="btn small" type="button" data-pa="link">Add an existing portal login</button></div>' : '');
+  let h = pBanner() + (ed ? '<div class="toolbar"><button class="btn small primary" type="button" data-pa="add">Add employee (new Punch login)</button><button class="btn small" type="button" data-pa="link">Add an existing login or onboarded employee</button></div>' : '');
   if (add) {
     if (add === 'done') h += '<section class="panel"><h2>Login created</h2><p>Give these to the employee. They sign in to the Punch app with them.</p><p>Username: <b>' + esc(S.pAddDone.user) + '</b><br>Temporary password: <b>' + esc(S.pAddDone.pw) + '</b></p><p class="help">This login works in the Punch app (Employee login) and in the portal. They change the password after signing in.</p><p>' + (S.pAddDone.uid && pCan(P_SALE) ? '<button class="btn small primary" type="button" data-of="gopkg" data-x="' + esc(S.pAddDone.uid) + '">Set package &amp; offer letter</button> ' : '') + '<button class="btn small" type="button" data-pa="addclose">Done</button></p></section>';
-    else if (add === 'link') { const have = new Set(E.map(e => e._id)), M = (S.data.members || []).filter(m => !have.has(m._id) && m.status !== 'Suspended');
-      h += '<section class="panel"><h2>Add an existing portal login to Punch</h2>' + (M.length ? '<div class="toolbar"><select id="pl-uid"><option value="">Choose a person</option>' + M.map(m => '<option value="' + esc(m._id) + '">' + esc(nameOf(m._id)) + ' · ' + esc(roleById(m.role).name) + '</option>').join('') + '</select><button class="btn small primary" type="button" data-pa="linkgo">Add</button><button class="btn small" type="button" data-pa="addclose">Cancel</button></div>' : '<p>Everyone with a login is already on Punch.</p>') + '</section>'; }
-    else h += '<section class="panel"><h2>New employee</h2><div class="pgrid"><label class="mini">Full name<input id="pa-name"></label><label class="mini">Username (login)<input id="pa-user" autocapitalize="none" value="' + esc(nextEmpId()) + '"></label><label class="mini">Temporary password (8+)<input id="pa-pw" value="' + esc(S.pAddPw || '') + '"></label><label class="mini">Employee ID<input id="pa-eid" inputmode="numeric" value="' + esc(nextEmpId()) + '"></label><label class="mini">Designation<input id="pa-desg"></label><label class="mini">Date of joining<input id="pa-join" type="date"></label></div><p class="mini" id="pa-msg"></p><p><button class="btn small primary" type="button" data-pa="addgo">Create login and add</button> <button class="btn small" type="button" data-pa="addclose">Cancel</button></p><p class="help">Creates a portal login with the role "Employee (Punch app only)". They see only their own data in the app.</p></section>';
+    else if (add === 'link') { const have = new Set(E.map(e => e._id)), onName = new Set(E.map(e => lc(e.name)));
+      const M = (S.data.members || []).filter(m => !have.has(m._id) && m.status !== 'Suspended' && m.role !== 'none'); wantNames(M.map(m => m._id));
+      const nm = id => { const n = (S.names[id] || '').replace(/ \(you\)$/, ''); return n && n !== '…' ? n : ''; };
+      const Ml = M.filter(m => !onName.has(lc(nm(m._id))) || !nm(m._id));
+      // onboarded employees (HR › Employees) who have no Punch login yet
+      const St = (S.data.staff || []).filter(x => !x.puid && stageOf('staff', x) !== 'Left' && !onName.has(lc(x.name)));
+      h += '<section class="panel"><h2>Add to Punch</h2><p class="help">Pick a portal login, or an onboarded employee who has no login yet (a Punch login is created for them).</p>' + (Ml.length || St.length ? '<div class="toolbar"><select id="pl-uid" style="min-width:min(420px,100%)"><option value="">Choose a person</option>' +
+        (Ml.length ? '<optgroup label="Portal logins">' + Ml.map(m => '<option value="' + esc(m._id) + '">' + esc(nm(m._id) || 'Loading name…') + ' · ' + esc(roleById(m.role).name) + (m._id === (S.me && S.me.id) ? ' (you)' : '') + '</option>').join('') + '</optgroup>' : '') +
+        (St.length ? '<optgroup label="Onboarded employees without a login">' + St.map(x => '<option value="staff:' + esc(x._id) + '">' + esc(x.name) + (x.empId ? ' · ' + esc(x.empId) : '') + (x.role ? ' · ' + esc(x.role) : '') + '</option>').join('') + '</optgroup>' : '') +
+        '</select><button class="btn small primary" type="button" data-pa="linkgo">Add</button><button class="btn small" type="button" data-pa="addclose">Cancel</button></div>' : '<p>Everyone is already on Punch.</p>') + '</section>'; }
+    else h += '<section class="panel"><h2>New employee</h2><div class="pgrid"><label class="mini">Full name<input id="pa-name" value="' + esc((S.pAddPre || {}).name || '') + '"></label><label class="mini">Username (login)<input id="pa-user" autocapitalize="none" value="' + esc((S.pAddPre || {}).eid || nextEmpId()) + '"></label><label class="mini">Temporary password (8+)<input id="pa-pw" value="' + esc(S.pAddPw || '') + '"></label><label class="mini">Employee ID<input id="pa-eid" inputmode="numeric" value="' + esc((S.pAddPre || {}).eid || nextEmpId()) + '"></label><label class="mini">Designation<input id="pa-desg" value="' + esc((S.pAddPre || {}).desg || '') + '"></label><label class="mini">Date of joining<input id="pa-join" type="date" value="' + esc((S.pAddPre || {}).join || '') + '"></label></div><p class="mini" id="pa-msg"></p><p><button class="btn small primary" type="button" data-pa="addgo">Create login and add</button> <button class="btn small" type="button" data-pa="addclose">Cancel</button></p><p class="help">Creates a portal login with the role "Employee (Punch app only)". They see only their own data in the app.</p></section>';
   }
   if (cur) { const e = cur, wo = e.wo || [0];
     h += '<section class="panel"><h2>' + esc(e.name || nameOf(e._id)) + '</h2><div class="pgrid">' +
@@ -3266,10 +3274,12 @@ document.addEventListener('click', async e => {
   if (a === 'empsave') { const cur = (S.data.punch_emp || []).find(e => e._id === x) || { _id: x }, o = pReadEmp(cur); if (!o.name) { toast('Enter the full name'); return; } o.updatedAt = Date.now();
     if (await pSet('punch_emp', x, o)) { audit('punch_emp', 'Punch details saved for ' + o.name); toast('Saved'); S.pEmp = null; render(); } return; }
   if (a === 'empdel') { if (!confirm('Remove this person from Punch? Their login stays; their attendance history stays.')) return; try { await S.db.collection('punch_emp').doc(x).delete(); S.pEmp = null; toast('Removed from Punch'); } catch (err) { toast('Your role is not allowed to do this.'); } return; }
-  if (a === 'add') { S.pAdd = 'new'; S.pEmp = null; S.pAddPw = Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 8).toUpperCase(); render(); return; }
+  if (a === 'add') { S.pAdd = 'new'; S.pEmp = null; S.pAddPre = null; S.pAddPw = Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 8).toUpperCase(); render(); return; }
   if (a === 'link') { S.pAdd = 'link'; S.pEmp = null; render(); return; }
-  if (a === 'addclose') { S.pAdd = null; render(); return; }
-  if (a === 'linkgo') { const uid = $('#pl-uid').value; if (!uid) return; let nm = (S.names[uid] || '').replace(/ \(you\)$/, ''); if (!nm || nm === '…') { try { const d = await S.db.collection('users').doc(uid).get(); nm = (d && (d.data ? d.data() : d) || {}).name || ''; } catch (e) {} } if (!nm || nm === '…') nm = (S.me && uid === S.me.id && S.me.name) || 'Employee';
+  if (a === 'addclose') { S.pAdd = null; S.pAddPre = null; render(); return; }
+  if (a === 'linkgo') { const uid = $('#pl-uid').value; if (!uid) return;
+    if (uid.startsWith('staff:')) { const st = (S.data.staff || []).find(x => x._id === uid.slice(6)) || {}; S.pAddPre = { staffId: st._id, name: st.name || '', eid: /^\d{8}$/.test(String(st.empId || '')) ? String(st.empId) : '', desg: st.role || '', join: st.joined || '' };
+      S.pAdd = 'new'; S.pAddPw = Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 8).toUpperCase(); render(); return; } let nm = (S.names[uid] || '').replace(/ \(you\)$/, '').replace(/\s*\(@[^)]*\)\s*$/, ''); if (!nm || nm === '…') { try { const d = await S.db.collection('users').doc(uid).get(); nm = (d && (d.data ? d.data() : d) || {}).name || ''; } catch (e) {} } if (!nm || nm === '…') nm = (S.me && uid === S.me.id && S.me.name) || 'Employee';
     if (await pSet('punch_emp', uid, { name: nm, wo: [0], radius: 150, createdAt: Date.now(), updatedAt: Date.now() })) { S.pAdd = null; S.pEmp = uid; render(); } return; }
   if (a === 'addgo') { const v = id => $('#' + id).value.trim(), msg = $('#pa-msg'), name = v('pa-name'), user = v('pa-user').toLowerCase(), pw = v('pa-pw');
     if (!name || !user) { msg.textContent = 'Enter the full name and a username.'; return; }
@@ -3280,7 +3290,8 @@ document.addEventListener('click', async e => {
     try { const uid = await window.MOVANA_FB.createStaff(name, user, pw); S.names[uid] = name;
       await S.db.collection('members').doc(uid).set({ role: 'employee', staff: '', status: 'Active', createdAt: Date.now(), updatedAt: Date.now(), addedBy: S.me && S.me.id });
       await S.db.collection('punch_emp').doc(uid).set({ name, eid: v('pa-eid'), desg: v('pa-desg'), join: v('pa-join'), wo: [0], radius: 150, createdAt: Date.now(), updatedAt: Date.now() });
-      audit('punch_emp', 'Punch login created for ' + name); S.pAdd = 'done'; S.pAddDone = { user, pw, uid }; render();
+      if (S.pAddPre && S.pAddPre.staffId) { const st = Object.assign({}, (S.data.staff || []).find(x => x._id === S.pAddPre.staffId) || {}); delete st._id; if (st.name) { st.puid = uid; st.empId = v('pa-eid') || st.empId; st.updatedAt = Date.now(); try { await S.db.collection('staff').doc(S.pAddPre.staffId).set(st); } catch (e) {} } }
+      S.pAddPre = null; audit('punch_emp', 'Punch login created for ' + name); S.pAdd = 'done'; S.pAddDone = { user, pw, uid }; render();
     } catch (err) { msg.textContent = (window.MOVANA_FB.authMsg ? window.MOVANA_FB.authMsg(err) : 'Could not create the login.'); t.disabled = false; } return; }
   if (a === 'csv') { const ym = pMonth(), rows = [['Employee', 'ID', 'Date', 'Status', 'In', 'Out', 'Hours', 'OT']];
     pEmps().forEach(e => pDays(e, ym).forEach(d => rows.push([e.name, e.eid || '', d.k, d.st, tmS(d.a), tmS(d.b), d.ms ? (d.ms / 36e5).toFixed(2) : '', d.ot ? (d.ot / 36e5).toFixed(2) : ''])));
