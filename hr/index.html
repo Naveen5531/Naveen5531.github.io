@@ -119,14 +119,14 @@ const HR_ALL = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_exec', 
 const HR_APPR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_tl', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
 const SAL_V = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
 const ADMIN = ['superadmin', 'admin_head'];
-const S = { uid: null, me: {}, roles: [], d: {}, open: {}, q: {}, ym: ymNow(), f: {} };
+const S = { uid: null, self: null, me: {}, roles: [], d: {}, open: {}, q: {}, ym: ymNow(), f: {} };
 const has = list => S.roles.some(r => list.includes(r));
 const isHR = () => has(HR_ALL), canAppr = () => has(HR_APPR), canSal = () => has(SAL_V), isAdmin = () => has(ADMIN);
 
 /* ================= sign in (shared with the portal) ================= */
 await window.claude.use('user');
 const auth = firebase.auth(), fs = firebase.firestore(), U = auth.currentUser;
-S.uid = U.uid;
+S.uid = U.uid; S.self = U.uid;
 { const [m, o, u] = await Promise.all([fs.doc('members/' + U.uid).get().catch(() => null), fs.doc('settings/owner').get().catch(() => null), fs.doc('users/' + U.uid).get().catch(() => null)]);
   const md = m && m.exists ? m.data() : null, owner = o && o.exists && o.data().uid === U.uid;
   S.roles = owner ? ['superadmin'] : (md && md.status !== 'Suspended' ? [md.role].concat(md.roles || []).filter(Boolean) : ['none']);
@@ -134,21 +134,40 @@ S.uid = U.uid;
 $('#whoAv').textContent = ini(S.me.name); $('#whoName').textContent = S.me.name;
 
 /* ================= live data ================= */
-const D = S.d; ['emp', 'att', 'mark', 'req', 'bal', 'pay', 'offer', 'users', 'posts', 'hol', 'jobs', 'cands', 'train', 'enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => D[k] = []);
+const D = S.d; ['emp', 'pemp', 'staff', 'att', 'mark', 'req', 'bal', 'pay', 'offer', 'users', 'posts', 'hol', 'jobs', 'cands', 'train', 'enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => D[k] = []);
 let rq = false; const later = () => { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); }); };
 const live = (k, q) => q.onSnapshot(s => { D[k] = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); later(); }, () => { later(); });
 const liveDoc = (k, ref) => ref.onSnapshot(d => { D[k] = d.exists ? [Object.assign({ _id: d.id }, d.data())] : []; later(); }, () => { D[k] = []; later(); });
 const col = n => fs.collection(n), mineQ = n => col(n).where('uid', '==', S.uid);
-live('emp', col('punch_emp')); live('users', col('users')); live('posts', col('hr_posts')); live('hol', col('hr_holidays')); live('jobs', col('hr_jobs')); live('train', col('hr_training'));
+live('pemp', col('punch_emp')); live('staff', col('staff')); live('users', col('users')); live('posts', col('hr_posts')); live('hol', col('hr_holidays')); live('jobs', col('hr_jobs')); live('train', col('hr_training'));
 if (isHR()) { live('att', col('punch_att')); live('mark', col('punch_mark')); live('req', col('punch_req')); live('bal', col('punch_bal')); live('cands', col('hr_cands'));
   ['enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => live(k, col({ enrol: 'hr_enrol', goals: 'hr_goals', reviews: 'hr_reviews', exp: 'hr_expenses', exits: 'hr_exits', help: 'hr_help' }[k]))); }
 else { live('att', mineQ('punch_att')); live('mark', mineQ('punch_mark')); live('req', mineQ('punch_req')); liveDoc('bal', fs.doc('punch_bal/' + S.uid));
   ['enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => live(k, mineQ({ enrol: 'hr_enrol', goals: 'hr_goals', reviews: 'hr_reviews', exp: 'hr_expenses', exits: 'hr_exits', help: 'hr_help' }[k]))); }
 if (canSal()) { live('pay', col('punch_pay')); live('offer', col('punch_offer')); }
 else { liveDoc('pay', fs.doc('punch_pay/' + S.uid)); liveDoc('offer', fs.doc('punch_offer/' + S.uid)); }
-const mine = arr => arr.filter(x => x.uid === S.uid);
+/** One list of people: every Punch employee, plus everyone onboarded in the portal (Employees) who has no Punch login yet.
+ *  The same person is never listed twice – matched by Punch link, then employee ID, then name. */
+const normN = v => lc(String(v || '').replace(/\s*\(@[^)]*\)\s*$/, '').replace(/\s+/g, ' ').trim());
+function mergePeople() {
+  const P = D.pemp.map(e => Object.assign({}, e)), used = new Set();
+  P.forEach(p => { const st = D.staff.find(x => x.puid === p._id) || D.staff.find(x => !x.puid && ((p.eid && String(x.empId || '') === String(p.eid)) || normN(x.name) === normN(p.name)));
+    if (st) { used.add(st._id); p.staffId = st._id; p.phone = p.phone || st.phone || ''; if (st.stage === 'Left') p.left = true; } });
+  D.staff.filter(x => !used.has(x._id) && x.stage !== 'Left').forEach(x => {
+    const dup = P.find(p => (x.puid && p._id === x.puid) || (x.empId && String(p.eid || '') === String(x.empId)) || normN(p.name) === normN(x.name));
+    if (dup) { if (!dup.staffId) dup.staffId = x._id; return; }
+    P.push({ _id: 's:' + x._id, staffId: x._id, noPunch: true, name: x.name || '', eid: x.empId || '', desg: x.role || '', grade: x.grade || '', cat: x.dept || '', wp: { name: x.hub || '' }, join: x.joined || '', mgr: x.mgr || '', phone: x.phone || '' }); });
+  return P.filter(p => !p.left);
+}
+function resolvePeople() {
+  D.emp = mergePeople(); S.self = S.uid;
+  // a second login of the same person (e.g. an old username and a Gmail) opens that person's own records
+  if (!D.emp.some(p => p._id === S.uid) && isHR()) { const m = D.emp.filter(p => !p.noPunch && normN(p.name) === normN(S.me.name)); if (m.length === 1) S.self = m[0]._id; }
+}
+const nextEmpId = () => { const used = new Set(D.staff.map(r => r.empId).concat(D.pemp.map(e => e.eid)).map(v => String(v || '').trim()).filter(v => /^\d{8}$/.test(v)).map(Number)); let n = 10000000; while (used.has(n)) n++; return String(n); };
+const mine = arr => arr.filter(x => x.uid === S.self);
 const empOf = uid => D.emp.find(e => e._id === uid);
-const meEmp = () => empOf(S.uid) || { _id: S.uid, name: S.me.name, wo: [0] };
+const meEmp = () => empOf(S.self) || { _id: S.self, name: S.me.name, wo: [0] };
 const payOf = uid => D.pay.find(p => p._id === uid);
 const balOf = uid => D.bal.find(b => b._id === uid);
 const nameOf = uid => (empOf(uid) || {}).name || ((D.users.find(u => u._id === uid) || {}).name) || 'Someone';
@@ -206,7 +225,7 @@ const val = id => { const el = document.getElementById(id); return el ? el.value
 
 /* ================= Home ================= */
 function vHome() {
-  const e = meEmp(), ym = ymNow(), at = attDoc(S.uid, ym), dd = today().slice(8), d = at && at.days && at.days[dd], open = at && at.open && iso(new Date(at.open.t)) === today() ? at.open : null, b = balOf(S.uid), h = new Date().getHours();
+  const e = meEmp(), ym = ymNow(), at = attDoc(S.self, ym), dd = today().slice(8), d = at && at.days && at.days[dd], open = at && at.open && iso(new Date(at.open.t)) === today() ? at.open : null, b = balOf(S.self), h = new Date().getHours();
   const st = open ? 'Checked in at ' + tm(open.t) : d && d.a ? 'Today ' + tm(d.a) + ' – ' + (d.b ? tm(d.b) : '…') + ' · ' + hm(d.ms) : 'Not checked in yet today';
   let x = '<div class="grid g2"><section class="card hero"><div class="row" style="align-items:center;gap:14px"><span class="av lg" style="background:rgba(255,255,255,.2)">' + esc(ini(e.name)) + '</span><div><h1 style="color:#fff">Good ' + (h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening') + ', ' + esc(String(e.name || S.me.name).split(' ')[0]) + '</h1><p>' + esc([e.desg, e.eid].filter(Boolean).join(' · ') || 'Welcome to Movana People') + '</p></div></div>' +
     '<div class="tiles mt"><a class="t" href="#/attendance"><span>Today</span><b style="font-size:1rem">' + esc(st) + '</b></a>' + (b ? ['PL', 'SL', 'CL'].map(t => '<a class="t" href="#/leave"><span>' + { PL: 'Privilege', SL: 'Sick', CL: 'Casual' }[t] + ' leave</span><b>' + r2((b.lv || {})[t] ? b.lv[t].b : 0) + '</b></a>').join('') + '<a class="t" href="#/leave"><span>Comp off</span><b>' + r2((b.co || {}).b) + '</b></a>' : '<a class="t" href="#/leave"><span>Leave balance</span><b style="font-size:1rem">Open Punch once to load it</b></a>') + '</div></section>';
@@ -225,7 +244,7 @@ function pend() { return { req: D.req.filter(r => r.s === 'Pending').length, exp
 
 /* ================= Me ================= */
 function vProfile() {
-  const e = meEmp(), u = D.users.find(x => x._id === S.uid) || {};
+  const e = meEmp(), u = D.users.find(x => x._id === S.self) || {};
   return ph('My profile', 'Kept by HR. Ask HR through the helpdesk to change anything.') + '<section class="card"><div class="row" style="gap:16px;margin-bottom:14px"><span class="av lg">' + esc(ini(e.name)) + '</span><div><h2>' + esc(e.name || S.me.name) + '</h2><div class="mute">' + esc([e.desg, e.grade && 'Grade ' + e.grade].filter(Boolean).join(' · ')) + '</div><div class="row mt">' + S.roles.map(r => pill(roleName(r), 'info')).join('') + '</div></div></div>' +
     '<div class="kv">' + [['Employee ID', e.eid], ['Designation', e.desg], ['Grade', e.grade], ['Department', e.cat], ['Workplace', (e.wp || {}).name], ['Date of joining', fmtD(e.join)], ['Weekly off', (e.wo || []).map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ')], ['Login', u.username || S.me.email]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>';
 }
@@ -244,7 +263,7 @@ function vAttendance() {
 }
 const LT = [['PL', 'Privilege leave'], ['SL', 'Sick leave'], ['CL', 'Casual leave'], ['CO', 'Comp off']];
 function vLeave() {
-  const b = balOf(S.uid), R = mine(D.req).filter(r => r.kind === 'leave').sort((a, b2) => num(b2.at) - num(a.at));
+  const b = balOf(S.self), R = mine(D.req).filter(r => r.kind === 'leave').sort((a, b2) => num(b2.at) - num(a.at));
   let x = ph('Leave', 'Same balances and requests as your Punch app.');
   x += '<div class="tiles" style="margin-bottom:14px">' + (b ? LT.map(([t, n]) => { const v = t === 'CO' ? (b.co || {}).b : ((b.lv || {})[t] || {}).b; const u = t === 'CO' ? (b.co || {}).u : ((b.lv || {})[t] || {}).used; return '<div class="t"><span>' + n + '</span><b>' + r2(v) + '</b><span>Used ' + r2(u) + '</span></div>'; }).join('') : '<div class="t"><span>Balances</span><b style="font-size:1rem">Open the Punch app once to load them</b></div>') + '</div>';
   x += '<div class="grid g2"><section class="card"><h2>Apply for leave</h2><div class="form">' + fld('lv-t', 'Type', 'select:' + LT.map(l => l[1]).join('|')) + fld('lv-a', 'From', 'date', today()) + fld('lv-b', 'To', 'date', today()) + fld('lv-why', 'Reason', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="lv-send">Send to HR</button><span class="mute small">Week offs are skipped.</span></div></section>' +
@@ -253,7 +272,7 @@ function vLeave() {
 }
 function reqLabel(r) { return r.kind === 'leave' ? (r.t === 'CO' ? 'Comp off' : (LT.find(l => l[0] === r.t) || [0, r.t])[1]) : (String(r.v).startsWith('leave:') ? 'Leave · ' + r.v.slice(6) : r.v === '-' ? 'Clear mark' : (ML[r.v] || r.v)); }
 function reqDays(r) { const d = (r.days || []).slice().sort(); return d.length ? fmtD(d[0]) + (d.length > 1 ? ' – ' + fmtD(d[d.length - 1]) + ' (' + d.length + ' days)' : '') : ''; }
-function reqList(R) { return R.length ? '<div class="list">' + R.map(r => '<div class="li"><div class="g1"><b>' + esc(reqLabel(r)) + '</b><span>' + esc(reqDays(r)) + (r.why ? ' · ' + esc(r.why) : '') + '</span></div>' + stPill(r.s) + (r.s === 'Pending' && r.uid === S.uid ? '<button class="btn s d" type="button" data-a="req-cancel" data-x="' + esc(r._id) + '">Cancel</button>' : '') + '</div>').join('') + '</div>' : '<div class="empty">No requests yet.</div>'; }
+function reqList(R) { return R.length ? '<div class="list">' + R.map(r => '<div class="li"><div class="g1"><b>' + esc(reqLabel(r)) + '</b><span>' + esc(reqDays(r)) + (r.why ? ' · ' + esc(r.why) : '') + '</span></div>' + stPill(r.s) + (r.s === 'Pending' && r.uid === S.self ? '<button class="btn s d" type="button" data-a="req-cancel" data-x="' + esc(r._id) + '">Cancel</button>' : '') + '</div>').join('') + '</div>' : '<div class="empty">No requests yet.</div>'; }
 function rangeDays(a, b, wo) { const out = []; if (!a || !b || b < a) return out; for (let d = new Date(a + 'T00:00:00'); iso(d) <= b && out.length < 62; d.setDate(d.getDate() + 1)) if (!(wo || []).includes(d.getDay())) out.push(iso(d)); return out; }
 function vRequests() {
   const R = mine(D.req).filter(r => r.kind !== 'leave').sort((a, b) => num(b.at) - num(a.at));
@@ -267,7 +286,7 @@ function slipHtml(e, p, ym) {
     '<div class="t mt" style="background:color-mix(in srgb,var(--in) 12%,var(--soft))"><span>Net pay</span><b>' + money(p.net) + '</b></div><p class="mute small mt">Worked out from your salary set-up and attendance. ' + (ym === ymNow() ? 'This month counts days up to today. ' : '') + 'Your Punch app has the full payslip.</p></div>';
 }
 function vPayslips() {
-  const e = meEmp(), v = payOf(S.uid);
+  const e = meEmp(), v = payOf(S.self);
   if (!v) return ph('Payslips') + '<div class="empty">Your salary is not set up yet. HR sets it in the package.</div>';
   const start = (e.join || ymNow()).slice(0, 7), list = []; for (let d = new Date(ymNow() + '-01T00:00:00'); iso(d).slice(0, 7) >= start && list.length < 24; d.setMonth(d.getMonth() - 1)) list.push(iso(d).slice(0, 7));
   if (!list.includes(S.ym)) S.ym = list[0];
@@ -296,7 +315,7 @@ function vLearning() {
     return '<section class="card"><h2>' + esc(t.title) + '</h2><p class="mute small">' + esc([fmtD(t.date), t.mode, t.trainer].filter(Boolean).join(' · ')) + '</p><p>' + esc(t.desc || '') + '</p><div class="row mt">' + (en ? stPill(en.s) + (en.s === 'Enrolled' ? '<button class="btn s d" type="button" data-a="own-del" data-c="hr_enrol" data-x="' + esc(en._id) + '">Withdraw</button>' : '') : '<button class="btn p s" type="button" data-a="tr-join" data-x="' + esc(t._id) + '">Sign up</button>') + (isHR() ? '<span class="mute small">' + cnt + (t.seats ? ' / ' + t.seats : '') + ' signed up</span>' : '') + '</div></section>'; }).join('') + '</div>' : '<div class="empty">No training scheduled.</div>');
 }
 function vDocuments() {
-  const o = D.offer.find(x => x._id === S.uid), ok = o && ['Released', 'Accepted'].includes(o.status);
+  const o = D.offer.find(x => x._id === S.self), ok = o && ['Released', 'Accepted'].includes(o.status);
   return ph('My documents') + '<div class="grid g2"><section class="card"><h2>Offer letter</h2>' + (ok ? '<p>' + (o.status === 'Accepted' ? 'You accepted this offer on ' + esc(fmtT(o.acceptedAt)) + '.' : 'Released by HR. Please read and accept it.') + '</p><div class="row"><button class="btn" type="button" data-a="of-view">' + (S.ofView ? 'Hide' : 'View') + '</button><button class="btn" type="button" data-a="of-print">Print / PDF</button>' + (o.status === 'Released' ? '<button class="btn p" type="button" data-a="of-accept">Accept offer</button>' : '') + '</div>' : '<div class="empty">No offer letter released to you.</div>') + '</section>' +
     '<section class="card"><h2>Payslips</h2><p>Monthly salary slips worked out from your attendance.</p><a class="btn" href="#/payslips">Open payslips</a></section></div>' + (ok && S.ofView && window.OfferLetter ? '<div class="card mt" style="overflow-x:auto">' + OfferLetter.html(o, { name: 'Movana Logistics' }) + '</div>' : '');
 }
@@ -339,20 +358,33 @@ function vCareers() {
 }
 
 /* ================= HR ================= */
+const GRADES = ['Executive', 'Sr Executive', 'Team Lead', 'Assistant Manager', 'Manager', 'Sr Manager', 'GM', 'Sr GM', 'AVP', 'VP', 'Sr VP'];
+const DEPTS_HR = ['Operations', 'Transport', 'First mile', 'Mid mile', 'Last mile', 'Warehouse', 'Finance', 'Accounts', 'HR', 'Admin', 'IT', 'Sales', 'Other'];
+function empForm() {
+  const id = S.edit, e = id === 'new' ? { eid: nextEmpId() } : empOf(id) || {}, opt = (L, v) => '<option value=""></option>' + L.concat(v && !L.includes(v) ? [v] : []).map(o => '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>').join('');
+  return '<section class="card" style="margin-bottom:14px"><h2>' + (id === 'new' ? 'New employee' : 'Edit ' + esc(e.name)) + '</h2><div class="form">' + fld('em-name', 'Full name', 'text', e.name) + fld('em-eid', 'Employee ID', 'text', e.eid) + fld('em-desg', 'Designation', 'text', e.desg) +
+    '<label>Grade<select id="em-grade">' + opt(GRADES, e.grade) + '</select></label><label>Department<select id="em-cat">' + opt(DEPTS_HR, e.cat) + '</select></label>' + fld('em-hub', 'Workplace', 'text', (e.wp || {}).name) + fld('em-join', 'Date of joining', 'date', e.join) +
+    '<label>Reporting manager<select id="em-mgr">' + opt(D.emp.filter(o => o._id !== id).map(o => o.name).sort(), e.mgr) + '</select></label>' + fld('em-phone', 'Mobile', 'tel', e.phone) + '</div>' +
+    '<p class="mute small mt">Saved to the portal\'s employee list' + (e.noPunch || id === 'new' ? '' : ' and this person\'s Punch app profile') + ' at the same time.</p><div class="row mt"><button class="btn p" type="button" data-a="em-save">Save</button><button class="btn" type="button" data-a="em-cancel">Cancel</button></div></section>';
+}
 function vHrEmployees() {
-  const E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = ymNow();
-  return ph('Employees', E.length + ' on Punch', '<a class="btn p" href="../portal/#punch">＋ New joiner / edit (portal)</a>') + tbl(['Name', 'ID', 'Designation', 'Department', 'Joined', '#Present this month', 'Offer'], E.map(e => { const o = D.offer.find(x => x._id === e._id); return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + esc(e.cat || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td class="n">' + monthSum(e, ym).p + '</td><td>' + (o ? stPill(o.status) : canSal() ? '<span class="mute">—</span>' : '') + '</td></tr>'; }));
+  const q = lc(S.q.emp || ''), E = D.emp.filter(e => !q || lc([e.name, e.eid, e.desg, e.cat].join(' ')).includes(q)).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = ymNow(), np = D.emp.filter(e => e.noPunch).length;
+  return ph('Employees', D.emp.length + ' employees · ' + (D.emp.length - np) + ' on Punch' + (np ? ' · ' + np + ' without a Punch login' : ''), '<input id="q-emp" type="search" class="btn" placeholder="Name or ID" value="' + esc(S.q.emp || '') + '" style="min-width:min(200px,100%)"><button class="btn p" type="button" data-a="em-new">＋ New employee</button>') +
+    (S.edit ? empForm() : '') +
+    tbl(['Name', 'ID', 'Designation', 'Department', 'Joined', 'Punch', '#Present this month', 'Offer', ''], E.map(e => { const o = D.offer.find(x => x._id === e._id);
+      return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc([e.desg, e.grade].filter(Boolean).join(' · ')) + '</td><td>' + esc(e.cat || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (e.noPunch ? '<a href="../portal/#punch" class="pill warn">Create login</a>' : pill('On Punch', 'good')) + '</td><td class="n">' + (e.noPunch ? '—' : monthSum(e, ym).p) + '</td><td>' + (o ? stPill(o.status) : canSal() && !e.noPunch ? '<span class="mute">—</span>' : '') + '</td>' +
+        '<td style="white-space:nowrap"><button class="btn s" type="button" data-a="em-edit" data-x="' + esc(e._id) + '">Edit</button> <button class="btn s d" type="button" data-a="em-left" data-x="' + esc(e._id) + '">Mark left</button></td></tr>'; }), 'No employees match.');
 }
 function vOnboarding() {
-  const E = D.emp.filter(e => !e.join || e.join >= iso(new Date(Date.now() - 90 * 864e5))).sort((a, b) => String(b.join) < String(a.join) ? -1 : 1);
+  const E = D.emp.filter(e => e.noPunch || !e.join || e.join >= iso(new Date(Date.now() - 90 * 864e5))).sort((a, b) => String(b.join) < String(a.join) ? -1 : 1);
   return ph('Onboarding', 'New joiners in the last 90 days and upcoming joiners, with their offer letter status.', '<a class="btn p" href="../portal/#punch">＋ New joiner (create Punch login)</a>') +
-    tbl(['Name', 'ID', 'Designation', 'Joining', 'Offer letter', 'Punch app'], E.map(e => { const o = D.offer.find(x => x._id === e._id), at = D.att.some(a => a.uid === e._id); return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (o ? stPill(o.status) : pill('Not prepared')) + '</td><td>' + (at ? pill('Using', 'good') : pill('Not yet', 'warn')) + '</td></tr>'; }), 'No new joiners.') +
+    tbl(['Name', 'ID', 'Designation', 'Joining', 'Offer letter', 'Punch app'], E.map(e => { const o = D.offer.find(x => x._id === e._id), at = D.att.some(a => a.uid === e._id); return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (o ? stPill(o.status) : pill('Not prepared')) + '</td><td>' + (e.noPunch ? '<a href="../portal/#punch" class="pill warn">Create Punch login</a>' : at ? pill('Using', 'good') : pill('Not yet', 'warn')) + '</td></tr>'; }), 'No new joiners.') +
     '<p class="mute small mt">Packages and offer letters are prepared and released in the portal: Team live › Package &amp; offer letter.</p>';
 }
 function vTeamAtt() {
   const E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = S.ym, dd = today().slice(8);
   return ph('Team attendance', 'Live from Punch.', monthPick('ym', S.ym) + '<a class="btn" href="../portal/#punch">Live board (portal)</a>') +
-    tbl(['Name', 'Today', '#Present', '#Half', '#Absent', '#Leave', '#Week off', '#Hours'], E.map(e => { const x = monthSum(e, ym), at = attDoc(e._id, ymNow()), open = at && at.open && iso(new Date(at.open.t)) === today(), d = at && at.days && at.days[dd];
+    tbl(['Name', 'Today', '#Present', '#Half', '#Absent', '#Leave', '#Week off', '#Hours'], E.map(e => { if (e.noPunch) return '<tr><td>' + esc(e.name) + '</td><td colspan="7" class="mute">No Punch login yet – attendance starts once they use the Punch app</td></tr>'; const x = monthSum(e, ym), at = attDoc(e._id, ymNow()), open = at && at.open && iso(new Date(at.open.t)) === today(), d = at && at.days && at.days[dd];
       return '<tr><td>' + esc(e.name) + '</td><td>' + (open ? pill('In since ' + tm(at.open.t), 'good') : d && d.a ? pill(tm(d.a) + '–' + (d.b ? tm(d.b) : '…'), 'info') : pill(dayOf(e, ymNow(), +dd).st || 'Not in', 'warn')) + '</td><td class="n">' + x.p + '</td><td class="n">' + x.h + '</td><td class="n">' + x.a + '</td><td class="n">' + x.l + '</td><td class="n">' + x.wo + '</td><td class="n">' + hm(x.ms) + '</td></tr>'; }));
 }
 function vApprovals() {
@@ -365,15 +397,15 @@ async function decide(id, ok) {
   const r = D.req.find(x => x._id === id); if (!r || !canAppr()) return; const by = {}; (r.days || []).forEach(k => (by[k.slice(0, 7)] = by[k.slice(0, 7)] || []).push(k));
   if (ok) for (const ym of Object.keys(by)) { const cur = markDoc(r.uid, ym) || {}, marks = Object.assign({}, cur.marks), lt = Object.assign({}, cur.lt);
     by[ym].forEach(k => { if (r.kind === 'leave') { if (r.t === 'CO') { marks[k] = 'compoff'; delete lt[k]; } else { marks[k] = 'leave'; lt[k] = r.t; } } else { const v = String(r.v); if (v === '-') { delete marks[k]; delete lt[k]; } else if (v.startsWith('leave:')) { marks[k] = 'leave'; lt[k] = v.slice(6); } else { marks[k] = v; delete lt[k]; } } });
-    if (!(await save('punch_mark/' + r.uid + '_' + ym, { uid: r.uid, ym, marks, lt, by: S.uid, updatedAt: Date.now() }))) return; }
-  const b = Object.assign({}, r); delete b._id; if (await save('punch_req/' + id, Object.assign(b, { s: ok ? 'Approved' : 'Rejected', by: S.uid, byName: S.me.name, decidedAt: Date.now() }), ok ? 'Approved' : 'Rejected')) {}
+    if (!(await save('punch_mark/' + r.uid + '_' + ym, { uid: r.uid, ym, marks, lt, by: S.self, updatedAt: Date.now() }))) return; }
+  const b = Object.assign({}, r); delete b._id; if (await save('punch_req/' + id, Object.assign(b, { s: ok ? 'Approved' : 'Rejected', by: S.self, byName: S.me.name, decidedAt: Date.now() }), ok ? 'Approved' : 'Rejected')) {}
 }
 function vPayroll() {
   if (!canSal()) return ph('Payroll') + '<div class="empty">Payroll is for HR manager, HR head and admins.</div>';
   const E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), rows = E.map(e => ({ e, p: payslip(e, payOf(e._id), S.ym) })), T = k => rows.reduce((t, r) => t + (r.p ? num(k(r.p)) : 0), 0);
   return ph('Payroll', ymLabel(S.ym) + (S.ym === ymNow() ? ' · days up to today' : ''), monthPick('ym', S.ym) + '<a class="btn" href="../portal/#payroll">Payroll runs (portal)</a>') +
     '<div class="tiles" style="margin-bottom:14px"><div class="t"><span>Employees paid</span><b>' + rows.filter(r => r.p).length + '</b></div><div class="t"><span>Gross</span><b>' + money(T(p => p.gross)) + '</b></div><div class="t"><span>Deductions</span><b>' + money(T(p => p.td)) + '</b></div><div class="t"><span>Net pay</span><b>' + money(T(p => p.net)) + '</b></div></div>' +
-    tbl(['Name', 'ID', '#Paid days', '#Monthly salary', '#Gross', '#PF', '#PT', '#Other', '#Net pay'], rows.map(({ e, p }) => p ? '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td class="n">' + p.pd + ' / ' + p.base + '</td><td class="n">' + money(p.sal) + '</td><td class="n">' + money(p.gross) + '</td><td class="n">' + money(p.ded.pf) + '</td><td class="n">' + money(p.ded.pt) + '</td><td class="n">' + money(p.ded.vpf + p.ded.esi + p.ded.oth) + '</td><td class="n"><b>' + money(p.net) + '</b></td></tr>' : '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td colspan="7" class="mute">Salary not set up – set the package in the portal</td></tr>'));
+    tbl(['Name', 'ID', '#Paid days', '#Monthly salary', '#Gross', '#PF', '#PT', '#Other', '#Net pay'], rows.map(({ e, p }) => p ? '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td class="n">' + p.pd + ' / ' + p.base + '</td><td class="n">' + money(p.sal) + '</td><td class="n">' + money(p.gross) + '</td><td class="n">' + money(p.ded.pf) + '</td><td class="n">' + money(p.ded.pt) + '</td><td class="n">' + money(p.ded.vpf + p.ded.esi + p.ded.oth) + '</td><td class="n"><b>' + money(p.net) + '</b></td></tr>' : '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td colspan="7" class="mute">' + (e.noPunch ? 'No Punch login yet – create it, then set the package' : 'Salary not set up – set the package in the portal') + '</td></tr>'));
 }
 const STG = ['Applied', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
 function vRecruit() {
@@ -418,7 +450,7 @@ add('payslips', 'Me', 'Payslips', 'pay', vPayslips);
 add('expenses', 'Me', 'Expenses', 'exp', vExpenses);
 add('goals', 'Me', 'Goals & reviews', 'goal', vGoals);
 add('learning', 'Me', 'Training', 'learn', vLearning);
-add('documents', 'Me', 'Documents', 'doc', vDocuments, E_, () => D.offer.filter(o => o._id === S.uid && o.status === 'Released').length);
+add('documents', 'Me', 'Documents', 'doc', vDocuments, E_, () => D.offer.filter(o => o._id === S.self && o.status === 'Released').length);
 add('helpdesk', 'Me', 'Ask HR', 'help', vHelpdesk);
 add('separation', 'Me', 'Resignation', 'exit', vSeparation);
 add('people', 'Company', 'People', 'people', vPeople);
@@ -443,9 +475,10 @@ ext('Apps', 'Website', 'home', '../', E_);
 
 /* ================= render ================= */
 function render() {
+  resolvePeople();
   const h = (location.hash.match(/^#\/([\w-]+)/) || [])[1] || 'home', vis = V.filter(v => v.id && v.ok()), cur = vis.find(v => v.id === h) || vis[0];
   route = cur.id; $('#nav').innerHTML = navHtml();
-  const P = isHR() ? pend() : null, bn = P ? P.req + P.exp + P.help + P.exits : D.offer.filter(o => o._id === S.uid && o.status === 'Released').length; $('#bellN').hidden = !bn; $('#bellN').textContent = bn;
+  const P = isHR() ? pend() : null, bn = P ? P.req + P.exp + P.help + P.exits : D.offer.filter(o => o._id === S.self && o.status === 'Released').length; $('#bellN').hidden = !bn; $('#bellN').textContent = bn;
   const ae = document.activeElement, keep = ae && ae.id && $('#main').contains(ae) ? [ae.id, ae.selectionStart] : null;
   try { $('#main').innerHTML = cur.render(); } catch (e) { console.error(e); $('#main').innerHTML = '<div class="empty">This page hit an error: ' + esc(e.message) + '</div>'; }
   document.title = cur.label + ' · Movana People';
@@ -468,7 +501,7 @@ document.addEventListener('click', async ev => {
   if (busy.has(a + x)) return; busy.add(a + x); try { await act(a, x, t); } finally { busy.delete(a + x); }
 });
 async function act(a, x, t) {
-  const now = Date.now(), e = meEmp(), base = { uid: S.uid, name: e.name || S.me.name, eid: e.eid || '', at: now };
+  const now = Date.now(), e = meEmp(), base = { uid: S.self, name: e.name || S.me.name, eid: e.eid || '', at: now };
   switch (a) {
     case 'print': window.print(); return;
     case 'lv-send': { const tn = val('lv-t'), tc = (LT.find(l => l[1] === tn) || ['PL'])[0], A = val('lv-a'), B = val('lv-b'), days = rangeDays(A, B, e.wo || [0]); if (!days.length) { toast('Pick valid dates (week offs are skipped).'); return; }
@@ -479,31 +512,51 @@ async function act(a, x, t) {
     case 'ex-send': { if (!(num(val('ex-amt')) > 0)) { toast('Enter the amount.'); return; } await save('hr_expenses/' + newId('ex'), Object.assign({}, base, { date: val('ex-date'), cat: val('ex-cat'), amount: num(val('ex-amt')), note: val('ex-note'), s: 'Pending' }), 'Claim submitted'); return; }
     case 'own-del': { if (!confirm('Withdraw this?')) return; if (await del(t.dataset.c + '/' + x)) toast('Withdrawn'); return; }
     case 'gl-add': { if (!val('gl-title')) { toast('Write the goal.'); return; } await save('hr_goals/' + newId('gl'), Object.assign({}, base, { title: val('gl-title'), metric: val('gl-metric'), target: val('gl-target'), weight: num(val('gl-weight')), due: val('gl-due'), progress: 0, s: 'Active' }), 'Goal added'); return; }
-    case 'rv-send': { const cyc = val('rv-cycle'), id = 'rv_' + S.uid + '_' + cyc.replace(/\s+/g, ''), old = D.reviews.find(r => r._id === id); if (old && old.s === 'Final') { toast('This review is already final.'); return; }
+    case 'rv-send': { const cyc = val('rv-cycle'), id = 'rv_' + S.self + '_' + cyc.replace(/\s+/g, ''), old = D.reviews.find(r => r._id === id); if (old && old.s === 'Final') { toast('This review is already final.'); return; }
       await save('hr_reviews/' + id, Object.assign({}, base, { cycle: cyc, self: { rating: num(val('rv-rate')), text: val('rv-text') }, mgr: (old && old.mgr) || null, s: 'Submitted' }), 'Review submitted'); return; }
-    case 'tr-join': { const c = D.train.find(z => z._id === x); await save('hr_enrol/' + x + '_' + S.uid, Object.assign({}, base, { course: x, courseTitle: c ? c.title : '', s: 'Enrolled' }), 'Signed up'); return; }
+    case 'tr-join': { const c = D.train.find(z => z._id === x); await save('hr_enrol/' + x + '_' + S.self, Object.assign({}, base, { course: x, courseTitle: c ? c.title : '', s: 'Enrolled' }), 'Signed up'); return; }
     case 'hd-send': { if (!val('hd-sub')) { toast('Write a subject.'); return; } await save('hr_help/' + newId('hd'), Object.assign({}, base, { cat: val('hd-cat'), subject: val('hd-sub'), detail: val('hd-text'), s: 'Open' }), 'Sent to HR'); return; }
     case 'sx-send': { if (!val('sx-lwd')) { toast('Pick your last working day.'); return; } if (!confirm('Submit your resignation to HR?')) return; await save('hr_exits/' + newId('sx'), Object.assign({}, base, { lwdAsked: val('sx-lwd'), reason: val('sx-why'), text: val('sx-text'), s: 'Pending' }), 'Resignation submitted'); return; }
     case 'of-view': S.ofView = !S.ofView; render(); return;
-    case 'of-print': { const o = D.offer.find(z => z._id === S.uid); if (o && window.OfferLetter) OfferLetter.print(o, { name: 'Movana Logistics' }); return; }
-    case 'of-accept': { const o = D.offer.find(z => z._id === S.uid); if (!o || !confirm('Accept this offer on the terms in the letter?')) return; const b = Object.assign({}, o); delete b._id; b.status = 'Accepted'; b.acceptedAt = now; await save('punch_offer/' + S.uid, b, 'Offer accepted'); return; }
+    case 'of-print': { const o = D.offer.find(z => z._id === S.self); if (o && window.OfferLetter) OfferLetter.print(o, { name: 'Movana Logistics' }); return; }
+    case 'of-accept': { const o = D.offer.find(z => z._id === S.self); if (!o || !confirm('Accept this offer on the terms in the letter?')) return; const b = Object.assign({}, o); delete b._id; b.status = 'Accepted'; b.acceptedAt = now; await save('punch_offer/' + S.self, b, 'Offer accepted'); return; }
+    case 'em-new': S.edit = 'new'; render(); window.scrollTo(0, 0); return;
+    case 'em-edit': S.edit = x; render(); window.scrollTo(0, 0); return;
+    case 'em-cancel': S.edit = null; render(); return;
+    case 'em-save': {
+      if (!isHR()) return; const id = S.edit, p = id && id !== 'new' ? empOf(id) : null;
+      const f = { name: val('em-name'), eid: val('em-eid'), desg: val('em-desg'), grade: val('em-grade'), cat: val('em-cat'), hub: val('em-hub'), join: val('em-join'), mgr: val('em-mgr'), phone: val('em-phone') };
+      if (!f.name) { toast('Enter the name.'); return; }
+      if (!/^\d{8}$/.test(f.eid)) { toast('Employee ID is 8 digits, from 10000000.'); return; }
+      const clash = D.emp.find(o => o._id !== (p && p._id) && String(o.eid || '') === f.eid); if (clash) { toast('ID ' + f.eid + ' already belongs to ' + clash.name + '.'); return; }
+      const twin = D.emp.find(o => o._id !== (p && p._id) && normN(o.name) === normN(f.name)); if (twin && !confirm(twin.name + ' (' + (twin.eid || 'no ID') + ') is already in the list. Add another person with the same name?')) return;
+      const sid = (p && p.staffId) || (p && !p.noPunch ? 'p_' + p._id : newId('st')), cur = Object.assign({}, D.staff.find(z => z._id === sid) || {}); delete cur._id;
+      const sb = Object.assign({ stage: 'Active', createdAt: now }, cur, { name: f.name, empId: f.eid, role: f.desg, grade: f.grade, dept: f.cat, hub: f.hub, joined: f.join, mgr: f.mgr, phone: f.phone, updatedAt: now });
+      if (p && !p.noPunch) sb.puid = p._id;
+      if (!(await save('staff/' + sid, sb))) return;
+      if (p && !p.noPunch) { const raw = Object.assign({}, D.pemp.find(z => z._id === p._id) || {}); delete raw._id;
+        if (!(await save('punch_emp/' + p._id, Object.assign(raw, { name: f.name, eid: f.eid, desg: f.desg, grade: f.grade, cat: f.cat, join: f.join, mgr: f.mgr, wp: Object.assign({}, raw.wp, { name: f.hub }), updatedAt: now })))) return; }
+      S.edit = null; toast(p ? 'Saved – portal' + (p.noPunch ? '' : ' and Punch app') + ' updated' : 'Employee added'); render(); return; }
+    case 'em-left': { const p = empOf(x); if (!p || !confirm('Mark ' + p.name + ' as left? They drop off every list; their Punch history is kept.')) return;
+      const sid = p.staffId || 'p_' + p._id, cur = Object.assign({}, D.staff.find(z => z._id === sid) || { name: p.name, empId: p.eid || '', role: p.desg || '', puid: p.noPunch ? '' : p._id, createdAt: now }); delete cur._id;
+      if (await save('staff/' + sid, Object.assign(cur, { stage: 'Left', leftAt: now, updatedAt: now }), p.name + ' marked as left')) render(); return; }
     case 'pp-open': S.open.person = x; render(); window.scrollTo(0, 0); return;
     case 'pp-close': S.open.person = null; render(); return;
-    case 'an-add': { if (!val('an-title')) { toast('Write a title.'); return; } await save('hr_posts/' + newId('an'), { title: val('an-title'), body: val('an-body'), pin: !!val('an-pin'), by: S.uid, byName: S.me.name, at: now }, 'Posted'); return; }
-    case 'ho-add': { if (!val('ho-date') || !val('ho-name')) { toast('Enter the date and holiday.'); return; } await save('hr_holidays/' + val('ho-date'), { date: val('ho-date'), name: val('ho-name'), by: S.uid, at: now }, 'Holiday added'); return; }
+    case 'an-add': { if (!val('an-title')) { toast('Write a title.'); return; } await save('hr_posts/' + newId('an'), { title: val('an-title'), body: val('an-body'), pin: !!val('an-pin'), by: S.self, byName: S.me.name, at: now }, 'Posted'); return; }
+    case 'ho-add': { if (!val('ho-date') || !val('ho-name')) { toast('Enter the date and holiday.'); return; } await save('hr_holidays/' + val('ho-date'), { date: val('ho-date'), name: val('ho-name'), by: S.self, at: now }, 'Holiday added'); return; }
     case 'del': { if (!confirm('Delete this?')) return; await del(t.dataset.p); return; }
     case 'ap-ok': case 'ap-no': if (a === 'ap-no' && !confirm('Reject this request?')) return; await decide(x, a === 'ap-ok'); return;
-    case 'jb-add': { if (!val('jb-title')) { toast('Enter the role.'); return; } await save('hr_jobs/' + newId('jb'), { title: val('jb-title'), dept: val('jb-dept'), loc: val('jb-loc'), openings: num(val('jb-n')) || 1, type: val('jb-type'), desc: val('jb-desc'), s: 'Open', by: S.uid, at: now }, 'Opening posted'); return; }
+    case 'jb-add': { if (!val('jb-title')) { toast('Enter the role.'); return; } await save('hr_jobs/' + newId('jb'), { title: val('jb-title'), dept: val('jb-dept'), loc: val('jb-loc'), openings: num(val('jb-n')) || 1, type: val('jb-type'), desc: val('jb-desc'), s: 'Open', by: S.self, at: now }, 'Opening posted'); return; }
     case 'jb-toggle': { const j = D.jobs.find(z => z._id === x); if (!j) return; const b = Object.assign({}, j); delete b._id; b.s = j.s === 'Closed' ? 'Open' : 'Closed'; await save('hr_jobs/' + x, b); return; }
-    case 'cd-add': { if (!val('cd-name')) { toast('Enter the name.'); return; } await save('hr_cands/' + newId('cd'), { name: val('cd-name'), mob: val('cd-mob'), email: val('cd-email'), job: val('cd-job'), source: val('cd-src'), note: val('cd-note'), stage: 'Applied', by: S.uid, at: now }, 'Candidate added'); return; }
+    case 'cd-add': { if (!val('cd-name')) { toast('Enter the name.'); return; } await save('hr_cands/' + newId('cd'), { name: val('cd-name'), mob: val('cd-mob'), email: val('cd-email'), job: val('cd-job'), source: val('cd-src'), note: val('cd-note'), stage: 'Applied', by: S.self, at: now }, 'Candidate added'); return; }
     case 'goal-done': { const g = D.goals.find(z => z._id === x); if (!g) return; const b = Object.assign({}, g); delete b._id; b.s = 'Completed'; b.progress = 100; await save('hr_goals/' + x, b, 'Marked complete'); return; }
-    case 'rv-final': { const r = D.reviews.find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; b.mgr = { rating: num(document.querySelector('[data-mr="' + x + '"]').value), text: document.querySelector('[data-mt="' + x + '"]').value.trim(), by: S.uid, byName: S.me.name }; b.s = 'Final'; await save('hr_reviews/' + x, b, 'Review finalised'); return; }
-    case 'tr-add': { if (!val('tr-title')) { toast('Enter a title.'); return; } await save('hr_training/' + newId('tr'), { title: val('tr-title'), date: val('tr-date'), mode: val('tr-mode'), trainer: val('tr-trainer'), seats: num(val('tr-seats')), desc: val('tr-desc'), s: 'Open', by: S.uid, at: now }, 'Session added'); return; }
+    case 'rv-final': { const r = D.reviews.find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; b.mgr = { rating: num(document.querySelector('[data-mr="' + x + '"]').value), text: document.querySelector('[data-mt="' + x + '"]').value.trim(), by: S.self, byName: S.me.name }; b.s = 'Final'; await save('hr_reviews/' + x, b, 'Review finalised'); return; }
+    case 'tr-add': { if (!val('tr-title')) { toast('Enter a title.'); return; } await save('hr_training/' + newId('tr'), { title: val('tr-title'), date: val('tr-date'), mode: val('tr-mode'), trainer: val('tr-trainer'), seats: num(val('tr-seats')), desc: val('tr-desc'), s: 'Open', by: S.self, at: now }, 'Session added'); return; }
     case 'tr-toggle': { const c = D.train.find(z => z._id === x); if (!c) return; const b = Object.assign({}, c); delete b._id; b.s = c.s === 'Closed' ? 'Open' : 'Closed'; await save('hr_training/' + x, b); return; }
     case 'tr-complete': { for (const en of D.enrol.filter(z => z.course === x && z.s === 'Enrolled')) { const b = Object.assign({}, en); delete b._id; b.s = 'Completed'; await save('hr_enrol/' + en._id, b); } toast('Marked attended'); return; }
-    case 'st': { const c = t.dataset.c, k = { hr_expenses: 'exp', hr_exits: 'exits', hr_help: 'help' }[c], r = D[k].find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; b.s = t.dataset.v; b.by = S.uid; b.byName = S.me.name; b.decidedAt = now; await save(c + '/' + x, b, b.s); return; }
-    case 'sx-ok': { const r = D.exits.find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; const l = document.querySelector('[data-lwd="' + x + '"]'); b.lwd = (l && l.value) || r.lwdAsked; b.s = 'Approved'; b.by = S.uid; b.decidedAt = now; await save('hr_exits/' + x, b, 'Resignation accepted'); return; }
-    case 'hd-reply': { const r = D.help.find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; b.reply = document.querySelector('[data-hr="' + x + '"]').value.trim(); if (!b.reply) { toast('Write a reply.'); return; } b.s = 'Resolved'; b.by = S.uid; b.byName = S.me.name; b.decidedAt = now; await save('hr_help/' + x, b, 'Replied'); return; }
+    case 'st': { const c = t.dataset.c, k = { hr_expenses: 'exp', hr_exits: 'exits', hr_help: 'help' }[c], r = D[k].find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; b.s = t.dataset.v; b.by = S.self; b.byName = S.me.name; b.decidedAt = now; await save(c + '/' + x, b, b.s); return; }
+    case 'sx-ok': { const r = D.exits.find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; const l = document.querySelector('[data-lwd="' + x + '"]'); b.lwd = (l && l.value) || r.lwdAsked; b.s = 'Approved'; b.by = S.self; b.decidedAt = now; await save('hr_exits/' + x, b, 'Resignation accepted'); return; }
+    case 'hd-reply': { const r = D.help.find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; b.reply = document.querySelector('[data-hr="' + x + '"]').value.trim(); if (!b.reply) { toast('Write a reply.'); return; } b.s = 'Resolved'; b.by = S.self; b.byName = S.me.name; b.decidedAt = now; await save('hr_help/' + x, b, 'Replied'); return; }
   }
 }
 document.addEventListener('change', async ev => {
@@ -515,6 +568,7 @@ document.addEventListener('change', async ev => {
 document.addEventListener('input', ev => {
   const t = ev.target;
   if (t.id === 'q-people') { S.q.people = t.value; render(); return; }
+  if (t.id === 'q-emp') { S.q.emp = t.value; render(); return; }
   if (t.id === 'q') { const q = lc(t.value.trim()), h = $('#hits'); if (!q) { h.hidden = true; return; } const L = D.emp.filter(e => lc([e.name, e.eid, e.desg].join(' ')).includes(q)).slice(0, 8);
     h.innerHTML = L.length ? L.map(e => '<button type="button" data-hit="' + esc(e._id) + '"><span class="av">' + esc(ini(e.name)) + '</span><span><b>' + esc(e.name) + '</b><br><span class="mute small">' + esc([e.eid, e.desg].filter(Boolean).join(' · ')) + '</span></span></button>').join('') : '<div class="mute small" style="padding:10px">No one found</div>'; h.hidden = false; }
 });

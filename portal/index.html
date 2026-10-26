@@ -562,7 +562,8 @@ const writable = k => S.dbState === 'ok' && S.canWrite && !S.readonly && lvl(COL
 // ================= data layer =================
 async function boot() {
   try { const v = JSON.parse(localStorage.getItem('movana.nav') || 'null'); if (v && v.mod) { S.mod = v.mod; S.tab = v.tab || {}; } } catch (e) {}
-  const h = location.hash.slice(1); if (h && NAV.some(m => m.id === h)) S.mod = h;
+  const h = location.hash.slice(1), hm = NAV.find(m => m.id === h && m.href); if (hm) { location.replace(hm.href); return; } if (h && NAV.some(m => m.id === h)) S.mod = h;
+  if ((NAV.find(m => m.id === S.mod) || {}).href) S.mod = 'punch';
   render();
   const use = window.claude && window.claude.use ? window.claude.use.bind(window.claude) : null;
   if (!use) { S.dbState = 'none'; render(); return; }
@@ -3174,7 +3175,7 @@ function punchLive() {
   const pend = (S.data.punch_req || []).filter(r => r.s === 'Pending').sort((a, b) => num(a.at) - num(b.at)), ap = pCan(P_APPR), sal = pCan(P_SALV);
   const tot = sal ? E.reduce((t, e) => { const p = pEarn(e, ym); return t + (p ? p.gross : 0); }, 0) : 0;
   h += '<div class="kpis"><div class="kpi okay"><span class="v">' + G.in.length + '</span><span class="l">In now</span></div><div class="kpi"><span class="v">' + G.out.length + '</span><span class="l">Done for today</span></div><div class="kpi' + (G.none.length ? ' alert' : '') + '"><span class="v">' + G.none.length + '</span><span class="l">Not checked in</span></div><div class="kpi"><span class="v">' + G.off.length + '</span><span class="l">Off / leave today</span></div>' +
-    '<button type="button" class="kpi' + (pend.length ? ' alert' : '') + '" data-go="punch" data-gotab="req"><span class="v">' + pend.length + '</span><span class="l">Requests waiting</span></button>' + (sal ? '<button type="button" class="kpi" data-go="punch" data-gotab="sal"><span class="v">' + money2(tot) + '</span><span class="l">Salary earned so far this month</span></button>' : '') + '</div>';
+    '<a class="kpi' + (pend.length ? ' alert' : '') + '" href="../hr/#/approvals" style="text-decoration:none;color:inherit"><span class="v">' + pend.length + '</span><span class="l">Requests waiting</span></a>' + (sal ? '<button type="button" class="kpi" data-go="punch" data-gotab="sal"><span class="v">' + money2(tot) + '</span><span class="l">Salary earned so far this month</span></button>' : '') + '</div>';
   const card = (cls, x) => '<div class="pcard ' + cls + '"><div class="nm">' + esc(x.e.name) + (x.e.eid ? ' <span class="mini">' + esc(x.e.eid) + '</span>' : '') + '</div><div class="st">' + esc(x.st) + '</div><div class="sub">' + x.sub + '</div></div>';
   [['in', 'In now', 'checked in on the app'], ['none', 'Not checked in', ''], ['out', 'Checked out', ''], ['off', 'Off or on leave', '']].forEach(([k, t, n]) => { if (G[k].length) h += '<div class="board-h">' + t + ' <span class="mini">' + G[k].length + (n ? ' ' + n : '') + '</span></div><div class="board">' + G[k].map(x => card(k, x)).join('') + '</div>'; });
   if (pend.length) h += '<section class="panel"><h2>Requests waiting (' + pend.length + ')</h2>' + (ap ? '' : '<p class="help">HR manager or HR head approves these.</p>') + '<div class="tablewrap"><table><thead><tr><th>Employee</th><th>Request</th><th>Days</th><th>Reason</th><th>Sent</th><th></th></tr></thead><tbody>' +
@@ -3337,8 +3338,7 @@ document.addEventListener('change', async e => {
 
 const NAV = [
   { id: 'punch', label: 'Team live', icon: 'clock', dept: 'hr', top: true, sub: () => 'Live attendance from the Punch app · ' + fmtDate(today()),
-    get tabs() { return [{ id: 'live', label: 'Live', view: punchLive }, { id: 'reg', label: 'Attendance register', view: punchRegister },
-      { id: 'req', label: 'Requests', view: punchRequests, n: () => (S.data.punch_req || []).filter(r => r.s === 'Pending').length }]
+    get tabs() { return [{ id: 'live', label: 'Live', view: punchLive }, { id: 'reg', label: 'Attendance register', view: punchRegister }]
       .concat(pCan(P_SALV) ? [{ id: 'sal', label: 'Salary', view: punchSalary }, { id: 'offer', label: 'Package & offer letter', view: punchOffers, n: () => (S.data.punch_offer || []).filter(o => o.status === 'Released').length }] : []).concat([{ id: 'emp', label: 'Employees', view: punchEmployees }]); } },
   { id: 'dashboard', label: 'Dashboard', icon: 'dash', dept: 'overview', sub: () => 'Everything at a glance · ' + fmtDate(today()), tabs: [{ id: 'main', label: 'Overview', view: dashboard }] },
   { id: 'shipments', label: 'Shipments', icon: 'truck', dept: 'ops', sub: () => 'Book, track and price every consignment', tabs: [
@@ -3381,24 +3381,25 @@ const NAV = [
   { id: 'access', label: 'Roles & access', icon: 'key', dept: 'adm', sub: () => 'Who can see and change each department', tabs: [
     { id: 'team', label: 'People & roles', view: teamView, n: () => (S.data.joinreq || []).filter(q => q.status === 'Pending').length },
     { id: 'roles', label: 'Roles & permissions', view: rolesView }] },
-  { id: 'people', label: 'Employees', icon: 'people', dept: 'hr', sub: () => 'Employee records and daily attendance', tabs: [
+  { id: 'people', label: 'Employees', icon: 'people', dept: 'hr', href: '../hr/#/hr-employees', sub: () => 'Employee records and daily attendance', tabs: [
     { id: 'staff', label: 'Employees', view: L('staff'), n: () => S.data.staff.filter(s => stageOf('staff', s) !== 'Left').length }, { id: 'att', label: 'Attendance', view: attendanceView }] },
-  { id: 'leave', label: 'Leave', icon: 'cal', dept: 'hr', sub: () => 'Apply, approve, balances – approved leave marks attendance', tabs: [
+  { id: 'leave', label: 'Leave & approvals', icon: 'cal', dept: 'hr', href: '../hr/#/approvals', sub: () => 'Apply, approve, balances – approved leave marks attendance', tabs: [
     { id: 'req', label: 'Leave requests', view: L('leaves'), n: () => S.data.leaves.filter(l => stageOf('leaves', l) === 'Applied').length }, { id: 'bal', label: 'Balances', view: leaveBalances }] },
-  { id: 'payroll', label: 'Payroll', icon: 'pay', dept: 'hr', sub: () => 'Monthly payroll from attendance and leave, PF / ESI / PT, payslips', tabs: [
+  { id: 'payroll', label: 'Payroll', icon: 'pay', dept: 'hr', href: '../hr/#/payroll', sub: () => 'Monthly payroll from attendance and leave, PF / ESI / PT, payslips', tabs: [
     { id: 'run', label: 'Payroll run', view: payrollRun }, { id: 'slips', label: 'Payslips', view: L('payroll'), n: () => S.data.payroll.filter(p => stageOf('payroll', p) !== 'Paid').length }] },
   { id: 'fleet', label: 'Fleet', icon: 'bus', dept: 'ops', sub: () => 'Vehicles, papers, maintenance and fuel mileage', tabs: [
     { id: 'vehicles', label: 'Vehicles', view: L('vehicles') }, { id: 'vtypes', label: 'Vehicle types', view: vtypesView, n: () => S.data.vtypes.length }, { id: 'mnt', label: 'Maintenance', view: L('maintenance') }, { id: 'fuel', label: 'Fuel log', view: L('fuel') }] },
-  { id: 'directory', label: 'Employee directory', icon: 'people', dept: 'overview', always: true, sub: () => 'Find a colleague by employee ID or name', tabs: [{ id: 'main', label: 'Employee directory', view: directoryView }] },
+  { id: 'directory', label: 'Employee directory', icon: 'people', dept: 'overview', always: true, href: '../hr/#/people', sub: () => 'Find a colleague by employee ID or name', tabs: [{ id: 'main', label: 'Employee directory', view: directoryView }] },
   { id: 'account', label: 'Settings', icon: 'cog', dept: 'overview', always: true, hidden: true, sub: () => 'Password, Google sign-in and apps', tabs: [{ id: 'main', label: 'Settings', view: accountView }] },
   { id: 'me', label: 'My access', icon: 'key', dept: 'overview', always: true, sub: () => 'Your role and what it lets you do', tabs: [{ id: 'main', label: 'My access', view: myAccessView }] },
   { id: 'reports', label: 'Reports', icon: 'chart', dept: 'overview', sub: () => 'Service levels, revenue and productivity', tabs: [{ id: 'main', label: 'Performance', view: reports }] },
   { id: 'settings', label: 'Settings', icon: 'cog', dept: 'adm', sub: () => 'Rates, rules, routing, upload templates and the audit log', tabs: [{ id: 'main', label: 'Settings', view: settingsView }, { id: 'pins', label: 'Pincodes & states', view: pinsView }, { id: 'templates', label: 'Upload templates', view: templatesView }, { id: 'audit', label: 'Audit log', view: auditView }] }
 ];
-const visibleMods = () => NAV.filter(m => anyLvl(m.id) >= 1);
+const visibleMods = () => NAV.filter(m => !m.href && anyLvl(m.id) >= 1);
 const curMod = () => { const v = visibleMods(); return v.find(m => m.id === S.mod) || v[0] || NAV.find(m => m.id === 'me'); };
 const curTab = () => { const m = curMod(), ts = tabsOf(m); return ts.find(t => t.id === S.tab[m.id]) || ts[0] || m.tabs[0]; };
 function go(mod, tab) {
+  const hm = NAV.find(m => m.id === mod && m.href); if (hm) { location.href = hm.href; return; }
   if (lvl(mod) < 1) { toast('Your role does not include ' + ((NAV.find(m => m.id === mod) || {}).label || 'that screen') + '.'); return; }
   S.mod = mod; if (tab) S.tab[mod] = tab; closeDrawer();
   try { localStorage.setItem('movana.nav', JSON.stringify({ mod: S.mod, tab: S.tab })); } catch (e) {}
@@ -3420,6 +3421,7 @@ function renderNav() {
   const chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>';
   const cnt = m => tabsOf(m).reduce((a, t) => a + (t.n && !['hubs', 'vtypes', 'staff'].includes(t.id) ? t.n() : 0), 0);
   const modHtml = m => {
+    if (m.href) return '<a class="mod" href="' + m.href + '" style="text-decoration:none">' + svg(m.icon) + '<span>' + esc(m.label) + '</span><span class="count" style="background:none;color:inherit;opacity:.6">↗</span></a>';
     const multi = tabsOf(m).length > 1, isOpen = multi && ((m.id === S.mod && !S.collapsed) || (S.open && S.open[m.id]));
     const n = cnt(m);
     return '<button type="button" class="mod" data-mod="' + m.id + '"' + (multi ? ' aria-expanded="' + !!isOpen + '"' : '') + (m.id === cm.id && !multi ? ' aria-current="page"' : '') + '>' + svg(m.icon) + '<span>' + esc(m.label) + '</span>' + (n ? '<span class="count">' + n + '</span>' : '') + (multi ? chev : '') + '</button>' +
