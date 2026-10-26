@@ -439,7 +439,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261026k"></script><script>
+<script src="fb.js?v=20261026l"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -589,7 +589,7 @@ async function boot() {
 }
 setInterval(() => { try { const ae = document.activeElement; if (S.mod === 'punch' && curTab().id === 'live' && !(ae && /INPUT|SELECT|TEXTAREA/.test(ae.tagName)) && !document.hidden) render(); } catch (e) {} }, 30000);
 let rq = false;
-function scheduleRender() { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); refreshDrawer(); }); }
+function scheduleRender() { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); refreshDrawer(); try { syncPunchStaff(); } catch (e) {} }); }
 
 function writeErr(e, k) {
   if (e && e.code === 'invalid_argument' && ADMIN_ONLY.includes(k)) { toast('Only Editors of this page can change this. Ask the owner (Share → Editor).'); return; }
@@ -2114,11 +2114,35 @@ HOOK.detail.staff = r => {
   const del = S.data.shipments.filter(s => s.drsNo && S.data.drs.some(d => d.no === s.drsNo && lc(d.rider) === lc(r.name)) && stageOf('shipments', s) === 'Delivered').length;
   return '<div class="kv"><div><span class="mini">Present this month</span><div><b>' + p + '</b> days</div></div>' + (sal ? '<div><span class="mini">Pay so far (pro-rata)</span><div><b>' + money(sal / days * p) + '</b></div></div>' : '') + (del ? '<div><span class="mini">Deliveries done</span><div><b>' + del + '</b></div></div>' : '') + '</div>';
 };
+/* ===== Punch ⇄ HR link: every Punch employee is also an HR employee record; attendance, leave and payroll read Punch ===== */
+const punchOfStaff = st => st && st.puid ? (S.data.punch_emp || []).find(e => e._id === st.puid) : null;
+const punchOfName = name => punchOfStaff((S.data.staff || []).find(s => s.name === name && s.puid));
+let syncBusy = false, syncSig = '';
+async function syncPunchStaff() {
+  if (syncBusy || !S.db || S.dbState !== 'ok' || !S.loaded.staff || !S.loaded.punch_emp || anyLvl('people') < 2) return;
+  const E = S.data.punch_emp || [], sal = hasRoleAny(P_SALV), jobs = [];
+  E.forEach(e => {
+    const st = (S.data.staff || []).find(s => s.puid === e._id) || (S.data.staff || []).find(s => !s.puid && ((e.eid && s.empId === e.eid) || lc(s.name) === lc(e.name || '')));
+    const want = { name: e.name || '', empId: e.eid || '', role: e.desg || '', dept: e.cat || '', hub: (e.wp && e.wp.name) || '', joined: e.join || '', puid: e._id };
+    if (sal && pPay(e._id)) want.salary = pGross(pPay(e._id));
+    const id = st ? st._id : 'p_' + e._id, cur = st || {};
+    if (Object.keys(want).some(k => String(cur[k] == null ? '' : cur[k]) !== String(want[k]))) { const b = Object.assign({ stage: 'Active', createdAt: Date.now() }, cur, want); delete b._id; jobs.push([id, b]); }
+  });
+  const sig = JSON.stringify(jobs.map(j => j[0] + JSON.stringify(j[1]))); if (!jobs.length || sig === syncSig) return;
+  syncBusy = true; syncSig = sig;
+  try { for (const [id, b] of jobs) { if (b.role && !SCHEMA.staff.fields.find(f => f.k === 'role').opts.includes(b.role)) SCHEMA.staff.fields.find(f => f.k === 'role').opts.push(b.role); await S.db.collection('staff').doc(id).set(Object.assign(b, { updatedAt: Date.now() })); } } catch (e) {} finally { syncBusy = false; }
+}
+/** Attendance code for an HR employee on a date: a manual mark wins, otherwise the Punch app's day. */
+function attMark(st, date) {
+  const doc = S.data.attendance.find(d => d._id === date), m = doc && doc.marks && doc.marks[st.name]; if (m) return m;
+  const e = punchOfStaff(st); if (!e) return ''; const d = pDay(e, date.slice(0, 7), +date.slice(8));
+  return d.code || (/^Leave/.test(d.st) ? 'L' : '');
+}
 function attendanceView() {
   const date = S.attDate, hub = S.attHub;
   const doc = S.data.attendance.find(d => d._id === date) || { marks: {} };
   const people = S.data.staff.filter(s => stageOf('staff', s) !== 'Left' && (!hub || lc(s.hub) === lc(hub)));
-  const marks = doc.marks || {};
+  const marks = {}; people.forEach(p => { marks[p.name] = attMark(p, date); });
   const cnt = c => people.filter(p => marks[p.name] === c).length;
   let h = '<div class="toolbar"><label class="mini" for="att-date">Date</label><input id="att-date" type="date" style="width:auto" value="' + date + '"><label class="mini" for="att-hub">Hub</label><select id="att-hub" style="width:auto"><option value="">All hubs</option>' + uniq(S.data.staff.map(s => s.hub)).map(x => '<option' + (x === hub ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select>' +
     (writable() ? '<button class="btn small" type="button" data-act="att-allp">Mark everyone present</button>' : '') + '</div>';
@@ -2132,6 +2156,10 @@ async function markAtt(names, code) {
   const marks = Object.assign({}, (doc && doc.marks) || {});
   names.forEach(n => { marks[n] = marks[n] === code && names.length === 1 ? '' : code; });
   await setDoc('attendance', date, { marks });
+  // the Punch app follows HR's marks too
+  if (hasRoleAny(P_HR)) for (const n of names) { const e = punchOfName(n); if (!e) continue; const ym = date.slice(0, 7), cur = pMark(e._id, ym) || {}, mk = Object.assign({}, cur.marks), lt = Object.assign({}, cur.lt), v = { P: 'present', A: 'absent', L: 'leave' }[marks[n]];
+    if (v) { mk[date] = v; if (v === 'leave') lt[date] = lt[date] || 'CL'; else delete lt[date]; } else { delete mk[date]; delete lt[date]; }
+    await pSet('punch_mark', e._id + '_' + ym, { uid: e._id, ym, marks: mk, lt, by: S.me && S.me.id, updatedAt: Date.now() }); }
 }
 function docsInfo(r) {
   const items = [['Insurance', r.insurance], ['Fitness', r.fitness], ['PUC', r.puc], ['Permit', r.permit]].filter(x => x[1]);
@@ -2599,7 +2627,9 @@ SECTIONS.staff = [['Person', ['name', 'empId', 'role', 'dept', 'hub', 'phone', '
 HOOK.cell.staff.login = r => { const m = (S.data.members || []).find(x => x.staff === r.name); if (!m) return '<span class="mini">—</span>'; wantNames([m._id]); return pill(roleById(m.role).name, m.status === 'Suspended' ? 'bad' : 'info'); };
 
 const dateRange = (a, b) => { const out = []; let d = a; let guard = 0; while (d && b && d <= b && guard++ < 370) { out.push(d); d = addDays(d, 1); } return out; };
-function leaveUsed(name, type, year, exceptId) { return sum(S.data.leaves.filter(l => l._id !== exceptId && l.employee === name && l.type === type && ['Applied', 'Approved'].includes(stageOf('leaves', l)) && String(l.from).slice(0, 4) === year), l => num(l.days)); }
+function punchLeaveUsed(name, type, year) { const e = punchOfName(name); if (!e) return 0; const code = { Casual: 'CL', Sick: 'SL', Earned: 'PL', 'Loss of pay': 'LOP' }[type]; if (!code) return 0;
+  return (S.data.punch_mark || []).filter(m => m.uid === e._id && String(m.ym).slice(0, 4) === year).reduce((t, m) => t + Object.keys(m.marks || {}).filter(k => m.marks[k] === 'leave' && (m.lt || {})[k] === code).length, 0); }
+function leaveUsed(name, type, year, exceptId) { return punchLeaveUsed(name, type, year) + sum(S.data.leaves.filter(l => l._id !== exceptId && l.employee === name && l.type === type && ['Applied', 'Approved'].includes(stageOf('leaves', l)) && String(l.from).slice(0, 4) === year), l => num(l.days)); }
 function leaveLeft(name, type, year, exceptId) { const q = LEAVE_QUOTA[type]; return q ? num(SET()[q]) - leaveUsed(name, type, year, exceptId) : null; }
 HOOK.cell.leaves = { left: r => { const v = leaveLeft(r.employee, r.type, String(r.from).slice(0, 4)); return v == null ? '<span class="mini">—</span>' : '<span class="' + (v < 0 ? 'bad-t' : '') + '">' + v + '</span>'; } };
 HOOK.beforeSave.leaves = (b, old) => {
@@ -2656,6 +2686,10 @@ function payFigures(b) {
 }
 function attendanceFor(name, month, joined) {
   const days = dim(month); let lop = 0;
+  const pe = punchOfName(name);
+  if (pe) { pDays(pe, month).forEach(d => { const man = ((S.data.attendance.find(x => x._id === d.k) || {}).marks || {})[name]; const c = man || d.code;
+      if (d.st === 'Not joined' || c === 'A' || /LOP/.test(d.st)) lop += 1; else if (c === 'H') lop += 0.5; });
+    return { days, payable: Math.max(0, days - lop), lop }; }
   S.data.attendance.filter(d => (d._id || '').slice(0, 7) === month).forEach(d => { const m = (d.marks || {})[name]; if (m === 'A') lop += 1; if (m === 'H') lop += 0.5; });
   if (joined && joined.slice(0, 7) === month) lop += Math.max(0, num(joined.slice(8, 10)) - 1);
   if (joined && joined.slice(0, 7) > month) lop = days;
