@@ -43,8 +43,9 @@ service cloud.firestore {
     function punchColl(c) { return c in ['punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req']; }
 
     // Employee profile for the app (designation, workplace, weekly offs …): HR keeps it, the employee reads their own.
+    // Everyone signed in may read these basic profiles (Employee directory); salary is in punch_pay, not here.
     match /punch_emp/{uid} {
-      allow read: if mine(uid) || hrAll();
+      allow read: if mine(uid) || hrAll() || isMember();
       allow write: if hrAll();
     }
     // Salary set-up: the employee reads their own (for their payslip); HR manager reads; HR head changes.
