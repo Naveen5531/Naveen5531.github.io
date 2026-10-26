@@ -3156,7 +3156,8 @@ document.addEventListener('click', async e => {
   if (a === 'add') { S.pAdd = 'new'; S.pEmp = null; S.pAddPw = Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 8).toUpperCase(); render(); return; }
   if (a === 'link') { S.pAdd = 'link'; S.pEmp = null; render(); return; }
   if (a === 'addclose') { S.pAdd = null; render(); return; }
-  if (a === 'linkgo') { const uid = $('#pl-uid').value; if (!uid) return; if (await pSet('punch_emp', uid, { name: (S.names[uid] || nameOf(uid)).replace(/ \(you\)$/, ''), wo: [0], radius: 150, createdAt: Date.now(), updatedAt: Date.now() })) { S.pAdd = null; S.pEmp = uid; render(); } return; }
+  if (a === 'linkgo') { const uid = $('#pl-uid').value; if (!uid) return; let nm = (S.names[uid] || '').replace(/ \(you\)$/, ''); if (!nm || nm === '…') { try { const d = await S.db.collection('users').doc(uid).get(); nm = (d && (d.data ? d.data() : d) || {}).name || ''; } catch (e) {} } if (!nm || nm === '…') nm = (S.me && uid === S.me.id && S.me.name) || 'Employee';
+    if (await pSet('punch_emp', uid, { name: nm, wo: [0], radius: 150, createdAt: Date.now(), updatedAt: Date.now() })) { S.pAdd = null; S.pEmp = uid; render(); } return; }
   if (a === 'addgo') { const v = id => $('#' + id).value.trim(), msg = $('#pa-msg'), name = v('pa-name'), user = v('pa-user').toLowerCase(), pw = v('pa-pw');
     if (!name || !user) { msg.textContent = 'Enter the full name and a username.'; return; }
     if (!/^[a-z0-9._-]{3,30}$/.test(user)) { msg.textContent = 'Username: 3–30 letters, numbers, dot, dash or underscore.'; return; }
