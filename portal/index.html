@@ -2377,6 +2377,8 @@ function myAccessView() {
     '<p class="help" style="margin:10px 0 0">' + esc(r.desc || '') + '</p></section>';
   if (w.role === 'none' || (w.role !== 'superadmin' && w.role !== '_loading' && S.whoKnown && S.me)) h += requestPanel(w);
   if (window.MOVANA_FB) h += '<section class="panel"><h2>Login & password</h2><p class="help">You sign in as <b class="code">' + esc(window.MOVANA_FB.username() || '') + '</b>.</p><div class="form"><label>Current password<input id="pw-old" type="password" autocomplete="current-password"></label><label>New password (8+ characters)<input id="pw-new" type="password" autocomplete="new-password"></label><label>New password again<input id="pw-new2" type="password" autocomplete="new-password"></label></div><p class="foot" id="pw-msg" role="status"></p><div class="actions"><button class="btn primary" type="button" data-act="pw-change">Change password</button><button class="btn" type="button" data-act="sign-out">Sign out</button></div></section>';
+  if (window.MOVANA_FB && window.MOVANA_FB.googleEmail) { const ge = window.MOVANA_FB.googleEmail();
+    h += '<section class="panel"><h2>Sign in with Google</h2>' + (ge ? '<p class="help">Linked to <b>' + esc(ge) + '</b>. On the login screen tap <b>Sign in with Google</b> and choose this account; you get the same role as now.</p><p><button class="btn small" type="button" data-gl="unlink">Unlink Google</button></p>' : '<p class="help">Link your Gmail to this login, then sign in with one tap using <b>Sign in with Google</b>. Your role stays the same.</p><p><button class="btn small primary" type="button" data-gl="link">Link my Google account</button></p>') + '<p class="mini" id="gl-msg"></p></section>'; }
   if (window.MOVANA_FB && S.isOwner) h += '<section class="panel"><h2>Bring across old data</h2><p class="help">Choose the <b>movana-data.json</b> file to copy shipments, customers, vehicle types, invoices and settings from the old portal. Safe to run again: the same records are overwritten, not duplicated.</p><input type="file" id="imp-file" accept=".json,application/json"><p class="foot" id="imp-msg" role="status"></p></section>';
   h += '<section class="panel"><h2>Mobile apps</h2><p class="help">' + (whoAmI().role === 'employee' ? 'Your login is for the <b>Punch</b> attendance app: check in and out, apply leave and comp off, and see your payslip. Sign in to Punch with this same username and password.' : 'Use the portal on your phone, and the Punch app for attendance. Both use this same username and password.') + '</p><p><a class="btn small primary" href="../Punch.apk" download>Download Punch (attendance)</a> <a class="btn small" href="../#app" target="_blank" rel="noopener">All apps</a></p></section>';
   h += '<section class="panel"><h2>What you can do</h2>' + permTable(r.perms, false) + '</section>';
@@ -2975,6 +2977,15 @@ document.addEventListener('click', async e => {
     if (!confirm('Copy ' + ym + ' attendance of ' + n + ' employee(s) into Employees › Attendance? Existing marks for them on those dates are replaced.')) return;
     for (const k of Object.keys(byDate)) { const doc = (S.data.attendance || []).find(d => d._id === k), marks = Object.assign({}, (doc && doc.marks) || {}, byDate[k]); await setDoc('attendance', k, { marks }); }
     toast('Copied into Employees › Attendance'); return; }
+});
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-gl]'); if (!t || !window.MOVANA_FB) return; const msg = $('#gl-msg');
+  t.disabled = true;
+  try {
+    if (t.dataset.gl === 'link') { const em = await window.MOVANA_FB.linkGoogle(); audit('members', 'Google account linked: ' + em); toast('Google account linked: ' + em); }
+    else { if (!confirm('Unlink Google from this login? You can still sign in with your username and password.')) { t.disabled = false; return; } await window.MOVANA_FB.unlinkGoogle(); toast('Google unlinked'); }
+    render();
+  } catch (err) { t.disabled = false; if (msg) msg.textContent = err && err.code === 'auth/credential-already-in-use' ? 'That Google account is already used by another login.' : err && err.code === 'auth/popup-blocked' ? 'Allow pop-ups for this site, then try again.' : err && err.code === 'auth/popup-closed-by-user' ? '' : 'Could not link: ' + ((err && err.code) || err); }
 });
 document.addEventListener('change', async e => {
   const t = e.target;

@@ -15,7 +15,7 @@
   css.textContent = '#fbGate{position:fixed;inset:0;z-index:100;background:#0b0b0c;color:#f2efe7;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));overflow:auto;font-family:"Plus Jakarta Sans",system-ui,sans-serif}' +
     '#fbGate .box{width:100%;max-width:380px;display:grid;gap:14px}#fbGate .mk{width:56px;height:56px;border-radius:16px;background:#b8862b;display:grid;place-items:center}#fbGate h1{font:600 1.7rem Fraunces,Georgia,serif;margin:6px 0 0}#fbGate p{margin:0;color:#a9a59a;font-size:.92rem;line-height:1.5}' +
     '#fbGate label{display:grid;gap:6px;font-size:.8rem;font-weight:600;color:#a9a59a}#fbGate input{font:500 1rem inherit;font-family:inherit;padding:13px 14px;border-radius:12px;border:1px solid #3a3426;background:#151517;color:#f2efe7;width:100%;box-sizing:border-box}#fbGate input:focus{outline:2px solid #b8862b;outline-offset:1px}' +
-    '#fbGate button{font:700 1rem inherit;font-family:inherit;padding:14px;border-radius:999px;border:0;background:#b8862b;color:#fff;cursor:pointer}#fbGate button[disabled]{opacity:.6}#fbGate .link{background:none;color:#d4a64a;padding:4px;font-weight:600;font-size:.86rem}#fbGate .err{color:#ff8d7a;min-height:1.2em;font-size:.88rem}#fbGate .ok{color:#7fd6a0}#fbGate code{background:#1d1d20;padding:2px 6px;border-radius:6px;color:#f2efe7}';
+    '#fbGate button{font:700 1rem inherit;font-family:inherit;padding:14px;border-radius:999px;border:0;background:#b8862b;color:#fff;cursor:pointer}#fbGate button[disabled]{opacity:.6}#fbGate .link{background:none;color:#d4a64a;padding:4px;font-weight:600;font-size:.86rem}#fbGate .err{color:#ff8d7a;min-height:1.2em;font-size:.88rem}#fbGate .ok{color:#7fd6a0}#fbGate .gbtn{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f1f1f;border:1px solid #dadce0}#fbGate code{background:#1d1d20;padding:2px 6px;border-radius:6px;color:#f2efe7}';
   document.head.appendChild(css);
   const gate = document.createElement('div'); gate.id = 'fbGate'; gate.hidden = true;
   document.addEventListener('DOMContentLoaded', () => document.body.appendChild(gate));
@@ -36,7 +36,8 @@
   try { fs.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) {}
 
   function loginScreen(msg) {
-    showGate('<h1>Staff login</h1><p>Movana Logistics control tower</p><form id="fbLogin" style="display:grid;gap:12px"><label>Username<input id="fbU" autocomplete="username" autocapitalize="none" spellcheck="false" required></label><label>Password<input id="fbP" type="password" autocomplete="current-password" required></label><div class="err" id="fbErr" role="alert">' + esc(msg || '') + '</div><button type="submit" id="fbGo">Sign in</button></form><button class="link" type="button" id="fbForgot">Forgot password?</button>');
+    if (!msg && typeof GMSG === 'string' && GMSG) msg = GMSG;
+    showGate('<h1>Staff login</h1><p>Movana Logistics control tower</p><form id="fbLogin" style="display:grid;gap:12px"><label>Username<input id="fbU" autocomplete="username" autocapitalize="none" spellcheck="false" required></label><label>Password<input id="fbP" type="password" autocomplete="current-password" required></label><div class="err" id="fbErr" role="alert">' + esc(msg || '') + '</div><button type="submit" id="fbGo">Sign in</button></form><button type="button" id="fbGoogle" class="gbtn"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Sign in with Google</button><button class="link" type="button" id="fbForgot">Forgot password?</button>');
   }
   function setupScreen() {
     showGate('<h1>Create the admin login</h1><p>First time here. This account becomes the owner and Super admin of the portal. Choose a strong password you do not use anywhere else.</p><form id="fbSetup" style="display:grid;gap:12px"><label>Your name<input id="fbN" autocomplete="name" required></label><label>Username<input id="fbU" value="admin" autocomplete="username" autocapitalize="none" spellcheck="false" required></label><label>Password (8+ characters)<input id="fbP" type="password" autocomplete="new-password" required></label><label>Password again<input id="fbP2" type="password" autocomplete="new-password" required></label><div class="err" id="fbErr" role="alert"></div><button type="submit" id="fbGo">Create admin and open portal</button></form>');
@@ -45,7 +46,7 @@
 
   gate.addEventListener('submit', async e => {
     e.preventDefault();
-    const err = gate.querySelector('#fbErr'), go = gate.querySelector('#fbGo'); err.textContent = '';
+    const err = gate.querySelector('#fbErr'), go = gate.querySelector('#fbGo'); err.textContent = ''; GMSG = '';
     const u = gate.querySelector('#fbU').value, p = gate.querySelector('#fbP').value;
     if (e.target.id === 'fbLogin') {
       go.disabled = true;
@@ -62,7 +63,23 @@
       } catch (x) { SETUP = null; err.textContent = authMsg(x); go.disabled = false; go.textContent = 'Create admin and open portal'; }
     }
   });
+  let GPEND = false, GMSG = '';
+  const gprov = () => { const p = new firebase.auth.GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' }); return p; };
   gate.addEventListener('click', async e => {
+    const gb = e.target.closest && e.target.closest('#fbGoogle');
+    if (gb) {
+      const err = gate.querySelector('#fbErr'); err.className = 'err'; err.textContent = ''; gb.disabled = true; GPEND = true; GMSG = '';
+      try {
+        const r = await auth.signInWithPopup(gprov());
+        if (r.additionalUserInfo && r.additionalUserInfo.isNewUser) {
+          // this Google account is not linked to any portal login: remove the empty login again
+          const em = r.user.email; try { await r.user.delete(); } catch (x) { try { await auth.signOut(); } catch (y) {} }
+          GPEND = false; GMSG = em + ' is not linked to a portal login. Sign in with your username once, then open My access › Sign in with Google › Link.'; loginScreen(); return;
+        }
+        GPEND = false; window.__fbOnUser(r.user);
+      } catch (x) { GPEND = false; gb.disabled = false; if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(x && x.code)) err.textContent = x && x.code === 'auth/popup-blocked' ? 'Allow pop-ups for this site, then try again.' : authMsg(x); }
+      return;
+    }
     if (e.target.id !== 'fbForgot') return;
     const u = gate.querySelector('#fbU').value.trim(), err = gate.querySelector('#fbErr');
     if (!u.includes('@')) { err.textContent = 'Ask your administrator to set a new password for you. (Logins that use a real email address can reset by email.)'; return; }
@@ -90,6 +107,10 @@
         setupDone ? loginScreen() : setupScreen();
         return;
       }
+      if (started || GPEND) return;
+      onUser(user);
+    });
+    async function onUser(user) {
       if (started) return;
       try {
         if (SETUP) await firstRun(user);
@@ -98,7 +119,8 @@
         ME.member = m.exists ? m.data() : null; ME.profile = p.exists ? p.data() : {}; ME.owner = o && o.exists ? o.data().uid : null;
         started = true; gate.hidden = true; resolve(user);
       } catch (e) { loginScreen('Signed in, but the data could not load: ' + (e.code || e.message)); }
-    });
+    }
+    window.__fbOnUser = onUser;
   });
 
   // ---------- data ----------
@@ -166,6 +188,10 @@
       await ME.user.updatePassword(newPw);
     },
     signOut: () => auth.signOut(),
+    /** Google account linked to this login (signs in to the same account, same role) */
+    googleEmail: () => { const g = ME.user && (ME.user.providerData || []).find(p => p && p.providerId === 'google.com'); return g ? g.email : ''; },
+    async linkGoogle() { await ME.user.linkWithPopup(gprov()); try { await ME.user.reload(); } catch (e) {} return (ME.user.providerData || []).find(p => p && p.providerId === 'google.com').email; },
+    async unlinkGoogle() { await ME.user.unlink('google.com'); },
     /** Load a data file exported from the old claude.ai portal: { collection: { docId: data } } */
     async importData(obj) {
       const ops = []; Object.keys(obj || {}).forEach(c => { if (!/^[a-z]+$/.test(c) || ['members', 'roles', 'users', 'public'].includes(c)) return; Object.keys(obj[c] || {}).forEach(id => { if (id !== 'owner') ops.push([c, id, obj[c][id]]); }); });
