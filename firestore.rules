@@ -19,6 +19,54 @@ service cloud.firestore {
     // Read-only roles can look but never change anything.
     function canWrite() { return isOwner() || (isMember() && !(role() in ['viewer', 'auditor', 'director'])); }
 
+    // ----- Punch (attendance app) -----
+    // "employee" = staff who only use the Punch app: they see their own Punch data and nothing else in the portal.
+    function isEmpOnly() { return isMember() && !isOwner() && role() == 'employee'; }
+    function hasRole(list) { return isOwner() || (isMember() && role() in list); }
+    // HR head, HR manager and HR executive (plus Super admin and Admin head) work on every employee's attendance and requests.
+    function hrAll() { return hasRole(['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_exec']); }
+    // Approving leave, comp off and attendance changes: not HR executive.
+    function hrApprove() { return hasRole(['superadmin', 'admin_head', 'hr_head', 'hr_manager']); }
+    // Salary: HR manager can see it, only HR head (and Super admin / Admin head) can change it.
+    function salView() { return hasRole(['superadmin', 'admin_head', 'hr_head', 'hr_manager']); }
+    function salEdit() { return hasRole(['superadmin', 'admin_head', 'hr_head']); }
+    function mine(uid) { return signedIn() && request.auth.uid == uid; }
+    // per-month documents are named <uid>_<yyyy-mm>
+    function ownKey(id) { return signedIn() && id.matches(request.auth.uid + '_[0-9]{4}-[0-9]{2}'); }
+    function punchColl(c) { return c in ['punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req']; }
+
+    // Employee profile for the app (designation, workplace, weekly offs …): HR keeps it, the employee reads their own.
+    match /punch_emp/{uid} {
+      allow read: if mine(uid) || hrAll();
+      allow write: if hrAll();
+    }
+    // Salary set-up: the employee reads their own (for their payslip); HR manager reads; HR head changes.
+    match /punch_pay/{uid} {
+      allow read: if mine(uid) || salView();
+      allow write: if salEdit();
+    }
+    // Check-ins from the app, one document per employee per month. Only the employee writes their own.
+    match /punch_att/{id} {
+      allow read: if ownKey(id) || (signedIn() && resource.data.uid == request.auth.uid) || hrAll();
+      allow create, update: if (ownKey(id) && request.resource.data.uid == request.auth.uid) || hrAll();
+      allow delete: if hrAll();
+    }
+    // Attendance marked by HR (present, week off, holiday, leave, comp off …), one document per employee per month.
+    match /punch_mark/{id} {
+      allow read: if ownKey(id) || (signedIn() && resource.data.uid == request.auth.uid) || hrAll();
+      allow write: if hrAll();
+    }
+    // Leave, comp off and attendance-change requests.
+    match /punch_req/{id} {
+      allow read: if (signedIn() && resource.data.uid == request.auth.uid) || hrAll();
+      allow create: if (signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.s == 'Pending') || hrAll();
+      // HR approves or rejects; the employee can only cancel their own pending request.
+      allow update: if hrApprove()
+        || (signedIn() && resource.data.uid == request.auth.uid && resource.data.s == 'Pending'
+            && request.resource.data.uid == request.auth.uid && request.resource.data.s in ['Pending', 'Cancelled']);
+      allow delete: if hrApprove();
+    }
+
     // "Is the portal set up yet?" – readable before login so the first screen knows what to show.
     match /public/{d} {
       allow read: if true;
@@ -39,17 +87,19 @@ service cloud.firestore {
 
     // Who has which role. Everyone signed in may read their own; admins manage all.
     match /members/{uid} {
-      allow read: if signedIn() && (uid == request.auth.uid || isMember());
+      allow read: if signedIn() && (uid == request.auth.uid || (isMember() && !isEmpOnly()));
       allow create: if isAdmin()
+        || (hrApprove() && request.resource.data.role == 'employee')
         || (uid == request.auth.uid && !exists(ownerDoc())
             && getAfter(ownerDoc()).data.uid == request.auth.uid);
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAdmin()
+        || (hrApprove() && resource.data.role == 'employee' && request.resource.data.role == 'employee');
     }
 
     // Names and usernames for logins.
     match /users/{uid} {
       allow read: if signedIn();
-      allow create, update: if isAdmin() || (uid == request.auth.uid && !exists(memberDoc()) && !exists(ownerDoc()));
+      allow create, update: if isAdmin() || hrApprove() || (uid == request.auth.uid && !exists(memberDoc()) && !exists(ownerDoc()));
       allow delete: if isAdmin();
     }
 
@@ -67,9 +117,10 @@ service cloud.firestore {
     }
 
     // Everything else: shipments, pickups, trips, invoices, payments, staff, leave, payroll, tickets …
+    // Punch employees are kept out of all of this; Punch data has its own rules above.
     match /{coll}/{id} {
-      allow read: if isMember();
-      allow write: if canWrite()
+      allow read: if isMember() && !isEmpOnly() && !punchColl(coll);
+      allow write: if canWrite() && !isEmpOnly() && !punchColl(coll)
         && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids']);
     }
   }

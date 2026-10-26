@@ -492,7 +492,7 @@ const ACCT_TYPE = Object.fromEntries(COA);
 const EXPENSE_ACCTS = COA.filter(a => a[1] === 'Expense').map(a => a[0]);
 
 // ================= state =================
-const COLLS = ['shipments', 'pickups', 'trips', 'drs', 'returns', 'invoices', 'payments', 'vendorbills', 'journal', 'tickets', 'assets', 'access', 'approvals', 'staff', 'attendance', 'vehicles', 'vtypes', 'maintenance', 'fuel', 'customers', 'hubs', 'rates', 'settings', 'audit', 'pins', 'leaves', 'payroll', 'roles', 'members'];
+const COLLS = ['shipments', 'pickups', 'trips', 'drs', 'returns', 'invoices', 'payments', 'vendorbills', 'journal', 'tickets', 'assets', 'access', 'approvals', 'staff', 'attendance', 'vehicles', 'vtypes', 'maintenance', 'fuel', 'customers', 'hubs', 'rates', 'settings', 'audit', 'pins', 'leaves', 'payroll', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req'];
 const S = { mod: 'dashboard', tab: {}, data: {}, loaded: {}, q: {}, filt: {}, sel: {}, db: null, me: null, canWrite: true, readonly: false, dbState: 'connecting', downloads: null, users: null,
   from: addDays(today(), -29), to: today(), month: today().slice(0, 7), attDate: today(), attHub: '' };
 COLLS.forEach(k => { S.data[k] = []; S.q[k] = ''; S.filt[k] = 'All'; S.sel[k] = new Set(); });
@@ -528,7 +528,7 @@ async function boot() {
   COLLS.forEach(k => {
     let q = db.collection(k);
     if (k === 'audit') q = q.orderBy('day', 'desc').limit(31);
-    else if (!['settings', 'attendance', 'pins', 'roles', 'members'].includes(k)) q = q.orderBy('createdAt', 'desc').limit(1000);
+    else if (!['settings', 'attendance', 'pins', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req'].includes(k)) q = q.orderBy('createdAt', 'desc').limit(1000);
     q.onSnapshot(snap => {
       S.data[k] = snap.docs.map(d => Object.assign({ _id: d.id }, d.data()));
       S.loaded[k] = true; scheduleRender();
@@ -2292,6 +2292,7 @@ function builtinRoles() {
     R('hr_head', 'HR head', 'HR', 'All of HR, approves leave and payroll, sees who has which role.', { overview: 1, hr: 3 }, { admin: 3, access: 1 }),
     R('hr_manager', 'HR manager', 'HR', 'Employees, attendance, approves leave and payroll.', { hr: 3 }, { admin: 3, fleet: 1 }),
     R('hr_exec', 'HR executive', 'HR', 'Keeps employee records and attendance, prepares payroll.', { hr: 2 }, {}),
+    R('employee', 'Employee (Punch app only)', 'HR', 'Uses the Punch app for own check-in, leave, comp off and payslip. No portal screens.', {}, {}, false),
     R('payroll_exec', 'Payroll executive', 'HR', 'Prepares monthly payroll and payslips.', {}, { payroll: 2, people: 1, leave: 1 }),
     R('recruiter', 'Recruiter / onboarding', 'HR', 'Adds new joiners and keeps employee records.', {}, { people: 2 }),
     R('timekeeper', 'Attendance keeper', 'HR', 'Marks daily attendance and records leave.', {}, { people: 2, leave: 2 }),
@@ -2377,7 +2378,7 @@ function myAccessView() {
   if (w.role === 'none' || (w.role !== 'superadmin' && w.role !== '_loading' && S.whoKnown && S.me)) h += requestPanel(w);
   if (window.MOVANA_FB) h += '<section class="panel"><h2>Login & password</h2><p class="help">You sign in as <b class="code">' + esc(window.MOVANA_FB.username() || '') + '</b>.</p><div class="form"><label>Current password<input id="pw-old" type="password" autocomplete="current-password"></label><label>New password (8+ characters)<input id="pw-new" type="password" autocomplete="new-password"></label><label>New password again<input id="pw-new2" type="password" autocomplete="new-password"></label></div><p class="foot" id="pw-msg" role="status"></p><div class="actions"><button class="btn primary" type="button" data-act="pw-change">Change password</button><button class="btn" type="button" data-act="sign-out">Sign out</button></div></section>';
   if (window.MOVANA_FB && S.isOwner) h += '<section class="panel"><h2>Bring across old data</h2><p class="help">Choose the <b>movana-data.json</b> file to copy shipments, customers, vehicle types, invoices and settings from the old portal. Safe to run again: the same records are overwritten, not duplicated.</p><input type="file" id="imp-file" accept=".json,application/json"><p class="foot" id="imp-msg" role="status"></p></section>';
-  h += '<section class="panel"><h2>Mobile app</h2><p class="help">Use the portal on your phone: Android app download and iPhone home-screen steps are on the company website.</p><p><a class="btn small primary" href="https://claude.ai/artifact/R3vDnu6Rj7o9HZNRgcRptq#app" target="_blank" rel="noopener">Get the mobile app</a></p></section>';
+  h += '<section class="panel"><h2>Mobile apps</h2><p class="help">' + (whoAmI().role === 'employee' ? 'Your login is for the <b>Punch</b> attendance app: check in and out, apply leave and comp off, and see your payslip. Sign in to Punch with this same username and password.' : 'Use the portal on your phone, and the Punch app for attendance. Both use this same username and password.') + '</p><p><a class="btn small primary" href="../Punch.apk" download>Download Punch (attendance)</a> <a class="btn small" href="../#app" target="_blank" rel="noopener">All apps</a></p></section>';
   h += '<section class="panel"><h2>What you can do</h2>' + permTable(r.perms, false) + '</section>';
   return h;
 }
@@ -2820,6 +2821,169 @@ document.addEventListener('change', e => {
 });
 // ================= navigation =================
 const L = (k, o) => () => listView(k, o);
+
+// ================= HR: Punch attendance app =================
+// Data the Punch app shares with the portal (see firestore.rules):
+//   punch_emp/<uid>        employee profile for the app (HR)        punch_pay/<uid>  salary set-up (HR head edits, HR manager views)
+//   punch_att/<uid>_<ym>   check-ins sent by the employee's phone   punch_mark/<uid>_<ym>  attendance marked by HR / approved requests
+//   punch_req/<id>         leave, comp off and attendance-change requests
+const P_HR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_exec'], P_APPR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager'];
+const P_SALV = ['superadmin', 'admin_head', 'hr_head', 'hr_manager'], P_SALE = ['superadmin', 'admin_head', 'hr_head'];
+const pRole = () => whoAmI().role, pCan = list => list.includes(pRole());
+const pMonth = () => S.pMonth || today().slice(0, 7);
+const pEmps = () => (S.data.punch_emp || []).slice().sort((a, b) => lc(a.name).localeCompare(lc(b.name)));
+const pAtt = (uid, ym) => (S.data.punch_att || []).find(d => d._id === uid + '_' + ym);
+const pMark = (uid, ym) => (S.data.punch_mark || []).find(d => d._id === uid + '_' + ym);
+const pPay = uid => (S.data.punch_pay || []).find(d => d._id === uid);
+const hm = ms => { const m = Math.floor(num(ms) / 6e4); return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm'; };
+const tmS = t => t ? new Date(t).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
+const P_ML = { present: 'Present', weekoff: 'Week off', holiday: 'Holiday', compoff: 'Comp off', absent: 'Absent', holpresent: 'Holiday + Present', leave: 'Leave' };
+const pReqLabel = r => r.kind === 'leave' ? (r.t === 'CO' ? 'Comp off' : 'Leave · ' + r.t) : (String(r.v).startsWith('leave:') ? 'Leave · ' + r.v.slice(6) : (r.v === '-' ? 'Clear mark' : (P_ML[r.v] || r.v)));
+async function pSet(k, id, body) { if (!S.db) return false; try { await S.db.collection(k).doc(id).set(body); return true; } catch (e) { toast(e && e.code === 'invalid_argument' ? 'Your role is not allowed to change this.' : 'Could not save. Check the connection.'); return false; } }
+/** One day for one employee: HR mark first, then the phone's check-in, then week off / absent. */
+function pDay(e, ym, d) {
+  const k = ym + '-' + String(d).padStart(2, '0'), mk = pMark(e._id, ym), at = pAtt(e._id, ym), day = at && at.days && at.days[String(d).padStart(2, '0')];
+  const base = { k, a: day && day.a, b: day && day.b, ms: day ? num(day.ms) : 0, ot: day ? num(day.ot) : 0 };
+  if (e.join && k < e.join) return Object.assign(base, { st: 'Not joined', code: '' });
+  const m = mk && mk.marks && mk.marks[k];
+  if (m) { const st = m === 'leave' ? 'Leave' + (mk.lt && mk.lt[k] ? ' (' + mk.lt[k] + ')' : '') : (P_ML[m] || m); return Object.assign(base, { st, code: m === 'present' || m === 'holpresent' ? 'P' : m === 'absent' ? 'A' : (m === 'leave' || m === 'compoff') ? 'L' : '' }); }
+  if (day && day.st) return Object.assign(base, { st: day.st, code: day.st === 'Half day' ? 'H' : ['Full day', 'Shift completed', 'Marked present'].includes(day.st) ? 'P' : day.st === 'Absent' ? 'A' : '' });
+  const wd = new Date(k + 'T00:00:00').getDay();
+  if ((e.wo || [0]).includes(wd)) return Object.assign(base, { st: 'Week off', code: '' });
+  if (k >= today()) return Object.assign(base, { st: k === today() ? 'Not yet' : '', code: '' });
+  return Object.assign(base, { st: 'Absent', code: 'A' });
+}
+function pDays(e, ym) { const [y, m] = ym.split('-').map(Number), n = new Date(y, m, 0).getDate(); return Array.from({ length: n }, (_, i) => pDay(e, ym, i + 1)); }
+function pSum(e, ym) { const D = pDays(e, ym), c = f => D.filter(f).length;
+  return { p: c(d => d.code === 'P'), h: c(d => d.code === 'H'), a: c(d => d.code === 'A'), l: c(d => /^Leave/.test(d.st)), co: c(d => d.st === 'Comp off'), wo: c(d => d.st === 'Week off'), ms: sum(D, d => d.ms), ot: sum(D, d => d.ot), D }; }
+function pNoEmp() { return '<div class="empty">No employees in Punch yet. Open the Employees tab here and add them.</div>'; }
+function pBanner() { return S.dbState === 'ok' ? '' : '<div class="banner">Connect the portal to Firebase first. Then check-ins from the Punch app appear here.</div>'; }
+
+function punchToday() {
+  const E = pEmps(), ym = today().slice(0, 7), dd = today().slice(8);
+  if (!E.length) return pBanner() + pNoEmp();
+  let inN = 0; const rows = E.map(e => {
+    const a = pAtt(e._id, ym), d = a && a.days && a.days[dd], open = a && a.open, mk = pMark(e._id, ym), m = mk && mk.marks && mk.marks[today()];
+    let st, cls; if (open) { st = 'In since ' + tmS(open.t); cls = 'good'; inN++; } else if (d && d.a) { st = tmS(d.a) + ' – ' + (d.b ? tmS(d.b) : '—') + ' · ' + hm(d.ms); cls = 'neutral'; } else if (m) { st = P_ML[m] || m; cls = 'neutral'; } else { st = 'Not checked in'; cls = 'bad'; }
+    const ll = open ? [open.lat, open.lng] : (a && a.logs && a.logs.length ? [a.logs[a.logs.length - 1].inLat, a.logs[a.logs.length - 1].inLng] : null);
+    return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + esc((e.wp && e.wp.name) || '') + '</td><td><span class="pill ' + cls + '">' + esc(st) + '</span></td><td>' + (ll && ll[0] != null ? '<a href="https://www.google.com/maps?q=' + ll[0] + ',' + ll[1] + '" target="_blank" rel="noopener">Map</a>' : '') + '</td></tr>'; });
+  return pBanner() + '<div class="kpis"><div class="kpi okay"><span class="v">' + inN + '</span><span class="l">Checked in now</span></div><div class="kpi"><span class="v">' + E.length + '</span><span class="l">Employees on Punch</span></div><div class="kpi ' + ((S.data.punch_req || []).some(r => r.s === 'Pending') ? 'alert' : '') + '"><span class="v">' + (S.data.punch_req || []).filter(r => r.s === 'Pending').length + '</span><span class="l">Requests waiting</span></div></div>' +
+    '<div class="tablewrap"><table><thead><tr><th>Name</th><th>ID</th><th>Designation</th><th>Workplace</th><th>Today</th><th>Location</th></tr></thead><tbody>' + rows.join('') + '</tbody></table></div>';
+}
+function punchRegister() {
+  const E = pEmps(), ym = pMonth();
+  let h = pBanner() + '<div class="toolbar"><label class="mini" for="pm-month">Month</label><input id="pm-month" type="month" style="width:auto" value="' + ym + '"><button class="btn small" type="button" data-pa="csv">Download CSV</button>' + (pCan(P_HR) && S.data.staff ? '<button class="btn small" type="button" data-pa="copyatt">Copy into Employees › Attendance</button>' : '') + '</div>';
+  if (!E.length) return h + pNoEmp();
+  h += '<div class="tablewrap"><table><thead><tr><th>Name</th><th>ID</th><th class="num">Present</th><th class="num">Half</th><th class="num">Absent</th><th class="num">Leave</th><th class="num">Comp off</th><th class="num">Week off</th><th class="num">Hours</th><th class="num">OT</th><th></th></tr></thead><tbody>';
+  E.forEach(e => { const x = pSum(e, ym), open = S.pOpen === e._id;
+    h += '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td class="num">' + x.p + '</td><td class="num">' + x.h + '</td><td class="num">' + x.a + '</td><td class="num">' + x.l + '</td><td class="num">' + x.co + '</td><td class="num">' + x.wo + '</td><td class="num">' + hm(x.ms) + '</td><td class="num">' + hm(x.ot) + '</td><td><button class="btn small" type="button" data-pa="day" data-x="' + esc(e._id) + '">' + (open ? 'Hide days' : 'Days') + '</button></td></tr>';
+    if (open) h += '<tr><td colspan="11"><div class="tablewrap"><table><thead><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th class="num">Hours</th><th class="num">OT</th>' + (pCan(P_HR) ? '<th>Mark</th>' : '') + '</tr></thead><tbody>' + x.D.map(d => '<tr><td>' + fmtDate(d.k) + '</td><td>' + esc(d.st) + '</td><td>' + tmS(d.a) + '</td><td>' + tmS(d.b) + '</td><td class="num">' + (d.ms ? hm(d.ms) : '') + '</td><td class="num">' + (d.ot ? hm(d.ot) : '') + '</td>' + (pCan(P_HR) ? '<td><select data-pmark="' + esc(e._id) + '|' + d.k + '" aria-label="Mark ' + fmtDate(d.k) + '"><option value="">—</option>' + [['present', 'Present'], ['absent', 'Absent'], ['weekoff', 'Week off'], ['holiday', 'Holiday'], ['holpresent', 'Holiday + Present'], ['compoff', 'Comp off'], ['leave:PL', 'Leave PL'], ['leave:SL', 'Leave SL'], ['leave:CL', 'Leave CL'], ['leave:LOP', 'Leave LOP']].map(([v, n]) => { const mk = pMark(e._id, ym), cur = mk && mk.marks && mk.marks[d.k], cv = cur === 'leave' ? 'leave:' + ((mk.lt || {})[d.k] || '') : cur; return '<option value="' + v + '"' + (cv === v ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select></td>' : '') + '</tr>').join('') + '</tbody></table></div></td></tr>'; });
+  return h + '</tbody></table></div><p class="help">Days come from the phone check-ins; a mark set here by HR (or an approved request) takes priority. Week offs follow each employee\'s set-up.</p>';
+}
+function punchRequests() {
+  const all = (S.data.punch_req || []).slice().sort((a, b) => (a.s === 'Pending' ? 0 : 1) - (b.s === 'Pending' ? 0 : 1) || num(b.at) - num(a.at)).slice(0, 200), ap = pCan(P_APPR);
+  if (!all.length) return pBanner() + '<div class="empty">No requests from the Punch app yet.</div>';
+  const days = r => { const d = (r.days || []).slice().sort(); return d.length ? (d.length === 1 ? fmtDate(d[0]) : fmtDate(d[0]) + ' – ' + fmtDate(d[d.length - 1])) + ' (' + d.length + ')' : fmtDate(r.a) + (r.b && r.b !== r.a ? ' – ' + fmtDate(r.b) : ''); };
+  return pBanner() + (ap ? '' : '<div class="banner info">HR executives can see requests. HR manager or HR head approves them.</div>') + '<div class="tablewrap"><table><thead><tr><th>Employee</th><th>Request</th><th>Days</th><th>Reason</th><th>Sent</th><th>Status</th><th></th></tr></thead><tbody>' +
+    all.map(r => '<tr><td>' + esc(r.name || '') + '</td><td>' + esc(pReqLabel(r)) + '</td><td>' + days(r) + '</td><td>' + esc(r.why || '') + '</td><td>' + fmtTime(r.at) + '</td><td><span class="pill ' + (r.s === 'Approved' ? 'good' : r.s === 'Pending' ? 'warn' : 'neutral') + '">' + esc(r.s) + '</span>' + (r.byName ? ' <small>' + esc(r.byName) + '</small>' : '') + '</td><td>' + (ap && r.s === 'Pending' ? '<button class="btn small primary" type="button" data-pa="ok" data-x="' + esc(r._id) + '">Approve</button> <button class="btn small" type="button" data-pa="no" data-x="' + esc(r._id) + '">Reject</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>';
+}
+const P_PF = [['basicAmt', 'Basic'], ['hraAmt', 'HRA'], ['convAmt', 'Conveyance'], ['splAmt', 'Special allowance'], ['pfPct', 'PF % of Basic'], ['pf', 'PF fixed ₹ (if not %)'], ['pt', 'Professional tax'], ['vpf', 'VPF'], ['esi', 'ESI'], ['oth', 'Other deduction']];
+function pGross(v) { return num(v.basicAmt) + num(v.hraAmt) + num(v.convAmt) + num(v.splAmt); }
+function pNet(v) { const pf = v.pfMode === 'fix' ? num(v.pf) : Math.round(num(v.basicAmt) * num(v.pfPct || 12) / 100); return pGross(v) - pf - num(v.pt) - num(v.vpf) - num(v.esi) - num(v.oth); }
+function punchSalary() {
+  if (!pCan(P_SALV)) return '<div class="empty">Salary is visible to HR manager and HR head only.</div>';
+  const E = pEmps(), ed = pCan(P_SALE); if (!E.length) return pBanner() + pNoEmp();
+  let h = pBanner() + (ed ? '' : '<div class="banner info">You can see salaries. Only HR head changes them.</div>') + '<div class="tablewrap"><table><thead><tr><th>Name</th><th>ID</th><th class="num">Gross / month</th><th class="num">Take-home / month</th><th>Hikes</th><th></th></tr></thead><tbody>';
+  E.forEach(e => { const v = pPay(e._id) || {}, open = S.pSal === e._id;
+    h += '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td class="num">' + money2(pGross(v)) + '</td><td class="num">' + money2(pNet(v)) + '</td><td>' + esc((v.hikes || []).map(x => x.p + '% from ' + x.f).join(', ')) + '</td><td><button class="btn small" type="button" data-pa="sal" data-x="' + esc(e._id) + '">' + (open ? 'Close' : ed ? 'Edit' : 'View') + '</button></td></tr>';
+    if (open) { const hk = (v.hikes || []).concat([{ p: '', f: '' }, { p: '', f: '' }]).slice(0, Math.max(2, (v.hikes || []).length + 1));
+      h += '<tr><td colspan="6"><div class="formgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">' + P_PF.map(([k, l]) => '<label class="mini">' + l + '<input data-ps="' + k + '" type="number" step="0.01" value="' + esc(v[k] == null ? (k === 'pfPct' ? 12 : k === 'pt' ? 200 : '') : v[k]) + '"' + (ed ? '' : ' disabled') + '></label>').join('') +
+        '<label class="mini">PF calculation<select data-ps="pfMode"' + (ed ? '' : ' disabled') + '><option value="pct"' + (v.pfMode !== 'fix' ? ' selected' : '') + '>% of earned Basic</option><option value="fix"' + (v.pfMode === 'fix' ? ' selected' : '') + '>Fixed amount</option></select></label>' +
+        '<label class="mini">Days basis<select data-ps="basis"' + (ed ? '' : ' disabled') + '>' + [['cal', 'Calendar days'], ['work', 'Working days'], ['26', 'Fixed 26'], ['30', 'Fixed 30']].map(([a, b]) => '<option value="' + a + '"' + ((v.basis || 'cal') === a ? ' selected' : '') + '>' + b + '</option>').join('') + '</select></label></div>' +
+        '<p class="mini" style="margin:10px 0 4px">Hikes (each raises Basic, HRA, Conveyance and Special from that month)</p>' + hk.map((x, i) => '<div class="toolbar"><input data-ph="' + i + '|p" type="number" step="0.01" placeholder="%" value="' + esc(x.p) + '" style="width:90px"' + (ed ? '' : ' disabled') + '><span>% from</span><input data-ph="' + i + '|f" type="month" value="' + esc(x.f) + '" style="width:auto"' + (ed ? '' : ' disabled') + '></div>').join('') +
+        (ed ? '<p><button class="btn small primary" type="button" data-pa="salsave" data-x="' + esc(e._id) + '">Save salary</button></p>' : '') + '</td></tr>'; } });
+  return h + '</tbody></table></div><p class="help">The employee\'s Punch app works out each month\'s payslip from this set-up and their attendance.</p>';
+}
+function punchEmployees() {
+  const E = pEmps(), ed = pCan(P_HR), cur = S.pEmp ? (S.data.punch_emp || []).find(e => e._id === S.pEmp) || { _id: S.pEmp } : null, add = S.pAdd;
+  let h = pBanner() + (ed ? '<div class="toolbar"><button class="btn small primary" type="button" data-pa="add">Add employee (new Punch login)</button><button class="btn small" type="button" data-pa="link">Add an existing portal login</button></div>' : '');
+  if (add) {
+    if (add === 'done') h += '<section class="panel"><h2>Login created</h2><p>Give these to the employee. They sign in to the Punch app with them.</p><p>Username: <b>' + esc(S.pAddDone.user) + '</b><br>Temporary password: <b>' + esc(S.pAddDone.pw) + '</b></p><p><button class="btn small" type="button" data-pa="addclose">Done</button></p></section>';
+    else if (add === 'link') { const have = new Set(E.map(e => e._id)), M = (S.data.members || []).filter(m => !have.has(m._id) && m.status !== 'Suspended');
+      h += '<section class="panel"><h2>Add an existing portal login to Punch</h2>' + (M.length ? '<div class="toolbar"><select id="pl-uid"><option value="">Choose a person</option>' + M.map(m => '<option value="' + esc(m._id) + '">' + esc(nameOf(m._id)) + ' · ' + esc(roleById(m.role).name) + '</option>').join('') + '</select><button class="btn small primary" type="button" data-pa="linkgo">Add</button><button class="btn small" type="button" data-pa="addclose">Cancel</button></div>' : '<p>Everyone with a login is already on Punch.</p>') + '</section>'; }
+    else h += '<section class="panel"><h2>New employee</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"><label class="mini">Full name<input id="pa-name"></label><label class="mini">Username (login)<input id="pa-user" autocapitalize="none"></label><label class="mini">Temporary password (8+)<input id="pa-pw" value="' + esc(S.pAddPw || '') + '"></label><label class="mini">Employee ID<input id="pa-eid"></label><label class="mini">Designation<input id="pa-desg"></label><label class="mini">Date of joining<input id="pa-join" type="date"></label></div><p class="mini" id="pa-msg"></p><p><button class="btn small primary" type="button" data-pa="addgo">Create login and add</button> <button class="btn small" type="button" data-pa="addclose">Cancel</button></p><p class="help">Creates a portal login with the role "Employee (Punch app only)". They see only their own data in the app.</p></section>';
+  }
+  if (cur) { const e = cur, wo = e.wo || [0];
+    h += '<section class="panel"><h2>' + esc(e.name || nameOf(e._id)) + '</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">' +
+      [['name', 'Full name'], ['eid', 'Employee ID'], ['desg', 'Designation'], ['grade', 'Grade'], ['cat', 'Department'], ['join', 'Date of joining', 'date']].map(([k, l, t]) => '<label class="mini">' + l + '<input data-pe="' + k + '" type="' + (t || 'text') + '" value="' + esc(e[k] || '') + '"' + (ed ? '' : ' disabled') + '></label>').join('') +
+      '<label class="mini">Workplace name<input data-pe="wp.name" value="' + esc((e.wp || {}).name || '') + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Workplace latitude<input data-pe="wp.lat" type="number" step="0.000001" value="' + esc((e.wp || {}).lat == null ? '' : e.wp.lat) + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Workplace longitude<input data-pe="wp.lng" type="number" step="0.000001" value="' + esc((e.wp || {}).lng == null ? '' : e.wp.lng) + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Check-in radius (m)<input data-pe="radius" type="number" value="' + esc(e.radius || 150) + '"' + (ed ? '' : ' disabled') + '></label></div>' +
+      '<p class="mini" style="margin:10px 0 4px">Weekly off</p><div class="toolbar">' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => '<label class="mini" style="display:flex;gap:4px;align-items:center"><input type="checkbox" data-pwo="' + i + '"' + (wo.includes(i) ? ' checked' : '') + (ed ? '' : ' disabled') + '>' + d + '</label>').join('') + '</div>' +
+      (ed ? '<p><button class="btn small primary" type="button" data-pa="empsave" data-x="' + esc(e._id) + '">Save</button> <button class="btn small" type="button" data-pa="empclose">Close</button> <button class="btn small" type="button" data-pa="empdel" data-x="' + esc(e._id) + '">Remove from Punch</button></p>' : '<p><button class="btn small" type="button" data-pa="empclose">Close</button></p>') +
+      '<p class="help">Latitude and longitude: open the workplace in Google Maps, long-press the spot and copy the numbers shown.</p></section>'; }
+  if (!E.length) return h + pNoEmp();
+  return h + '<div class="tablewrap"><table><thead><tr><th>Name</th><th>ID</th><th>Designation</th><th>Joined</th><th>Workplace</th><th>Login</th><th></th></tr></thead><tbody>' + E.map(e => { const m = memberOf(e._id); return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + fmtDate(e.join) + '</td><td>' + esc((e.wp && e.wp.name) || '—') + '</td><td>' + esc(m ? roleById(m.role).name : '—') + '</td><td><button class="btn small" type="button" data-pa="emp" data-x="' + esc(e._id) + '">' + (ed ? 'Edit' : 'View') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
+}
+/** Approve or reject; approved days go into the employee's HR marks so their app and payslip follow. */
+async function pDecide(id, ok) {
+  const r = (S.data.punch_req || []).find(x => x._id === id); if (!r || !pCan(P_APPR)) return;
+  const days = (r.days || []).slice();
+  if (ok) { const by = {}; days.forEach(k => { (by[k.slice(0, 7)] = by[k.slice(0, 7)] || []).push(k); });
+    for (const ym of Object.keys(by)) { const cur = pMark(r.uid, ym) || {}, marks = Object.assign({}, cur.marks), lt = Object.assign({}, cur.lt);
+      by[ym].forEach(k => { if (r.kind === 'leave') { if (r.t === 'CO') { marks[k] = 'compoff'; delete lt[k]; } else { marks[k] = 'leave'; lt[k] = r.t; } }
+        else { const v = String(r.v); if (v === '-') { delete marks[k]; delete lt[k]; } else if (v.startsWith('leave:')) { marks[k] = 'leave'; lt[k] = v.slice(6); } else { marks[k] = v; delete lt[k]; } } });
+      if (!(await pSet('punch_mark', r.uid + '_' + ym, { uid: r.uid, ym, marks, lt, by: S.me && S.me.id, updatedAt: Date.now() }))) return; } }
+  const b = Object.assign({}, r); delete b._id;
+  if (await pSet('punch_req', id, Object.assign(b, { s: ok ? 'Approved' : 'Rejected', by: S.me && S.me.id, byName: (S.me && S.me.name) || '', decidedAt: Date.now() }))) { audit('punch_req', (ok ? 'Approved ' : 'Rejected ') + pReqLabel(r) + ' for ' + (r.name || '')); toast(ok ? 'Approved' : 'Rejected'); }
+}
+function pReadEmp(e) { const o = Object.assign({}, e); delete o._id; o.wp = Object.assign({}, o.wp || {});
+  $$('[data-pe]').forEach(i => { const k = i.dataset.pe; if (k.startsWith('wp.')) o.wp[k.slice(3)] = i.type === 'number' ? (i.value === '' ? null : num(i.value)) : i.value.trim(); else o[k] = i.type === 'number' ? num(i.value) : i.value.trim(); });
+  o.wo = $$('[data-pwo]').filter(i => i.checked).map(i => +i.dataset.pwo); if (o.wp.lat == null || o.wp.lng == null) delete o.wp.lat; return o; }
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-pa]'); if (!t) return; const a = t.dataset.pa, x = t.dataset.x;
+  if (a === 'day') { S.pOpen = S.pOpen === x ? null : x; render(); return; }
+  if (a === 'ok' || a === 'no') { if (a === 'no' && !confirm('Reject this request?')) return; t.disabled = true; await pDecide(x, a === 'ok'); return; }
+  if (a === 'sal') { S.pSal = S.pSal === x ? null : x; render(); return; }
+  if (a === 'salsave') { const v = Object.assign({}, pPay(x) || {}); delete v._id; $$('[data-ps]').forEach(i => { v[i.dataset.ps] = i.tagName === 'SELECT' ? i.value : (i.value === '' ? 0 : num(i.value)); });
+    const hk = {}; $$('[data-ph]').forEach(i => { const [n, f] = i.dataset.ph.split('|'); (hk[n] = hk[n] || {})[f] = f === 'p' ? num(i.value) : i.value; }); v.hikes = Object.values(hk).filter(h => h.p && h.f);
+    v.v2 = 1; v.updatedAt = Date.now(); v.by = S.me && S.me.id; if (await pSet('punch_pay', x, v)) { audit('punch_pay', 'Salary set-up changed for ' + ((S.data.punch_emp || []).find(e => e._id === x) || {}).name); toast('Salary saved'); S.pSal = null; render(); } return; }
+  if (a === 'emp') { S.pEmp = x; S.pAdd = null; render(); return; }
+  if (a === 'empclose') { S.pEmp = null; render(); return; }
+  if (a === 'empsave') { const cur = (S.data.punch_emp || []).find(e => e._id === x) || { _id: x }, o = pReadEmp(cur); if (!o.name) { toast('Enter the full name'); return; } o.updatedAt = Date.now();
+    if (await pSet('punch_emp', x, o)) { audit('punch_emp', 'Punch details saved for ' + o.name); toast('Saved'); S.pEmp = null; render(); } return; }
+  if (a === 'empdel') { if (!confirm('Remove this person from Punch? Their login stays; their attendance history stays.')) return; try { await S.db.collection('punch_emp').doc(x).delete(); S.pEmp = null; toast('Removed from Punch'); } catch (err) { toast('Your role is not allowed to do this.'); } return; }
+  if (a === 'add') { S.pAdd = 'new'; S.pEmp = null; S.pAddPw = Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 8).toUpperCase(); render(); return; }
+  if (a === 'link') { S.pAdd = 'link'; S.pEmp = null; render(); return; }
+  if (a === 'addclose') { S.pAdd = null; render(); return; }
+  if (a === 'linkgo') { const uid = $('#pl-uid').value; if (!uid) return; if (await pSet('punch_emp', uid, { name: (S.names[uid] || nameOf(uid)).replace(/ \(you\)$/, ''), wo: [0], radius: 150, createdAt: Date.now(), updatedAt: Date.now() })) { S.pAdd = null; S.pEmp = uid; render(); } return; }
+  if (a === 'addgo') { const v = id => $('#' + id).value.trim(), msg = $('#pa-msg'), name = v('pa-name'), user = v('pa-user').toLowerCase(), pw = v('pa-pw');
+    if (!name || !user) { msg.textContent = 'Enter the full name and a username.'; return; }
+    if (!/^[a-z0-9._-]{3,30}$/.test(user)) { msg.textContent = 'Username: 3–30 letters, numbers, dot, dash or underscore.'; return; }
+    if (pw.length < 8) { msg.textContent = 'The temporary password needs at least 8 characters.'; return; }
+    if (!window.MOVANA_FB) { msg.textContent = 'Connect the portal to Firebase first.'; return; }
+    t.disabled = true; msg.textContent = 'Creating…';
+    try { const uid = await window.MOVANA_FB.createStaff(name, user, pw); S.names[uid] = name;
+      await S.db.collection('members').doc(uid).set({ role: 'employee', staff: '', status: 'Active', createdAt: Date.now(), updatedAt: Date.now(), addedBy: S.me && S.me.id });
+      await S.db.collection('punch_emp').doc(uid).set({ name, eid: v('pa-eid'), desg: v('pa-desg'), join: v('pa-join'), wo: [0], radius: 150, createdAt: Date.now(), updatedAt: Date.now() });
+      audit('punch_emp', 'Punch login created for ' + name); S.pAdd = 'done'; S.pAddDone = { user, pw }; render();
+    } catch (err) { msg.textContent = (window.MOVANA_FB.authMsg ? window.MOVANA_FB.authMsg(err) : 'Could not create the login.'); t.disabled = false; } return; }
+  if (a === 'csv') { const ym = pMonth(), rows = [['Employee', 'ID', 'Date', 'Status', 'In', 'Out', 'Hours', 'OT']];
+    pEmps().forEach(e => pDays(e, ym).forEach(d => rows.push([e.name, e.eid || '', d.k, d.st, tmS(d.a), tmS(d.b), d.ms ? (d.ms / 36e5).toFixed(2) : '', d.ot ? (d.ot / 36e5).toFixed(2) : ''])));
+    const blob = new Blob(['﻿' + rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(',')).join('\n')], { type: 'text/csv' }), u = URL.createObjectURL(blob), l = document.createElement('a'); l.href = u; l.download = 'Punch_attendance_' + ym + '.csv'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); return; }
+  if (a === 'copyatt') { const ym = pMonth(), staff = S.data.staff || [], byDate = {}; let n = 0;
+    pEmps().forEach(e => { const st = staff.find(s => lc(s.name) === lc(e.name)); if (!st) return; n++; pDays(e, ym).forEach(d => { if (d.code) (byDate[d.k] = byDate[d.k] || {})[st.name] = d.code; }); });
+    if (!n) { toast('No Punch employee matches a name in Employees › Staff.'); return; }
+    if (!confirm('Copy ' + ym + ' attendance of ' + n + ' employee(s) into Employees › Attendance? Existing marks for them on those dates are replaced.')) return;
+    for (const k of Object.keys(byDate)) { const doc = (S.data.attendance || []).find(d => d._id === k), marks = Object.assign({}, (doc && doc.marks) || {}, byDate[k]); await setDoc('attendance', k, { marks }); }
+    toast('Copied into Employees › Attendance'); return; }
+});
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.id === 'pm-month') { S.pMonth = t.value || today().slice(0, 7); S.pOpen = null; render(); return; }
+  if (t.dataset && t.dataset.pmark) { const [uid, k] = t.dataset.pmark.split('|'), ym = k.slice(0, 7), cur = pMark(uid, ym) || {}, marks = Object.assign({}, cur.marks), lt = Object.assign({}, cur.lt), v = t.value;
+    if (!v) { delete marks[k]; delete lt[k]; } else if (v.startsWith('leave:')) { marks[k] = 'leave'; lt[k] = v.slice(6); } else { marks[k] = v; delete lt[k]; }
+    if (await pSet('punch_mark', uid + '_' + ym, { uid, ym, marks, lt, by: S.me && S.me.id, updatedAt: Date.now() })) toast('Marked'); }
+});
+
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: 'dash', dept: 'overview', sub: () => 'Everything at a glance · ' + fmtDate(today()), tabs: [{ id: 'main', label: 'Overview', view: dashboard }] },
   { id: 'shipments', label: 'Shipments', icon: 'truck', dept: 'ops', sub: () => 'Book, track and price every consignment', tabs: [
@@ -2868,6 +3032,10 @@ const NAV = [
     { id: 'req', label: 'Leave requests', view: L('leaves'), n: () => S.data.leaves.filter(l => stageOf('leaves', l) === 'Applied').length }, { id: 'bal', label: 'Balances', view: leaveBalances }] },
   { id: 'payroll', label: 'Payroll', icon: 'pay', dept: 'hr', sub: () => 'Monthly payroll from attendance and leave, PF / ESI / PT, payslips', tabs: [
     { id: 'run', label: 'Payroll run', view: payrollRun }, { id: 'slips', label: 'Payslips', view: L('payroll'), n: () => S.data.payroll.filter(p => stageOf('payroll', p) !== 'Paid').length }] },
+  { id: 'punch', label: 'Punch app', icon: 'clock', dept: 'hr', sub: () => 'Check-ins from the Punch app, approvals and salary set-up',
+    get tabs() { return [{ id: 'today', label: 'Today', view: punchToday }, { id: 'reg', label: 'Attendance register', view: punchRegister },
+      { id: 'req', label: 'Requests', view: punchRequests, n: () => (S.data.punch_req || []).filter(r => r.s === 'Pending').length }]
+      .concat(pCan(P_SALV) ? [{ id: 'sal', label: 'Salary set-up', view: punchSalary }] : []).concat([{ id: 'emp', label: 'Employees', view: punchEmployees }]); } },
   { id: 'fleet', label: 'Fleet', icon: 'bus', dept: 'ops', sub: () => 'Vehicles, papers, maintenance and fuel mileage', tabs: [
     { id: 'vehicles', label: 'Vehicles', view: L('vehicles') }, { id: 'vtypes', label: 'Vehicle types', view: vtypesView, n: () => S.data.vtypes.length }, { id: 'mnt', label: 'Maintenance', view: L('maintenance') }, { id: 'fuel', label: 'Fuel log', view: L('fuel') }] },
   { id: 'me', label: 'My access', icon: 'key', dept: 'overview', always: true, sub: () => 'Your role and what it lets you do', tabs: [{ id: 'main', label: 'My access', view: myAccessView }] },

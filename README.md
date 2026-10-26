@@ -10,6 +10,7 @@
 |---|---|
 | `index.html` | The public website. Contact details: search for `const SITE`. |
 | `Movana.apk` | Android app (opens the staff portal). |
+| `Punch.apk` | Punch attendance app. Staff sign in with their portal username and password. |
 | `portal/index.html` | The staff portal. |
 | `portal/firebase-config.js` | Connection to your Firebase project. Paste your `firebaseConfig` here. |
 | `firestore.rules` | Security rules. Paste into Firebase console → Firestore Database → Rules → Publish. |
@@ -41,3 +42,19 @@
 Admin › Roles & access › People & roles › **Add a staff login** creates a username and a temporary password.
 Staff change their password in **My access**. A forgotten password: remove the person and add them again with a new username,
 or delete the user in Firebase console → Authentication and add them again. Logins that use a real email address as the username can use "Forgot password?".
+
+## Punch attendance app (joined with the portal)
+
+- Download: https://naveen5531.github.io/Punch.apk (also on the website and in the portal under My access).
+- Punch reads `portal/firebase-config.js`, so it connects as soon as the portal does. Until then it works on its own.
+- **After any change to `firestore.rules`, paste the whole file again into Firebase console → Firestore Database → Rules → Publish.**
+- Portal › HR › **Punch app**: Today, Attendance register (with HR marks and CSV), Requests (approve/reject), Salary set-up, Employees (create Punch logins, workplace and weekly off).
+- Who can do what:
+
+| Role | Punch data |
+|---|---|
+| Super admin, Admin head, HR head | Everything, including changing salary |
+| HR manager | Attendance, approves leave / comp off / attendance changes, sees salary (cannot change it) |
+| HR executive | Attendance and employee details, sees requests; no approvals, no salary |
+| Employee (Punch app only) | Own check-ins, own requests, own payslip; nothing else in the portal |
+| Other portal roles | No Punch data |
