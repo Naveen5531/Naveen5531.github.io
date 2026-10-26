@@ -14,22 +14,26 @@ service cloud.firestore {
         && get(memberDoc()).data.role != 'none'));
     }
     function role() { return get(memberDoc()).data.role; }
+    // Everyone's roles: the main role plus any extra roles (a person can hold several; the highest access wins).
+    function myRoles() { return get(memberDoc()).data.get('roles', []).concat([role()]); }
+    // A members document may only list extra roles that are allowed for the main role written with it.
+    function rolesOnly(d, allowed) { return d.get('roles', []).removeAll(allowed).size() == 0; }
     // Super admin and Admin head manage logins, roles and settings.
-    function isAdmin() { return isOwner() || (isMember() && role() in ['superadmin', 'admin_head']); }
+    function isAdmin() { return isOwner() || (isMember() && myRoles().hasAny(['superadmin', 'admin_head'])); }
     // Read-only roles can look but never change anything.
-    function canWrite() { return isOwner() || (isMember() && !(role() in ['viewer', 'auditor', 'director'])); }
+    function canWrite() { return isOwner() || (isMember() && myRoles().removeAll(['viewer', 'auditor', 'director']).size() > 0); }
 
     // ----- Punch (attendance app) -----
     // "employee" = staff who only use the Punch app: they see their own Punch data and nothing else in the portal.
-    function isEmpOnly() { return isMember() && !isOwner() && role() == 'employee'; }
-    function hasRole(list) { return isOwner() || (isMember() && role() in list); }
+    function isEmpOnly() { return isMember() && !isOwner() && myRoles().removeAll(['employee']).size() == 0; }
+    function hasRole(list) { return isOwner() || (isMember() && myRoles().hasAny(list)); }
     // HR head, HR manager and HR executive (plus Super admin and Admin head) work on every employee's attendance and requests.
-    function hrAll() { return hasRole(['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_exec']); }
+    function hrAll() { return hasRole(['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_exec', 'hr_sr', 'hr_tl', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp']); }
     // Approving leave, comp off and attendance changes: not HR executive.
-    function hrApprove() { return hasRole(['superadmin', 'admin_head', 'hr_head', 'hr_manager']); }
+    function hrApprove() { return hasRole(['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_tl', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp']); }
     // Salary: HR manager can see it, only HR head (and Super admin / Admin head) can change it.
-    function salView() { return hasRole(['superadmin', 'admin_head', 'hr_head', 'hr_manager']); }
-    function salEdit() { return hasRole(['superadmin', 'admin_head', 'hr_head']); }
+    function salView() { return hasRole(['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp']); }
+    function salEdit() { return hasRole(['superadmin', 'admin_head', 'hr_head', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp']); }
     function mine(uid) { return signedIn() && request.auth.uid == uid; }
     // per-month documents are named <uid>_<yyyy-mm>
     function ownKey(id) { return signedIn() && id.matches(request.auth.uid + '_[0-9]{4}-[0-9]{2}'); }
@@ -97,12 +101,12 @@ service cloud.firestore {
     match /members/{uid} {
       allow read: if signedIn() && (uid == request.auth.uid || (isMember() && !isEmpOnly()));
       allow create: if isAdmin()
-        || (hrApprove() && request.resource.data.role == 'employee')
-        || (uid == request.auth.uid && gmailOk(request.resource.data.role))
+        || (hrApprove() && request.resource.data.role == 'employee' && rolesOnly(request.resource.data, ['employee']))
+        || (uid == request.auth.uid && gmailOk(request.resource.data.role) && rolesOnly(request.resource.data, [request.resource.data.role]))
         || (uid == request.auth.uid && !exists(ownerDoc())
             && getAfter(ownerDoc()).data.uid == request.auth.uid);
       allow update, delete: if isAdmin()
-        || (hrApprove() && resource.data.role == 'employee' && request.resource.data.role == 'employee');
+        || (hrApprove() && resource.data.role == 'employee' && rolesOnly(resource.data, ['employee']) && request.resource.data.role == 'employee' && rolesOnly(request.resource.data, ['employee']));
     }
 
     // Names and usernames for logins.

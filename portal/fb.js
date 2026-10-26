@@ -12,15 +12,15 @@
 
   // ---------- login screen ----------
   const css = document.createElement('style');
-  css.textContent = '#fbGate{position:fixed;inset:0;z-index:100;background:#0b0b0c;color:#f2efe7;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));overflow:auto;font-family:"Plus Jakarta Sans",system-ui,sans-serif}' +
-    '#fbGate .box{width:100%;max-width:380px;display:grid;gap:14px}#fbGate .mk{width:56px;height:56px;border-radius:16px;background:#b8862b;display:grid;place-items:center}#fbGate h1{font:600 1.7rem Fraunces,Georgia,serif;margin:6px 0 0}#fbGate p{margin:0;color:#a9a59a;font-size:.92rem;line-height:1.5}' +
-    '#fbGate label{display:grid;gap:6px;font-size:.8rem;font-weight:600;color:#a9a59a}#fbGate input{font:500 1rem inherit;font-family:inherit;padding:13px 14px;border-radius:12px;border:1px solid #3a3426;background:#151517;color:#f2efe7;width:100%;box-sizing:border-box}#fbGate input:focus{outline:2px solid #b8862b;outline-offset:1px}' +
-    '#fbGate button{font:700 1rem inherit;font-family:inherit;padding:14px;border-radius:999px;border:0;background:#b8862b;color:#fff;cursor:pointer}#fbGate button[disabled]{opacity:.6}#fbGate .link{background:none;color:#d4a64a;padding:4px;font-weight:600;font-size:.86rem}#fbGate .err{color:#ff8d7a;min-height:1.2em;font-size:.88rem}#fbGate .ok{color:#7fd6a0}#fbGate .gbtn{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f1f1f;border:1px solid #dadce0}#fbGate code{background:#1d1d20;padding:2px 6px;border-radius:6px;color:#f2efe7}';
+  css.textContent = '#fbGate{position:fixed;inset:0;z-index:100;background:#f2f3f7;color:#101828;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));overflow:auto;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}' +
+    '#fbGate .box{width:100%;max-width:400px;display:grid;gap:14px;background:#fff;border-radius:22px;padding:26px 22px;box-shadow:0 1px 2px rgba(16,24,40,.05),0 8px 24px -12px rgba(16,24,40,.12)}#fbGate .mk{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#25cf9f,#0c9b76);display:grid;place-items:center;color:#fff;font:800 1.2rem "Bricolage Grotesque",system-ui,sans-serif}#fbGate h1{font:800 1.75rem "Bricolage Grotesque",system-ui,sans-serif;margin:6px 0 0;letter-spacing:-.02em}#fbGate p{margin:0;color:#6b7280;font-size:.92rem;line-height:1.5}' +
+    '#fbGate label{display:grid;gap:6px;font-size:.8rem;font-weight:600;color:#6b7280}#fbGate input{font:500 1rem inherit;font-family:inherit;padding:13px 14px;border-radius:14px;border:1px solid #e9ebf1;background:#f8f9fb;color:#101828;width:100%;box-sizing:border-box}#fbGate input:focus{outline:2px solid #0c9b76;outline-offset:1px}' +
+    '#fbGate button{font:700 1rem inherit;font-family:inherit;padding:14px;border-radius:999px;border:0;background:#0c9b76;color:#fff;cursor:pointer}#fbGate button[disabled]{opacity:.6}#fbGate .link{background:none;color:#0c9b76;padding:4px;font-weight:600;font-size:.86rem}#fbGate .err{color:#d92d20;min-height:1.2em;font-size:.88rem}#fbGate .ok{color:#0c9b76}#fbGate .gbtn{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f1f1f;border:1px solid #dadce0}#fbGate code{background:#f3f4f8;padding:2px 6px;border-radius:6px;color:#101828}';
   document.head.appendChild(css);
   const gate = document.createElement('div'); gate.id = 'fbGate'; gate.hidden = true;
   document.addEventListener('DOMContentLoaded', () => document.body.appendChild(gate));
   if (document.body) document.body.appendChild(gate);
-  const MARK = '<div class="mk"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg></div>';
+  const MARK = '<div class="mk" aria-hidden="true">ML</div>';
   function showGate(html) { gate.innerHTML = '<div class="box">' + MARK + html + '</div>'; gate.hidden = false; const f = gate.querySelector('input'); if (f) setTimeout(() => f.focus(), 50); }
 
   if (!CFG || !window.firebase) {
@@ -161,7 +161,7 @@
     me: async () => ({ id: ME.user.uid, name: (ME.profile && ME.profile.name) || toUser(ME.user.email), avatarUrl: avatar((ME.profile && ME.profile.name) || ME.user.email, ME.user.uid), color: '', email: ME.user.email, isMe: true }),
     id: async () => ME.user.uid,
     isOwner: async () => ME.owner === ME.user.uid,
-    canEdit: async () => ME.owner === ME.user.uid || !!(ME.member && ME.member.status !== 'Suspended' && ADMIN_ROLES.includes(ME.member.role)),
+    canEdit: async () => ME.owner === ME.user.uid || !!(ME.member && ME.member.status !== 'Suspended' && [ME.member.role].concat(ME.member.roles || []).some(r => ADMIN_ROLES.includes(r))),
     can: async () => true,
     profiles: async ids => {
       const out = {};

@@ -1,5 +1,5 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b0b0c"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}
 /* ===== Punch live home ===== */
 .live-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
 .live-dot { display: inline-flex; align-items: center; gap: 7px; font-size: .78rem; font-weight: 600; color: var(--good); background: var(--good-bg); padding: 4px 10px; border-radius: 999px; }
@@ -15,11 +15,20 @@
 .pcard.in .st { color: #0c9b76; font-weight: 600; } .pcard.out .st { color: #c2540f; font-weight: 600; }
 .lgrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .board-h { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 8px; font-weight: 700; } .board-h .mini { font-weight: 400; }
+.linkbtn { border: 0; background: none; color: var(--accent); padding: 0 2px; cursor: pointer; font: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.perm-tab td { background: var(--surface-2); }
+.who-wrap { position: relative; }
+button.who { border: 0; background: none; cursor: pointer; padding: 4px; border-radius: 999px; font: inherit; }
+button.who:hover { background: var(--surface-2); }
+.who-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 220px; background: var(--surface-solid); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-lg); padding: 6px; display: grid; gap: 2px; }
+.who-menu .wm-h { padding: 10px 12px 8px; display: grid; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 4px; } .who-menu .wm-h span { font-size: .76rem; color: var(--muted); white-space: normal; }
+.who-menu button { display: flex; align-items: center; gap: 10px; border: 0; background: none; text-align: left; padding: 10px 12px; border-radius: 10px; font: 600 .9rem var(--body); color: var(--ink); cursor: pointer; }
+.who-menu button:hover { background: var(--surface-2); } .who-menu button svg { width: 16px; height: 16px; } .who-menu .out { color: var(--bad); }
 </style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b0b0c"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><title>Movana Control Tower</title></head><body>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><title>Movana Control Tower</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Outfit:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Outfit:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&display=swap">
 <style>
 /* Layout: left command rail (modules with their sub-tabs nested beneath), slim top bar with page title, tracking search and user; content canvas of cards and tables; records open in a right-hand sheet. Four skins re-dress the same structure. */
 :root {
@@ -69,6 +78,28 @@ body[data-skin="industrial"] {
   --display: "Barlow Condensed", "Arial Narrow", sans-serif; --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --r: 4px; --r-sm: 3px; --head-case: uppercase; --head-track: .04em; --kpi-size: 2rem; color-scheme: light;
 }
+
+/* Skin 5 · Punch – same look as the Punch app: light grey canvas, white rounded cards, green for "in", orange for "out" */
+body[data-skin="punch"] {
+  --canvas: #f2f3f7; --canvas-img: #f2f3f7; --surface: #ffffff; --surface-solid: #ffffff; --surface-2: #f3f4f8; --field: #f8f9fb;
+  --ink: #101828; --ink-2: #344054; --muted: #6b7280; --line: #e9ebf1; --line-2: #dfe2ea;
+  --side: #ffffff; --side-ink: #475467; --side-head: #101828; --side-active: rgba(12, 155, 118, .1); --side-active-ink: #0a7d5f; --side-sub: #6b7280; --side-line: #e9ebf1;
+  --accent: #0c9b76; --accent-ink: #ffffff; --accent-soft: rgba(12, 155, 118, .1); --accent-2: #f26a1b; --ic-bg: rgba(12, 155, 118, .1);
+  --good: #0a7d5f; --good-bg: #e3f6ef; --warn: #b54708; --warn-bg: #fff4e5; --bad: #d92d20; --bad-bg: #fdecea; --info: #3557b5; --info-bg: #eaf0fc;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 8px 24px -12px rgba(16, 24, 40, .12); --shadow-lg: 0 30px 70px rgba(16, 24, 40, .25); --blur: none;
+  --display: "Bricolage Grotesque", -apple-system, system-ui, sans-serif; --body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  --r: 22px; --r-sm: 14px; --kpi-size: 1.75rem; color-scheme: light;
+}
+body[data-skin="punch"] .brand-mark { background: linear-gradient(135deg, #25cf9f, #0c9b76); color: #fff; font: 800 .9rem var(--display); }
+body[data-skin="punch"] .mod .count { background: #f26a1b; }
+body[data-skin="punch"] .btn { border-radius: 999px; }
+body[data-skin="punch"] .btn.primary { background: #0c9b76; border-color: #0c9b76; color: #fff; }
+body[data-skin="punch"] .panel, body[data-skin="punch"] .kpi, body[data-skin="punch"] .tablewrap { border-color: transparent; box-shadow: var(--shadow); }
+body[data-skin="punch"] .kpi .v { font-family: var(--display); font-weight: 800; letter-spacing: -.02em; }
+body[data-skin="punch"] .titles h1, body[data-skin="punch"] .panel h2 { font-family: var(--display); font-weight: 800; letter-spacing: -.02em; }
+body[data-skin="punch"] .side { box-shadow: 1px 0 0 var(--line); }
+body[data-skin="punch"] .pcard { border-radius: 18px; border-color: transparent; box-shadow: var(--shadow); }
+body[data-skin="punch"] .pill { border-radius: 99px; }
 * { box-sizing: border-box; }
 html, body { min-height: 100%; }
 body { margin: 0; background: var(--canvas-img); background-color: var(--canvas); background-attachment: fixed; color: var(--ink); font: 14px/1.5 var(--body); -webkit-font-smoothing: antialiased; }
@@ -382,11 +413,11 @@ tr.click { cursor: pointer; }
 <div class="shell">
   <aside class="side" id="side" aria-label="Modules">
     <div class="brand">
-      <div class="brand-mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg></div>
+      <div class="brand-mark" aria-hidden="true">ML</div>
       <div><div class="brand-name" id="brandName">Movana Logistics</div><div class="brand-sub">Control tower</div></div>
     </div>
     <nav class="nav" id="nav"></nav>
-    <div class="side-foot"><span class="brand-sub">Movana · Executive</span><div id="skinrow" hidden></div></div>
+    <div class="side-foot"><span class="brand-sub">Movana · Punch</span><div id="skinrow" hidden></div></div>
   </aside>
   <div class="navscrim" data-act="nav-close"></div>
   <div class="main">
@@ -395,7 +426,7 @@ tr.click { cursor: pointer; }
       <div class="titles"><div class="crumb" id="crumb"></div><h1 id="title">Dashboard</h1></div>
       <form class="track" id="trackForm" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input type="search" id="trackInput" placeholder="Track AWB, delivery no, RMA, invoice…" aria-label="Track"><button type="submit">Track</button></form>
-      <div class="who" id="who"></div>
+      <div class="who-wrap"><button type="button" class="who" id="who" aria-haspopup="menu" aria-expanded="false" aria-label="Profile menu"></button><div class="who-menu" id="whoMenu" role="menu" hidden></div></div>
     </header>
     <main class="content gut" id="content"></main>
   </div>
@@ -403,7 +434,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261026i"></script><script>
+<script src="fb.js?v=20261026j"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -2276,7 +2307,7 @@ function builtinRoles() {
   return [
     // Management
     Object.assign(R('superadmin', 'Super admin', 'Management', 'Everything, including roles, access and settings. The page owner always has this.', ALL(3), {}, false), { locked: true }),
-    R('director', 'Director / CEO', 'Management', 'Sees the whole business, approves requests, changes nothing else.', ALL(1), { admin: 3, access: 1, it: 2, leave: 2 }, false),
+    R('director', 'Director / CEO', 'Management', 'Sees the whole business, approves requests, changes nothing else.', ALL(1), { admin: 3, access: 0, it: 2, leave: 2 }, false),
     R('gm', 'General manager', 'Management', 'Runs operations fully, sees finance and HR, approves requests.', { overview: 1, ops: 3, fin: 1, hr: 1, itd: 2 }, { admin: 3, leave: 3, payroll: 0 }),
     R('branch_manager', 'Branch / hub manager', 'Management', 'Runs one branch: all operations, attendance, leave approval, local approvals.', { overview: 1, ops: 3 }, { fleet: 2, billing: 1, people: 2, leave: 3, admin: 3 }),
     R('auditor', 'Auditor (read only)', 'Management', 'Reads books, bills, payroll, settings and the audit log. Changes nothing.', ALL(1), { access: 0 }, false),
@@ -2306,7 +2337,7 @@ function builtinRoles() {
     R('cashier', 'Cashier / COD reconciliation', 'Finance', 'Collects COD from riders, deposits cash, remits to clients.', {}, { billing: 2, payments: 2, last: 1 }),
     R('tax_exec', 'GST & tax executive', 'Finance', 'GST returns, TDS, journals and books review.', {}, { accounts: 2, billing: 1, payments: 1 }),
     // HR
-    R('hr_head', 'HR head', 'HR', 'All of HR, approves leave and payroll, sees who has which role.', { overview: 1, hr: 3 }, { admin: 3, access: 1 }),
+    R('hr_head', 'HR head', 'HR', 'All of HR, approves leave and payroll, sees who has which role.', { overview: 1, hr: 3 }, { admin: 3, access: 0 }),
     R('hr_manager', 'HR manager', 'HR', 'Employees, attendance, approves leave and payroll.', { hr: 3 }, { admin: 3, fleet: 1 }),
     R('hr_exec', 'HR executive', 'HR', 'Keeps employee records and attendance, prepares payroll.', { hr: 2 }, {}),
     R('employee', 'Employee (Punch app only)', 'HR', 'Uses the Punch app for own check-in, leave, comp off and payslip. No portal screens.', {}, {}, false),
@@ -2314,15 +2345,31 @@ function builtinRoles() {
     R('recruiter', 'Recruiter / onboarding', 'HR', 'Adds new joiners and keeps employee records.', {}, { people: 2 }),
     R('timekeeper', 'Attendance keeper', 'HR', 'Marks daily attendance and records leave.', {}, { people: 2, leave: 2 }),
     // Admin
-    R('admin_head', 'Admin head', 'Admin', 'Approvals, roles & access, settings, fleet papers, warehouses.', { adm: 3 }, { fleet: 2, mid: 1, people: 1 }),
-    R('admin_officer', 'Admin officer', 'Admin', 'Approvals, settings, fleet papers, warehouses.', { adm: 2 }, { admin: 3, access: 1, fleet: 2, mid: 1 }),
+    R('admin_head', 'Admin head', 'Admin', 'Approvals, roles & access, settings, fleet papers, warehouses.', { adm: 3, hr: 3 }, { fleet: 2, mid: 1, people: 3, punch: 3 }),
+    R('admin_officer', 'Admin officer', 'Admin', 'Approvals, settings, fleet papers, warehouses.', { adm: 2 }, { admin: 3, access: 0, fleet: 2, mid: 1 }),
     R('approver', 'Department approver', 'Admin', 'Approves requests and leave for their team.', {}, { admin: 3, leave: 3, people: 1 }),
     R('front_office', 'Front office / facilities', 'Admin', 'Raises purchase and repair requests, tracks vehicles and sites.', {}, { fleet: 1, mid: 1 }),
     // IT
-    R('it_manager', 'IT manager', 'IT', 'Helpdesk, assets, system access and settings.', { itd: 3 }, { access: 2, settings: 2 }),
-    R('it_support', 'IT support', 'IT', 'Helpdesk tickets, assets and system access.', { itd: 3 }, { access: 1 }),
+    R('it_manager', 'IT manager', 'IT', 'Helpdesk, assets, system access and settings.', { itd: 3 }, { access: 0, settings: 2 }),
+    R('it_support', 'IT support', 'IT', 'Helpdesk tickets, assets and system access.', { itd: 3 }, { access: 0 }),
     R('asset_keeper', 'IT asset keeper', 'IT', 'Issues and tracks laptops, scanners and phones.', {}, { it: 2 })
-  ];
+  ].concat(gradeRoles());
+}
+/** The same four grades in every department: Executive → Senior executive → Team lead → Assistant manager. */
+/* Executive → Sr executive → Team lead → Asst manager → Manager → Sr manager → GM → Sr GM → AVP → VP → SVP */
+const GRADES = [['exec', 'executive', 'Does the day-to-day work of the department: adds and updates records.'], ['sr', 'senior executive', 'Day-to-day work plus the department dashboard and reports.'], ['tl', 'team lead', 'Runs the team: full access to the department, approves the team\'s leave and requests.'], ['am', 'assistant manager', 'Full access to the department, approvals, reports and a view of related areas.'],
+  ['mgr', 'manager', 'Heads the department: full access, approvals, reports and related areas.'], ['srm', 'senior manager', 'Heads the department with a view of every other department.'], ['gm', 'general manager', 'Runs the department; sees the whole business.'], ['sgm', 'senior general manager', 'Runs the department; sees the whole business and approves across it.'],
+  ['avp', 'assistant vice president', 'Leads the department at business level; sees the whole business and approves across it.'], ['vp', 'vice president', 'Owns the department; sees the whole business and approves across it.'], ['svp', 'senior vice president', 'Owns the department and its strategy; sees the whole business and approves across it.']];
+const GRADE_DEPTS = [['ops', 'Operations', { people: 1 }], ['fin', 'Finance', { shipments: 1, first: 1, mid: 1, last: 1 }], ['hr', 'HR', {}], ['adm', 'Admin', { fleet: 1, mid: 1, people: 1 }], ['itd', 'IT', {}]];
+function gradeRoles() {
+  const out = [];
+  GRADE_DEPTS.forEach(([d, label, related]) => GRADES.forEach(([g, gname, desc], i) => {
+    const id = d + '_' + g; if (['hr_exec', 'ops_exec', 'hr_mgr', 'ops_mgr', 'fin_mgr', 'itd_mgr'].includes(id)) return; // already defined above (HR / Operations / Finance manager)
+    const lv = i >= 5 ? { overview: 1, ops: 1, fin: 1, hr: 1, adm: 1, itd: 1 } : {}; lv[d] = i < 2 ? 2 : 3; if (i >= 1) lv.overview = 1;
+    const over = Object.assign({}, i >= 1 ? { reports: 1 } : {}, i >= 2 ? { leave: 3, admin: 3 } : {}, i >= 3 ? related : {}, i >= 5 && d !== 'hr' ? { payroll: 0 } : {}, { access: 0 });
+    out.push(R(id, label + ' ' + gname, label, desc, lv, over));
+  }));
+  return out;
 }
 function allRoles() {
   const saved = S.data.roles || [];
@@ -2336,12 +2383,18 @@ const roleById = id => allRoles().find(r => r._id === id) || allRoles().find(r =
 const memberOf = id => (S.data.members || []).find(m => m._id === id);
 /** Where the viewer's role comes from: owner > assigned member > page editor > default for unassigned. */
 function whoAmI() {
+  const w = whoAmI0(); if (!w.roles) w.roles = [w.role]; return w;
+}
+const rolesOfMember = m => uniq([m.role].concat(Array.isArray(m.roles) ? m.roles : []).filter(Boolean));
+const myRoles = () => whoAmI().roles;
+const hasRoleAny = list => myRoles().some(r => list.includes(r));
+function whoAmI0() {
   if (S.dbState === 'none' || (S.whoKnown && !S.users)) return { role: 'viewer', how: 'No sign-in here – read only' };
   if (!S.whoKnown || !S.me) return { role: '_loading', how: 'Checking your access…' };
   if (S.isOwner) return { role: 'superadmin', how: 'You own this portal' };
   if (!S.loaded.members) return { role: '_loading', how: 'Checking your access…' };
   const m = memberOf(S.me.id);
-  if (m) return m.status === 'Suspended' ? { role: 'none', how: 'Your access is suspended', member: m } : { role: m.role, how: 'Assigned by an administrator', member: m };
+  if (m) return m.status === 'Suspended' ? { role: 'none', how: 'Your access is suspended', member: m } : { role: m.role, roles: rolesOfMember(m), how: 'Assigned by an administrator', member: m };
   if (S.isEditor) return { role: 'superadmin', how: 'Editor of this page with no role assigned yet' };
   return { role: SET().defaultRole || 'none', how: 'No role assigned yet' };
 }
@@ -2350,12 +2403,16 @@ function lvl(mod) {
   if (m && m.always) return Math.max(1, rawLvl(mod));
   return rawLvl(mod);
 }
-function rawLvl(mod) {
-  const w = whoAmI();
-  if (w.role === '_loading') return 1;
-  const r = roleById(w.role);
-  return num(r.perms[mod]);
+/** Access to one tab: a tab setting in any of the person's roles wins over the screen setting; the highest role wins. */
+function tabLvl(mod, tab) {
+  const w = whoAmI(); if (w.role === '_loading') return 1;
+  return Math.max(0, ...w.roles.map(id => { const p = roleById(id).perms || {}, k = tab != null ? p[mod + ':' + tab] : null; return num(k != null && k !== '' ? k : p[mod]); }));
 }
+/** Highest access anywhere on a screen (decides whether it shows in the menu). */
+function anyLvl(mod) { const m = NAV.find(x => x.id === mod); if (m && m.always) return Math.max(1, tabLvl(mod)); return Math.max(tabLvl(mod), ...((m && m.tabs) || []).map(t => tabLvl(mod, t.id))); }
+const tabsOf = m => m.always ? m.tabs : m.tabs.filter(t => tabLvl(m.id, t.id) >= 1);
+function curTabId(mod) { const m = NAV.find(x => x.id === mod); if (!m) return null; const ts = tabsOf(m); const t = ts.find(x => x.id === S.tab[mod]) || ts[0]; return t ? t.id : null; }
+function rawLvl(mod) { return mod === S.mod ? tabLvl(mod, curTabId(mod)) : anyLvl(mod); }
 const lvlOf = k => lvl(COLL_MOD[k] || S.mod);
 const canDelete = k => writable(k) && lvlOf(k) >= 3;
 const serverAdmin = () => !!(S.isOwner || S.isEditor);
@@ -2386,15 +2443,11 @@ S.avatars = {};
 const nameOf = id => (S.me && id === S.me.id ? (S.me.name || 'You') + ' (you)' : S.names[id] || '…');
 const avatarOf = id => S.avatars[id] || (S.me && id === S.me.id ? S.me.avatarUrl : '');
 
-// ================= My access =================
-function myAccessView() {
-  const w = whoAmI(); const r = roleById(w.role);
-  let h = '<section class="panel role-hero"><div class="who-big">' + (S.me ? '<img alt="" src="' + esc(S.me.avatarUrl) + '">' : '') + '<div><div class="mini">' + esc(w.how) + '</div><h2 style="margin:2px 0 4px">' + esc(S.me ? S.me.name || 'You' : 'Guest') + '</h2>' +
-    (w.role === '_loading' ? pill('Checking…', 'neutral') : pill(r.name, w.role === 'none' ? 'bad' : 'good')) + (w.member && w.member.staff ? ' ' + pill('Employee: ' + w.member.staff, 'neutral') : '') + '</div></div>' +
-    '<p class="help" style="margin:10px 0 0">' + esc(r.desc || '') + '</p></section>';
-  if (w.role === 'none' || (w.role !== 'superadmin' && w.role !== '_loading' && S.whoKnown && S.me)) h += requestPanel(w);
-  if (window.MOVANA_FB) h += '<section class="panel"><h2>Login & password</h2><p class="help">You sign in as <b class="code">' + esc(window.MOVANA_FB.username() || '') + '</b>.</p><div class="form"><label>Current password<input id="pw-old" type="password" autocomplete="current-password"></label><label>New password (8+ characters)<input id="pw-new" type="password" autocomplete="new-password"></label><label>New password again<input id="pw-new2" type="password" autocomplete="new-password"></label></div><p class="foot" id="pw-msg" role="status"></p><div class="actions"><button class="btn primary" type="button" data-act="pw-change">Change password</button><button class="btn" type="button" data-act="sign-out">Sign out</button></div></section>';
-  if (window.MOVANA_FB && window.MOVANA_FB.gmailList && (w.role === 'superadmin' || w.role === 'admin_head')) {
+/** Account settings: password, Google sign-in, Gmail approvals (admins), old data (owner), app downloads. */
+function accountView() {
+  const w = whoAmI(); let h = '';
+  if (window.MOVANA_FB) h += '<section class="panel"><h2>Login & password</h2><p class="help">You sign in as <b class="code">' + esc(window.MOVANA_FB.username() || '') + '</b>.</p><div class="form"><label>Current password<input id="pw-old" type="password" autocomplete="current-password"></label><label>New password (8+ characters)<input id="pw-new" type="password" autocomplete="new-password"></label><label>New password again<input id="pw-new2" type="password" autocomplete="new-password"></label></div><p class="foot" id="pw-msg" role="status"></p><div class="actions"><button class="btn primary" type="button" data-act="pw-change">Change password</button></div></section>';
+  if (window.MOVANA_FB && window.MOVANA_FB.gmailList && hasRoleAny(['superadmin', 'admin_head'])) {
     h += '<section class="panel"><h2>Gmail sign-in for staff</h2><p class="help">Approve a Gmail address with a role. That person taps <b>Sign in with Google</b> on the login screen and gets the role straight away, no username or password needed.</p>' +
       '<div class="form"><label>Gmail address<input id="gm-em" type="email" placeholder="name@gmail.com"></label><label>Name<input id="gm-nm" type="text"></label><label>Role<select id="gm-rl">' +
       allRoles().filter(x => x._id !== 'none').map(x => '<option value="' + esc(x._id) + '">' + esc(x.name) + '</option>').join('') + '</select></label></div>' +
@@ -2405,7 +2458,16 @@ function myAccessView() {
     h += '<section class="panel"><h2>Sign in with Google</h2>' + (ge ? '<p class="help">Linked to <b>' + esc(ge) + '</b>. On the login screen tap <b>Sign in with Google</b> and choose this account; you get the same role as now.</p><p><button class="btn small" type="button" data-gl="unlink">Unlink Google</button></p>' : '<p class="help">Link your Gmail to this login, then sign in with one tap using <b>Sign in with Google</b>. Your role stays the same.</p><p><button class="btn small primary" type="button" data-gl="link">Link my Google account</button></p>') + '<p class="mini" id="gl-msg"></p></section>'; }
   if (window.MOVANA_FB && S.isOwner) h += '<section class="panel"><h2>Bring across old data</h2><p class="help">Choose the <b>movana-data.json</b> file to copy shipments, customers, vehicle types, invoices and settings from the old portal. Safe to run again: the same records are overwritten, not duplicated.</p><input type="file" id="imp-file" accept=".json,application/json"><p class="foot" id="imp-msg" role="status"></p></section>';
   h += '<section class="panel"><h2>Mobile apps</h2><p class="help">' + (whoAmI().role === 'employee' ? 'Your login is for the <b>Punch</b> attendance app: check in and out, apply leave and comp off, and see your payslip. Sign in to Punch with this same username and password.' : 'Use the portal on your phone, and the Punch app for attendance. Both use this same username and password.') + '</p><p><a class="btn small primary" href="../Punch.apk" download>Download Punch (attendance)</a> <a class="btn small" href="../#app" target="_blank" rel="noopener">All apps</a></p></section>';
-  h += '<section class="panel"><h2>What you can do</h2>' + permTable(r.perms, false) + '</section>';
+  return h || '<div class="empty">Nothing to set here.</div>';
+}
+// ================= My access =================
+function myAccessView() {
+  const w = whoAmI(); const r = roleById(w.role);
+  let h = '<section class="panel role-hero"><div class="who-big">' + (S.me ? '<img alt="" src="' + esc(S.me.avatarUrl) + '">' : '') + '<div><div class="mini">' + esc(w.how) + '</div><h2 style="margin:2px 0 4px">' + esc(S.me ? S.me.name || 'You' : 'Guest') + '</h2>' +
+    (w.role === '_loading' ? pill('Checking…', 'neutral') : w.roles.map(id => pill(roleById(id).name, id === 'none' ? 'bad' : 'good')).join(' ')) + (w.member && w.member.staff ? ' ' + pill('Employee: ' + w.member.staff, 'neutral') : '') + '</div></div>' +
+    '<p class="help" style="margin:10px 0 0">' + esc(w.roles.length > 1 ? 'You hold ' + w.roles.length + ' roles; on every screen and tab you get the highest access any of them gives.' : (r.desc || '')) + '</p></section>';
+  if (w.role === 'none' || (!w.roles.includes('superadmin') && w.role !== '_loading' && S.whoKnown && S.me)) h += requestPanel(w);
+  h += '<section class="panel"><h2>What you can do</h2>' + permTable(effPerms(), false) + '</section>';
   return h;
 }
 function requestPanel(w) {
@@ -2419,6 +2481,7 @@ function requestPanel(w) {
   return h + '<div class="form"><label>Department<select id="jr-dept">' + DEPTS.filter(d => d.id !== 'overview').map(d => '<option>' + esc(d.label) + '</option>').join('') + '</select></label>' +
     '<label class="wide">What do you need?<input id="jr-note" type="text" placeholder="e.g. I book pickups at Hyderabad DC"></label></div><p><button class="btn primary" type="button" data-act="jr-send">' + (q ? 'Send again' : 'Send request') + '</button></p></section>';
 }
+function effPerms() { const o = {}; NAV.forEach(m => { o[m.id] = tabLvl(m.id); m.tabs.forEach(t => { const v = tabLvl(m.id, t.id); if (v !== o[m.id]) o[m.id + ':' + t.id] = v; }); }); return o; }
 function permTable(perms, edit) {
   return '<div class="tablewrap"><table class="perm"><thead><tr><th>Department / screen</th><th>Access</th><th class="hide-s">Means</th></tr></thead><tbody>' + DEPTS.map(d => {
     const ms = NAV.filter(m => m.dept === d.id && !m.always);
@@ -2426,9 +2489,12 @@ function permTable(perms, edit) {
     const vals = ms.map(m => num(perms[m.id]));
     const same = vals.every(v => v === vals[0]);
     return '<tr class="perm-dept"><th>' + svg(d.icon) + esc(d.label) + '</th><td>' + (edit ? '<select data-pdept="' + d.id + '" aria-label="Set all of ' + esc(d.label) + '"><option value="">' + (same ? 'All: ' + LEVELS[vals[0]] : 'Mixed') + '</option>' + LEVELS.map((l, i) => '<option value="' + i + '">Set all → ' + l + '</option>').join('') + '</select>' : '') + '</td><td class="hide-s mini">' + esc(d.note) + '</td></tr>' +
-      ms.map(m => { const v = num(perms[m.id]); return '<tr><td class="perm-mod">' + esc(m.label) + '<span class="mini"> · ' + esc(m.tabs.map(t => t.label).join(', ')) + '</span></td><td>' +
+      ms.map(m => { const v = num(perms[m.id]), tabs = m.tabs.length > 1 ? m.tabs : [], ov = tabs.filter(t => perms[m.id + ':' + t.id] != null && perms[m.id + ':' + t.id] !== ''), open = tabs.length && ((S.permOpen || {})[m.id] || ov.length);
+        return '<tr><td class="perm-mod">' + esc(m.label) + (tabs.length ? ' <button type="button" class="linkbtn mini" data-act="perm-tabs" data-x="' + m.id + '" aria-expanded="' + !!open + '">' + (open ? 'Hide tabs' : tabs.length + ' tabs' + (ov.length ? ' · ' + ov.length + ' set' : '')) + '</button>' : '') + '</td><td>' +
         (edit ? '<select data-pmod="' + m.id + '" aria-label="' + esc(m.label) + ' access">' + LEVELS.map((l, i) => '<option value="' + i + '"' + (i === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' : '<span class="lv lv' + v + '">' + LEVELS[v] + '</span>') +
-        '</td><td class="hide-s mini">' + LEVEL_NOTE[v] + '</td></tr>'; }).join('');
+        '</td><td class="hide-s mini">' + LEVEL_NOTE[v] + '</td></tr>' +
+        (open ? tabs.map(t => { const raw = perms[m.id + ':' + t.id], set = raw != null && raw !== '', tv = set ? num(raw) : v;
+          return '<tr class="perm-tab"><td class="perm-mod" style="padding-left:34px">↳ ' + esc(t.label) + '</td><td>' + (edit ? '<select data-ptab="' + m.id + ':' + t.id + '" aria-label="' + esc(m.label + ' › ' + t.label) + ' access"><option value=""' + (set ? '' : ' selected') + '>Same as screen (' + LEVELS[v] + ')</option>' + LEVELS.map((l, i) => '<option value="' + i + '"' + (set && i === tv ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' : '<span class="lv lv' + tv + '">' + LEVELS[tv] + '</span>' + (set ? '' : ' <span class="mini">same as screen</span>')) + '</td><td class="hide-s mini">' + LEVEL_NOTE[tv] + '</td></tr>'; }).join('') : ''); }).join('');
   }).join('') + '</tbody></table></div>';
 }
 
@@ -2462,8 +2528,8 @@ function teamView() {
   if (!S.loaded.members && S.dbState === 'ok') h += '<div class="empty">Loading…</div>';
   else if (!mem.length) h += '<div class="empty">No one has a role yet. ' + (can ? 'Add people above.' : '') + '</div>';
   h += mem.map(m => '<div class="mem-row' + (m.status === 'Suspended' ? ' off' : '') + '"><span class="av">' + (avatarOf(m._id) ? '<img alt="" src="' + esc(avatarOf(m._id)) + '">' : '') + '</span><div class="grow"><b>' + esc(nameOf(m._id)) + '</b><div class="mini">' + esc(roleById(m.role).dept || '') + (m.staff ? ' · Employee ' + esc(m.staff) : '') + ' · since ' + esc(fmtDate(dayOf(m.createdAt || m.updatedAt))) + '</div></div>' +
-    (can && srv ? roleSel(m._id, m.role, 'data-mrole="' + esc(m._id) + '"') + staffSel(m._id, m.staff, 'data-mstaff="' + esc(m._id) + '"') + '<button class="btn small" type="button" data-act="mem-susp" data-x="' + esc(m._id) + '">' + (m.status === 'Suspended' ? 'Restore' : 'Suspend') + '</button><button class="btn small danger" type="button" data-act="mem-del" data-x="' + esc(m._id) + '">' + (S.memDel === m._id ? 'Tap again to remove' : 'Remove') + '</button>'
-      : pill(roleById(m.role).name, m.status === 'Suspended' ? 'bad' : 'info') + (m.status === 'Suspended' ? ' ' + pill('Suspended', 'bad') : '')) + '</div>').join('');
+    (can && srv ? roleSel(m._id, m.role, 'data-mrole="' + esc(m._id) + '"') + rolesOfMember(m).filter(r => r !== m.role).map(r => '<span class="pill info">' + esc(roleById(r).name) + ' <button type="button" class="linkbtn" data-act="mem-rdel" data-x="' + esc(m._id) + '" data-r="' + esc(r) + '" aria-label="Remove ' + esc(roleById(r).name) + '">×</button></span>').join('') + '<select data-maddrole="' + esc(m._id) + '" aria-label="Add another role" style="width:auto"><option value="">＋ Add role</option>' + roles.filter(r => !rolesOfMember(m).includes(r._id) && r._id !== 'none').map(r => '<option value="' + r._id + '">' + esc(r.name) + '</option>').join('') + '</select>' + staffSel(m._id, m.staff, 'data-mstaff="' + esc(m._id) + '"') + '<button class="btn small" type="button" data-act="mem-susp" data-x="' + esc(m._id) + '">' + (m.status === 'Suspended' ? 'Restore' : 'Suspend') + '</button><button class="btn small danger" type="button" data-act="mem-del" data-x="' + esc(m._id) + '">' + (S.memDel === m._id ? 'Tap again to remove' : 'Remove') + '</button>'
+      : rolesOfMember(m).map(r => pill(roleById(r).name, m.status === 'Suspended' ? 'bad' : 'info')).join(' ') + (m.status === 'Suspended' ? ' ' + pill('Suspended', 'bad') : '')) + '</div>').join('');
   h += '</section>';
   if (can) h += '<section class="panel"><h2>People with no role</h2><p class="help">Someone who opens the portal without a role gets:</p><div class="form"><label>Default<select id="def-role"' + (srv ? '' : ' disabled') + '>' + ['none', 'viewer'].map(x => '<option value="' + x + '"' + ((SET().defaultRole || 'none') === x ? ' selected' : '') + '>' + esc(roleById(x).name) + '</option>').join('') + '</select></label></div><p class="help">Editors of the page with no role are treated as Super admin. Keep editors to a minimum.</p></section>';
   return h;
@@ -2477,7 +2543,7 @@ function rolesView() {
   const can = lvl('access') >= 3 && serverAdmin() && S.dbState === 'ok' && !sel.locked;
   if (!S.roleDraft || S.roleDraft._id !== sel._id) S.roleDraft = { _id: sel._id, name: sel.name, desc: sel.desc || '', dept: sel.dept || '', perms: Object.assign({}, sel.perms) };
   const dr = S.roleDraft;
-  const count = id => (S.data.members || []).filter(m => m.role === id).length;
+  const count = id => (S.data.members || []).filter(m => rolesOfMember(m).includes(id)).length;
   let h = '<div class="roles"><nav class="role-list" aria-label="Roles">' + [{ id: '_m', label: 'Management' }].concat(DEPTS.filter(d => d.id !== 'overview'), [{ id: '_x', label: 'Custom' }]).map(d => {
     const rs = roles.filter(r => (d.id === '_x' ? !['Management'].concat(DEPTS.map(x => x.label)).includes(r.dept) : r.dept === d.label));
     return rs.length ? '<div class="nav-label">' + esc(d.label) + ' <span class="n">' + rs.length + '</span></div>' + rs.map(r => '<button type="button" class="role-item" data-act="role-pick" data-x="' + r._id + '" aria-current="' + (r._id === sel._id) + '"><span>' + esc(r.name) + (r.changed ? ' <i class="mini">edited</i>' : '') + '</span><span class="n">' + (count(r._id) || '') + '</span></button>').join('') : '';
@@ -2698,6 +2764,8 @@ document.addEventListener('click', async e => {
     case 'mem-pick': S.memPick = x; render(); return;
     case 'mem-unpick': S.memPick = null; render(); return;
     case 'mem-add': { if (!S.memPick) return; const role = $('#mem-role').value, staff = $('#mem-staff').value; if (await saveMember(S.memPick, { role, staff, status: 'Active' })) { toast(nameOf(S.memPick) + ' → ' + roleById(role).name); S.memPick = null; render(); } return; }
+    case 'perm-tabs': { S.permOpen = S.permOpen || {}; S.permOpen[x] = !S.permOpen[x]; render(); return; }
+    case 'mem-rdel': { const m = memberOf(x), rr = t.dataset.r; if (!m || rr === m.role) return; await saveMember(x, { roles: rolesOfMember(m).filter(y => y !== rr) }); toast(roleById(rr).name + ' removed'); return; }
     case 'mem-susp': { const m = memberOf(x); if (m) await saveMember(x, { status: m.status === 'Suspended' ? 'Active' : 'Suspended' }); return; }
     case 'mem-del': {
       if (S.memDel !== x) { S.memDel = x; render(); setTimeout(() => { if (S.memDel === x) { S.memDel = null; render(); } }, 4000); return; }
@@ -2735,8 +2803,10 @@ document.addEventListener('click', async e => {
 document.addEventListener('change', async e => {
   const el = e.target, ds = el.dataset || {};
   if (ds.pmod && S.roleDraft) { readRoleHead(); S.roleDraft.perms[ds.pmod] = +el.value; render(); return; }
+  if (ds.ptab && S.roleDraft) { readRoleHead(); if (el.value === '') delete S.roleDraft.perms[ds.ptab]; else S.roleDraft.perms[ds.ptab] = +el.value; render(); return; }
   if (ds.pdept && S.roleDraft && el.value !== '') { readRoleHead(); NAV.filter(m => m.dept === ds.pdept && !m.always).forEach(m => { S.roleDraft.perms[m.id] = +el.value; }); render(); return; }
-  if (ds.mrole) { await saveMember(ds.mrole, { role: el.value }); toast(nameOf(ds.mrole) + ' → ' + roleById(el.value).name); return; }
+  if (ds.mrole) { const m = memberOf(ds.mrole) || {}, rest = rolesOfMember(m).filter(r => r !== m.role && r !== el.value); await saveMember(ds.mrole, { role: el.value, roles: [el.value].concat(rest) }); toast(nameOf(ds.mrole) + ' → ' + roleById(el.value).name); return; }
+  if (ds.maddrole) { if (!el.value) return; const m = memberOf(ds.maddrole) || {}, all = uniq(rolesOfMember(m).concat([el.value])); await saveMember(ds.maddrole, { role: m.role || el.value, roles: all }); toast(roleById(el.value).name + ' added for ' + nameOf(ds.maddrole)); return; }
   if (ds.mstaff != null && ds.mstaff !== undefined && el.matches('[data-mstaff]')) { await saveMember(ds.mstaff, { staff: el.value }); return; }
   if (el.id === 'def-role') { const cur = S.data.settings.find(d => d._id === 'main') || {}; const body = Object.assign({}, cur, { defaultRole: el.value }); delete body._id; if (await setDoc('settings', 'main', body)) toast('Saved'); return; }
   if (el.id === 'pr-month') { S.prMonth = el.value || S.prMonth; render(); return; }
@@ -2835,7 +2905,13 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('change', e => { if (e.target.id === 'reg-dept') { S.regDept = e.target.value; render(); } });
 
-document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#who') && S.me) go('me', 'main'); });
+document.addEventListener('click', e => {
+  const menu = $('#whoMenu'), item = e.target.closest && e.target.closest('[data-wm]');
+  if (item) { menu.hidden = true; if (item.dataset.wm === 'out') { if (window.MOVANA_FB) window.MOVANA_FB.signOut(); } else go('account', 'main'); return; }
+  if (e.target.closest && e.target.closest('#who') && S.me) { const w = whoAmI(); menu.innerHTML = '<div class="wm-h"><b>' + esc(S.me.name || 'You') + '</b><span>' + esc(w.roles.map(r => roleById(r).name).join(' · ')) + '</span></div><button type="button" role="menuitem" data-wm="set">' + svg('cog') + 'Settings</button>' + (window.MOVANA_FB ? '<button type="button" role="menuitem" data-wm="out" class="out">' + svg('key') + 'Log out</button>' : ''); menu.hidden = !menu.hidden; $('#who').setAttribute('aria-expanded', String(!menu.hidden)); return; }
+  if (menu && !menu.hidden && !(e.target.closest && e.target.closest('#whoMenu'))) { menu.hidden = true; $('#who').setAttribute('aria-expanded', 'false'); }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = $('#whoMenu'); if (m && !m.hidden) m.hidden = true; } });
 
 document.addEventListener('change', e => {
   if (e.target.id !== 'imp-file' || !window.MOVANA_FB) return;
@@ -2853,9 +2929,9 @@ const L = (k, o) => () => listView(k, o);
 //   punch_emp/<uid>        employee profile for the app (HR)        punch_pay/<uid>  salary set-up (HR head edits, HR manager views)
 //   punch_att/<uid>_<ym>   check-ins sent by the employee's phone   punch_mark/<uid>_<ym>  attendance marked by HR / approved requests
 //   punch_req/<id>         leave, comp off and attendance-change requests
-const P_HR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_exec'], P_APPR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager'];
-const P_SALV = ['superadmin', 'admin_head', 'hr_head', 'hr_manager'], P_SALE = ['superadmin', 'admin_head', 'hr_head'];
-const pRole = () => whoAmI().role, pCan = list => list.includes(pRole());
+const P_HR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_exec', 'hr_sr', 'hr_tl', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'], P_APPR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_tl', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
+const P_SALV = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'], P_SALE = ['superadmin', 'admin_head', 'hr_head', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
+const pRole = () => whoAmI().role, pCan = list => hasRoleAny(list);
 const pMonth = () => S.pMonth || today().slice(0, 7);
 const pEmps = () => (S.data.punch_emp || []).slice().sort((a, b) => lc(a.name).localeCompare(lc(b.name)));
 const pAtt = (uid, ym) => (S.data.punch_att || []).find(d => d._id === uid + '_' + ym);
@@ -2925,7 +3001,7 @@ function punchLive() {
     else if (done && done.length) G.out.push({ e, st: 'Out at ' + tmS(done[0].out), sub: tmS(done[done.length - 1].in) + ' – ' + tmS(done[0].out) + ' · ' + hm(ms) });
     else if (d && d.a) G.out.push({ e, st: d.b ? 'Out at ' + tmS(d.b) : 'Checked in ' + tmS(d.a), sub: hm(d.ms) });
     else if (['Week off', 'Holiday', 'Comp off'].includes(x.st) || /^Leave/.test(x.st)) G.off.push({ e, st: x.st, sub: esc(e.desg || '') });
-    else G.none.push({ e, st: x.st === 'Not yet' || !x.st ? 'Not checked in' : x.st, sub: esc(e.desg || '') + (wp ? ' · ' + esc(wp) : '') });
+    else G.none.push({ e, st: x.st === 'Not yet' || !x.st ? 'Not checked in' : x.st, sub: (a ? '' : '<b style="color:var(--warn)">No data from the Punch app yet</b> · ') + esc(e.desg || '') + (wp ? ' · ' + esc(wp) : '') });
   });
   const pend = (S.data.punch_req || []).filter(r => r.s === 'Pending').sort((a, b) => num(a.at) - num(b.at)), ap = pCan(P_APPR), sal = pCan(P_SALV);
   const tot = sal ? E.reduce((t, e) => { const p = pEarn(e, ym); return t + (p ? p.gross : 0); }, 0) : 0;
@@ -2967,13 +3043,14 @@ function punchSalary() {
   E.forEach(e => { const v = pPay(e._id) || {}, open = S.pSal === e._id;
     h += '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td class="num">' + money2(pGross(v)) + '</td><td class="num">' + money2(pNet(v)) + '</td><td class="num">' + (pPay(e._id) ? money2(pEarn(e, today().slice(0, 7)).gross) : '—') + '</td><td>' + esc((v.hikes || []).map(x => x.p + '% from ' + x.f).join(', ')) + '</td><td><button class="btn small" type="button" data-pa="sal" data-x="' + esc(e._id) + '">' + (open ? 'Close' : ed ? 'Edit' : 'View') + '</button></td></tr>';
     if (open) { const hk = (v.hikes || []).concat([{ p: '', f: '' }, { p: '', f: '' }]).slice(0, Math.max(2, (v.hikes || []).length + 1));
-      h += '<tr><td colspan="7"><div class="formgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">' + P_PF.map(([k, l]) => '<label class="mini">' + l + '<input data-ps="' + k + '" type="number" step="0.01" value="' + esc(v[k] == null ? (k === 'pfPct' ? 12 : k === 'pt' ? 200 : '') : v[k]) + '"' + (ed ? '' : ' disabled') + '></label>').join('') +
+      h += '<tr><td colspan="7"><div class="formgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">' + P_PF.map(([k, l]) => ed ? '<label class="mini">' + l + '<input data-ps="' + k + '" type="number" step="0.01" value="' + esc(v[k] == null ? (k === 'pfPct' ? 12 : k === 'pt' ? 200 : '') : v[k]) + '"></label>' : roVal(l, v[k] == null ? (k === 'pfPct' ? 12 : k === 'pt' ? 200 : '') : (/Amt$|^pf$|^pt$|^vpf$|^esi$|^oth$/.test(k) ? money2(v[k]) : v[k]))).join('') +
         '<label class="mini">PF calculation<select data-ps="pfMode"' + (ed ? '' : ' disabled') + '><option value="pct"' + (v.pfMode !== 'fix' ? ' selected' : '') + '>% of earned Basic</option><option value="fix"' + (v.pfMode === 'fix' ? ' selected' : '') + '>Fixed amount</option></select></label>' +
         '<label class="mini">Days basis<select data-ps="basis"' + (ed ? '' : ' disabled') + '>' + [['cal', 'Calendar days'], ['work', 'Working days'], ['26', 'Fixed 26'], ['30', 'Fixed 30']].map(([a, b]) => '<option value="' + a + '"' + ((v.basis || 'cal') === a ? ' selected' : '') + '>' + b + '</option>').join('') + '</select></label></div>' +
         '<p class="mini" style="margin:10px 0 4px">Hikes (each raises Basic, HRA, Conveyance and Special from that month)</p>' + hk.map((x, i) => '<div class="toolbar"><input data-ph="' + i + '|p" type="number" step="0.01" placeholder="%" value="' + esc(x.p) + '" style="width:90px"' + (ed ? '' : ' disabled') + '><span>% from</span><input data-ph="' + i + '|f" type="month" value="' + esc(x.f) + '" style="width:auto"' + (ed ? '' : ' disabled') + '></div>').join('') +
         (ed ? '<p><button class="btn small primary" type="button" data-pa="salsave" data-x="' + esc(e._id) + '">Save salary</button></p>' : '') + '</td></tr>'; } });
   return h + '</tbody></table></div><p class="help">The employee\'s Punch app works out each month\'s payslip from this set-up and their attendance.</p>';
 }
+const roVal = (l, v) => '<div class="mini" style="display:grid;gap:2px"><span>' + esc(l) + '</span><b style="font-size:.95rem;color:var(--ink)">' + (v === '' || v == null ? '—' : esc(v)) + '</b></div>';
 function punchEmployees() {
   const E = pEmps(), ed = pCan(P_HR), cur = S.pEmp ? (S.data.punch_emp || []).find(e => e._id === S.pEmp) || { _id: S.pEmp } : null, add = S.pAdd;
   let h = pBanner() + (ed ? '<div class="toolbar"><button class="btn small primary" type="button" data-pa="add">Add employee (new Punch login)</button><button class="btn small" type="button" data-pa="link">Add an existing portal login</button></div>' : '');
@@ -2985,11 +3062,11 @@ function punchEmployees() {
   }
   if (cur) { const e = cur, wo = e.wo || [0];
     h += '<section class="panel"><h2>' + esc(e.name || nameOf(e._id)) + '</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">' +
-      [['name', 'Full name'], ['eid', 'Employee ID'], ['desg', 'Designation'], ['grade', 'Grade'], ['cat', 'Department'], ['join', 'Date of joining', 'date']].map(([k, l, t]) => '<label class="mini">' + l + '<input data-pe="' + k + '" type="' + (t || 'text') + '" value="' + esc(e[k] || '') + '"' + (ed ? '' : ' disabled') + '></label>').join('') +
-      '<label class="mini">Workplace name<input data-pe="wp.name" value="' + esc((e.wp || {}).name || '') + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Workplace latitude<input data-pe="wp.lat" type="number" step="0.000001" value="' + esc((e.wp || {}).lat == null ? '' : e.wp.lat) + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Workplace longitude<input data-pe="wp.lng" type="number" step="0.000001" value="' + esc((e.wp || {}).lng == null ? '' : e.wp.lng) + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Check-in radius (m)<input data-pe="radius" type="number" value="' + esc(e.radius || 150) + '"' + (ed ? '' : ' disabled') + '></label></div>' +
+      [['name', 'Full name'], ['eid', 'Employee ID'], ['desg', 'Designation'], ['grade', 'Grade'], ['cat', 'Department'], ['join', 'Date of joining', 'date']].map(([k, l, t]) => ed ? '<label class="mini">' + l + '<input data-pe="' + k + '" type="' + (t || 'text') + '" value="' + esc(e[k] || '') + '"></label>' : roVal(l, k === 'join' ? fmtDate(e[k]) : e[k])).join('') +
+      (ed ? '<label class="mini">Workplace name<input data-pe="wp.name" value="' + esc((e.wp || {}).name || '') + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Workplace latitude<input data-pe="wp.lat" type="number" step="0.000001" value="' + esc((e.wp || {}).lat == null ? '' : e.wp.lat) + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Workplace longitude<input data-pe="wp.lng" type="number" step="0.000001" value="' + esc((e.wp || {}).lng == null ? '' : e.wp.lng) + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Check-in radius (m)<input data-pe="radius" type="number" value="' + esc(e.radius || 150) + '"' + (ed ? '' : ' disabled') + '></label></div>' +
       '<p class="mini" style="margin:10px 0 4px">Weekly off</p><div class="toolbar">' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => '<label class="mini" style="display:flex;gap:4px;align-items:center"><input type="checkbox" data-pwo="' + i + '"' + (wo.includes(i) ? ' checked' : '') + (ed ? '' : ' disabled') + '>' + d + '</label>').join('') + '</div>' +
-      (ed ? '<p><button class="btn small primary" type="button" data-pa="empsave" data-x="' + esc(e._id) + '">Save</button> <button class="btn small" type="button" data-pa="empclose">Close</button> <button class="btn small" type="button" data-pa="empdel" data-x="' + esc(e._id) + '">Remove from Punch</button></p>' : '<p><button class="btn small" type="button" data-pa="empclose">Close</button></p>') +
-      '<p class="help">Latitude and longitude: open the workplace in Google Maps, long-press the spot and copy the numbers shown.</p></section>'; }
+      (ed ? '<p><button class="btn small primary" type="button" data-pa="empsave" data-x="' + esc(e._id) + '">Save</button> <button class="btn small" type="button" data-pa="empclose">Close</button> <button class="btn small" type="button" data-pa="empdel" data-x="' + esc(e._id) + '">Remove from Punch</button></p>' : '<p><button class="btn small" type="button" data-pa="empclose">Close</button></p>') : roVal('Workplace', (e.wp || {}).name) + roVal('Check-in radius', (e.radius || 150) + ' m') + '</div><p class="mini" style="margin:10px 0 0">Weekly off: ' + esc(wo.map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ') || 'none') + '</p><p><button class="btn small" type="button" data-pa="empclose">Close</button></p>') +
+      (ed ? '<p class="help">Latitude and longitude: open the workplace in Google Maps, long-press the spot and copy the numbers shown.</p>' : '') + '</section>'; }
   if (!E.length) return h + pNoEmp();
   return h + '<div class="tablewrap"><table><thead><tr><th>Name</th><th>ID</th><th>Designation</th><th>Joined</th><th>Workplace</th><th>Login</th><th></th></tr></thead><tbody>' + E.map(e => { const m = memberOf(e._id); return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + fmtDate(e.join) + '</td><td>' + esc((e.wp && e.wp.name) || '—') + '</td><td>' + esc(m ? roleById(m.role).name : '—') + '</td><td><button class="btn small" type="button" data-pa="emp" data-x="' + esc(e._id) + '">' + (ed ? 'Edit' : 'View') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
 }
@@ -3132,13 +3209,14 @@ const NAV = [
     { id: 'run', label: 'Payroll run', view: payrollRun }, { id: 'slips', label: 'Payslips', view: L('payroll'), n: () => S.data.payroll.filter(p => stageOf('payroll', p) !== 'Paid').length }] },
   { id: 'fleet', label: 'Fleet', icon: 'bus', dept: 'ops', sub: () => 'Vehicles, papers, maintenance and fuel mileage', tabs: [
     { id: 'vehicles', label: 'Vehicles', view: L('vehicles') }, { id: 'vtypes', label: 'Vehicle types', view: vtypesView, n: () => S.data.vtypes.length }, { id: 'mnt', label: 'Maintenance', view: L('maintenance') }, { id: 'fuel', label: 'Fuel log', view: L('fuel') }] },
+  { id: 'account', label: 'Settings', icon: 'cog', dept: 'overview', always: true, hidden: true, sub: () => 'Password, Google sign-in and apps', tabs: [{ id: 'main', label: 'Settings', view: accountView }] },
   { id: 'me', label: 'My access', icon: 'key', dept: 'overview', always: true, sub: () => 'Your role and what it lets you do', tabs: [{ id: 'main', label: 'My access', view: myAccessView }] },
   { id: 'reports', label: 'Reports', icon: 'chart', dept: 'overview', sub: () => 'Service levels, revenue and productivity', tabs: [{ id: 'main', label: 'Performance', view: reports }] },
   { id: 'settings', label: 'Settings', icon: 'cog', dept: 'adm', sub: () => 'Rates, rules, routing, upload templates and the audit log', tabs: [{ id: 'main', label: 'Settings', view: settingsView }, { id: 'pins', label: 'Pincodes & states', view: pinsView }, { id: 'templates', label: 'Upload templates', view: templatesView }, { id: 'audit', label: 'Audit log', view: auditView }] }
 ];
-const visibleMods = () => NAV.filter(m => lvl(m.id) >= 1);
+const visibleMods = () => NAV.filter(m => anyLvl(m.id) >= 1);
 const curMod = () => { const v = visibleMods(); return v.find(m => m.id === S.mod) || v[0] || NAV.find(m => m.id === 'me'); };
-const curTab = () => { const m = curMod(); return m.tabs.find(t => t.id === S.tab[m.id]) || m.tabs[0]; };
+const curTab = () => { const m = curMod(), ts = tabsOf(m); return ts.find(t => t.id === S.tab[m.id]) || ts[0] || m.tabs[0]; };
 function go(mod, tab) {
   if (lvl(mod) < 1) { toast('Your role does not include ' + ((NAV.find(m => m.id === mod) || {}).label || 'that screen') + '.'); return; }
   S.mod = mod; if (tab) S.tab[mod] = tab; closeDrawer();
@@ -3146,29 +3224,30 @@ function go(mod, tab) {
   render(); window.scrollTo(0, 0);
 }
 const SKINS = [
+  { id: 'punch', name: 'Punch', note: 'Same look as the Punch app: light, white rounded cards, green and orange', sw: ['#ffffff', '#ffffff', '#0c9b76', '#f2f3f7'] },
   { id: 'midnight', name: 'Midnight Glass', note: 'Dark control-room look, glass cards, cyan and violet glow', sw: ['#060a16', '#0f1630', '#22d3ee', '#a78bfa'] },
   { id: 'executive', name: 'Executive Gold', note: 'Black rail, crisp white pages, gold accents, serif headings', sw: ['#0b0b0c', '#ffffff', '#b8862b', '#f3f4f6'] },
   { id: 'aurora', name: 'Aurora', note: 'Vibrant indigo-to-rose rail, soft rounded cards, colourful icons', sw: ['#5b21b6', '#ffffff', '#ec4899', '#6366f1'] },
   { id: 'industrial', name: 'Industrial', note: 'Graphite rail, safety-orange accents, condensed bold type, sharp edges', sw: ['#1b1f23', '#ffffff', '#ff6a13', '#e9ebec'] }
 ];
-function currentSkin() { return 'executive'; }
+function currentSkin() { return 'punch'; }
 function currentSkinOld() { let v = null; try { v = localStorage.getItem('movana.skin'); } catch (e) {} return (SKINS.find(x => x.id === v) || SKINS.find(x => x.id === SET().skin) || SKINS[0]).id; }
 function setSkin(id) { try { localStorage.setItem('movana.skin', id); } catch (e) {} document.body.dataset.skin = id; render(); }
 function renderNav() {
   const open = S.deptOpen || (S.deptOpen = {});
   const cm = curMod(), cur = curTab();
   const chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>';
-  const cnt = m => m.tabs.reduce((a, t) => a + (t.n && !['hubs', 'vtypes', 'staff'].includes(t.id) ? t.n() : 0), 0);
+  const cnt = m => tabsOf(m).reduce((a, t) => a + (t.n && !['hubs', 'vtypes', 'staff'].includes(t.id) ? t.n() : 0), 0);
   const modHtml = m => {
-    const multi = m.tabs.length > 1, isOpen = multi && ((m.id === S.mod && !S.collapsed) || (S.open && S.open[m.id]));
+    const multi = tabsOf(m).length > 1, isOpen = multi && ((m.id === S.mod && !S.collapsed) || (S.open && S.open[m.id]));
     const n = cnt(m);
     return '<button type="button" class="mod" data-mod="' + m.id + '"' + (multi ? ' aria-expanded="' + !!isOpen + '"' : '') + (m.id === cm.id && !multi ? ' aria-current="page"' : '') + '>' + svg(m.icon) + '<span>' + esc(m.label) + '</span>' + (n ? '<span class="count">' + n + '</span>' : '') + (multi ? chev : '') + '</button>' +
-      (isOpen ? '<div class="subs">' + m.tabs.map(t => { const c = t.n ? t.n() : 0; return '<button type="button" class="sub" data-go="' + m.id + '" data-gotab="' + t.id + '"' + (m.id === cm.id && cur.id === t.id ? ' aria-current="page"' : '') + '><span>' + esc(t.label) + '</span>' + (c ? '<span class="n">' + c + '</span>' : '') + '</button>'; }).join('') + '</div>' : '');
+      (isOpen ? '<div class="subs">' + tabsOf(m).map(t => { const c = t.n ? t.n() : 0; return '<button type="button" class="sub" data-go="' + m.id + '" data-gotab="' + t.id + '"' + (m.id === cm.id && cur.id === t.id ? ' aria-current="page"' : '') + '><span>' + esc(t.label) + '</span>' + (c ? '<span class="n">' + c + '</span>' : '') + '</button>'; }).join('') + '</div>' : '');
   };
   const w = whoAmI();
-  const tops = NAV.filter(m => m.top && lvl(m.id) >= 1);
+  const tops = NAV.filter(m => m.top && !m.hidden && anyLvl(m.id) >= 1);
   $('#nav').innerHTML = (tops.length ? '<div class="dept overview">' + tops.map(modHtml).join('') + '</div>' : '') + DEPTS.map(d => {
-    const ms = NAV.filter(m => m.dept === d.id && !m.top && lvl(m.id) >= 1);
+    const ms = NAV.filter(m => m.dept === d.id && !m.top && !m.hidden && anyLvl(m.id) >= 1);
     if (!ms.length) return '';
     if (d.id === 'overview') return '<div class="dept overview">' + ms.map(modHtml).join('') + '</div>';
     const isCur = ms.some(m => m.id === cm.id), isOpen = open[d.id] != null ? open[d.id] : isCur;
@@ -3190,8 +3269,8 @@ function render() {
   renderNav();
   const m = curMod(), t = curTab();
   document.body.dataset.skin = currentSkin();
-  $('#title').textContent = m.tabs.length > 1 ? t.label : m.label;
-  const dp = DEPTS.find(d => d.id === m.dept); $('#crumb').textContent = (dp && dp.id !== 'overview' ? dp.label + ' › ' : '') + (m.tabs.length > 1 ? m.label : m.sub());
+  $('#title').textContent = tabsOf(m).length > 1 ? t.label : m.label;
+  const dp = DEPTS.find(d => d.id === m.dept); $('#crumb').textContent = (dp && dp.id !== 'overview' ? dp.label + ' › ' : '') + (tabsOf(m).length > 1 ? m.label : m.sub());
   $('#brandName').textContent = SET().company || 'Movana Logistics';
 
   let html = '';
@@ -3287,7 +3366,7 @@ document.addEventListener('click', async e => {
   if (ds.sel || ds.selall) { e.stopPropagation(); if (ds.sel) { const [k, id] = ds.sel.split('|'); t.checked ? S.sel[k].add(id) : S.sel[k].delete(id); } else { const k = ds.selall; const rows = filtered(k).slice(0, 500); if (t.checked) rows.forEach(r => S.sel[k].add(r._id)); else S.sel[k].clear(); } render(); return; }
   if (ds.vtab && D) { D.vtab = ds.vtab; drawDrawer(); return; }
   if (ds.ftab && D) { showSection(ds.ftab); return; }
-  if (ds.mod) { const m = NAV.find(x => x.id === ds.mod); S.open = S.open || {}; if (m.tabs.length > 1 && S.mod === m.id) { S.collapsed = !S.collapsed; renderNav(); return; } S.collapsed = false; go(m.id); document.body.classList.remove('navopen'); return; }
+  if (ds.mod) { const m = NAV.find(x => x.id === ds.mod); S.open = S.open || {}; if (tabsOf(m).length > 1 && S.mod === m.id) { S.collapsed = !S.collapsed; renderNav(); return; } S.collapsed = false; go(m.id); document.body.classList.remove('navopen'); return; }
   if (ds.pickSkin) { setSkin(ds.pickSkin); return; }
   if (ds.skinDefault) { const cur = S.data.settings.find(d => d._id === 'main') || {}; const body = Object.assign({}, cur, { skin: ds.skinDefault }); delete body._id; if (await setDoc('settings', 'main', body)) toast('Default design set to ' + SKINS.find(x => x.id === ds.skinDefault).name); return; }
   if (ds.template) { templateCSV(ds.template); return; }

@@ -1,17 +1,17 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Movana Logistics – Punch attendance app with live team view for HR, plus full truckload, part load and last-mile freight across India."><meta name="theme-color" content="#0c0d0f"><title>Movana Logistics · Punch</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Movana Logistics – Punch attendance app with live team view for HR, plus full truckload, part load and last-mile freight across India."><meta name="theme-color" content="#f2f3f7"><title>Movana Logistics · Punch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: a consignment-note (LR) motif. Dark masthead band with the live estimate printed as an LR slip; white body sections ruled like a waybill; gold only on rules, numbers and the one primary action. */
 :root {
-  --bg: #f6f6f3; --paper: #ffffff; --ink: #121314; --ink-2: #4a4c50; --rule: #dedbd2; --gold: #9a6d16; --gold-soft: #f4ead3;
+  --bg: #f6f6f3; --paper: #ffffff; --ink: #121314; --ink-2: #4a4c50; --rule: #dedbd2; --gold: #0a7d5f; --gold-soft: #f4ead3;
   --band: #0c0d0f; --band-ink: #f2efe7; --band-sub: #a9a59a; --band-rule: #2a2b2e; --ok: #1d7a43;
   --display: "Fraunces", Georgia, "Times New Roman", serif; --body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
   --r: 14px;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1012; --paper: #17181b; --ink: #ecebe6; --ink-2: #a9a8a1; --rule: #2c2d31; --gold: #d4a64a; --gold-soft: #2b2416; --band: #070809; --band-ink: #f2efe7; --band-sub: #9d998e; --band-rule: #24252a; --ok: #4cc27f; color-scheme: dark } }
-:root[data-theme="dark"] { --bg: #0f1012; --paper: #17181b; --ink: #ecebe6; --ink-2: #a9a8a1; --rule: #2c2d31; --gold: #d4a64a; --gold-soft: #2b2416; --band: #070809; --band-ink: #f2efe7; --band-sub: #9d998e; --band-rule: #24252a; --ok: #4cc27f; color-scheme: dark }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1012; --paper: #17181b; --ink: #ecebe6; --ink-2: #a9a8a1; --rule: #2c2d31; --gold: #0c9b76; --gold-soft: #2b2416; --band: #070809; --band-ink: #f2efe7; --band-sub: #9d998e; --band-rule: #24252a; --ok: #4cc27f; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #0f1012; --paper: #17181b; --ink: #ecebe6; --ink-2: #a9a8a1; --rule: #2c2d31; --gold: #0c9b76; --gold-soft: #2b2416; --band: #070809; --band-ink: #f2efe7; --band-sub: #9d998e; --band-rule: #24252a; --ok: #4cc27f; color-scheme: dark }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; } body { margin: 0; } img { max-width: 100%; } [hidden] { display: none !important; }
 body { background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); }
@@ -34,48 +34,48 @@ p { margin: 0; }
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: var(--band); color: var(--band-ink); border-bottom: 1px solid var(--band-rule); }
 .top .wrap { display: flex; align-items: center; gap: 20px; padding-block: 12px; }
 .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
-.mark { width: 36px; height: 36px; border-radius: 10px; background: #b8862b; display: grid; place-items: center; flex: none; }
+.mark { width: 36px; height: 36px; border-radius: 10px; background: #0c9b76; display: grid; place-items: center; flex: none; }
 .mark svg { width: 21px; height: 21px; }
 .brand b { font: 700 1.08rem var(--display); display: block; line-height: 1.1; }
 .brand small { font: 500 .6rem var(--mono); letter-spacing: .18em; color: var(--band-sub); text-transform: uppercase; }
 .top nav { display: flex; gap: 18px; margin-left: auto; font-size: .9rem; }
 .top nav a { text-decoration: none; color: var(--band-sub); }
 .top nav a:hover { color: var(--band-ink); }
-.top .login { background: transparent; color: var(--band-ink); border-color: #4b4127; padding: 9px 15px; font-size: .86rem; }
+.top .login { background: transparent; color: var(--band-ink); border-color: var(--rule); padding: 9px 15px; font-size: .86rem; }
 @media (max-width: 860px) { .top nav { display: none; } .top .login { margin-left: auto; } }
 
 /* hero */
 .hero { background: var(--band); color: var(--band-ink); }
 .hero .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 48px; padding-block: 56px 64px; align-items: center; }
 .hero h1 { font-size: clamp(2.3rem, 5.4vw, 4rem); font-weight: 600; }
-.hero h1 em { font-style: italic; color: #d4a64a; font-weight: 500; }
+.hero h1 em { font-style: italic; color: #0c9b76; font-weight: 500; }
 .hero .lead { color: var(--band-sub); margin-top: 18px; font-size: 1.07rem; }
 .hero .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
-.hero .btn { background: transparent; color: var(--band-ink); border-color: #3a3426; }
-.hero .btn.gold { background: #b8862b; border-color: #b8862b; color: #fff; }
+.hero .btn { background: transparent; color: var(--band-ink); border-color: var(--rule); }
+.hero .btn.gold { background: #0c9b76; border-color: #0c9b76; color: #fff; }
 .lanes { margin-top: 30px; display: grid; gap: 6px; font: 400 .78rem var(--mono); color: var(--band-sub); }
 .lanes span b { color: var(--band-ink); font-weight: 600; }
 @media (max-width: 900px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-block: 36px 44px; } }
 
 /* LR estimate slip */
-.lr { background: #fbfaf6; color: #17181a; border-radius: 6px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.7); position: relative; overflow: hidden; }
-.lr::before { content: ""; position: absolute; inset: 0 0 auto; height: 6px; background: repeating-linear-gradient(90deg, #b8862b 0 22px, transparent 22px 30px); }
-.lr-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 22px 22px 12px; border-bottom: 1px dashed #cfc9b8; }
+.lr { background: #ffffff; color: #17181a; border-radius: 6px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.7); position: relative; overflow: hidden; }
+.lr::before { content: ""; position: absolute; inset: 0 0 auto; height: 6px; background: repeating-linear-gradient(90deg, #0c9b76 0 22px, transparent 22px 30px); }
+.lr-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 22px 22px 12px; border-bottom: 1px dashed #d6dae3; }
 .lr-head b { font: 600 1.1rem var(--display); }
 .lr-head span { font: 500 .72rem var(--mono); color: #6d6a60; letter-spacing: .06em; }
 .lr-grid { display: grid; grid-template-columns: 1fr 1fr; }
-.lr-f { padding: 12px 22px; border-bottom: 1px solid #e7e2d5; display: grid; gap: 4px; min-width: 0; }
-.lr-f:nth-child(odd) { border-right: 1px solid #e7e2d5; }
+.lr-f { padding: 12px 22px; border-bottom: 1px solid #eceef3; display: grid; gap: 4px; min-width: 0; }
+.lr-f:nth-child(odd) { border-right: 1px solid #eceef3; }
 .lr-f label { font: 600 .66rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: #7a766a; }
 .lr-f input, .lr-f select { border: 0; background: transparent; font: 600 1rem var(--body); color: #121314; padding: 2px 0; width: 100%; min-width: 0; color-scheme: light; }
-.lr-f input:focus, .lr-f select:focus { outline: none; box-shadow: 0 2px 0 #b8862b; }
+.lr-f input:focus, .lr-f select:focus { outline: none; box-shadow: 0 2px 0 #0c9b76; }
 .lr-out { padding: 16px 22px 20px; display: grid; gap: 8px; }
 .lr-row { display: flex; justify-content: space-between; gap: 12px; font-size: .9rem; color: #45433d; }
 .lr-row b { font-variant-numeric: tabular-nums; color: #121314; }
 .lr-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-top: 2px solid #121314; padding-top: 12px; margin-top: 4px; }
 .lr-total b { font: 700 1.7rem var(--display); font-variant-numeric: tabular-nums; }
 .lr-note { font-size: .76rem; color: #6d6a60; }
-.stamp { position: absolute; right: 18px; top: 58px; transform: rotate(-9deg); border: 2px solid #b8862b; color: #9a6d16; font: 700 .64rem var(--mono); letter-spacing: .16em; padding: 5px 8px; border-radius: 4px; opacity: .8; pointer-events: none; }
+.stamp { position: absolute; right: 18px; top: 58px; transform: rotate(-9deg); border: 2px solid #0c9b76; color: #0a7d5f; font: 700 .64rem var(--mono); letter-spacing: .16em; padding: 5px 8px; border-radius: 4px; opacity: .8; pointer-events: none; }
 
 /* sections */
 section.block { padding-block: 72px; border-bottom: 1px solid var(--rule); }
@@ -170,7 +170,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: 
 .livestrip .lh { display: flex; align-items: center; gap: 8px; color: var(--band-ink); font-weight: 600; }
 .ldot { width: 8px; height: 8px; border-radius: 50%; background: #6b6b6b; flex: none; } .ldot.on { background: #2fd1a0; box-shadow: 0 0 0 4px rgba(47,209,160,.18); }
 .livestrip .nums { display: flex; flex-wrap: wrap; gap: 6px 16px; } .livestrip .nums b { color: var(--band-ink); font-variant-numeric: tabular-nums; }
-.livestrip a { color: #d4a64a; }
+.livestrip a { color: #0c9b76; }
 .steps4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .steps4 .card b.n { font: 600 .78rem var(--mono); color: var(--gold); }
 @media (max-width: 900px) { .steps4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -182,15 +182,45 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: 
 .roles td { white-space: normal; }
 .freight-band { background: var(--band); color: var(--band-ink); border-bottom: 1px solid var(--rule); }
 .freight-band .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 48px; padding-block: 64px; align-items: center; }
-.freight-band h2 em { font-style: italic; color: #d4a64a; font-weight: 500; }
+.freight-band h2 em { font-style: italic; color: #0c9b76; font-weight: 500; }
 .freight-band .lead { color: var(--band-sub); margin-top: 14px; }
-.freight-band .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; } .freight-band .btn { background: transparent; color: var(--band-ink); border-color: #3a3426; } .freight-band .btn.gold { background: #b8862b; border-color: #b8862b; color: #fff; }
+.freight-band .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; } .freight-band .btn { background: transparent; color: var(--band-ink); border-color: var(--rule); } .freight-band .btn.gold { background: #0c9b76; border-color: #0c9b76; color: #fff; }
 @media (max-width: 900px) { .freight-band .wrap { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-block: 44px; } }
+
+/* ===== Punch look (same as the Punch app) ===== */
+:root { --bg: #f2f3f7; --paper: #ffffff; --ink: #101828; --ink-2: #475467; --rule: #e9ebf1; --gold: #0c9b76; --gold-soft: #e3f6ef; --band: #ffffff; --band-ink: #101828; --band-sub: #475467; --band-rule: #e9ebf1; --ok: #0a7d5f;
+  --display: "Bricolage Grotesque", -apple-system, system-ui, sans-serif; --body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif; --r: 22px; --sh: 0 1px 2px rgba(16,24,40,.05), 0 8px 24px -12px rgba(16,24,40,.12); --out: #f26a1b; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #090b0f; --paper: #15181e; --ink: #f3f4f6; --ink-2: #9aa1ad; --rule: #252a33; --gold: #2fd1a0; --gold-soft: #10291f; --band: #11141a; --band-ink: #f3f4f6; --band-sub: #9aa1ad; --band-rule: #252a33; --ok: #2fd1a0; --sh: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #090b0f; --paper: #15181e; --ink: #f3f4f6; --ink-2: #9aa1ad; --rule: #252a33; --gold: #2fd1a0; --gold-soft: #10291f; --band: #11141a; --band-ink: #f3f4f6; --band-sub: #9aa1ad; --band-rule: #252a33; --ok: #2fd1a0; color-scheme: dark }
+h1, h2, h3 { font-weight: 800; letter-spacing: -.025em; }
+.hero h1 { font-weight: 800; } .hero h1 em, .freight-band h2 em { font-style: normal; color: var(--gold); font-weight: 800; }
+.top { background: color-mix(in srgb, var(--band) 88%, transparent); backdrop-filter: blur(12px); }
+.brand b { font-weight: 800; }
+.mark { background: linear-gradient(135deg, #25cf9f, #0c9b76); color: #fff; font: 800 .9rem var(--display); }
+.hero { background: radial-gradient(900px 420px at 85% 0%, rgba(12,155,118,.14), transparent 60%), radial-gradient(700px 360px at 0% 100%, rgba(242,106,27,.08), transparent 60%), var(--bg); }
+.hero .btn, .freight-band .btn { background: var(--paper); color: var(--ink); border-color: var(--rule); }
+.btn.gold, .hero .btn.gold, .freight-band .btn.gold { background: var(--gold); border-color: var(--gold); color: #fff; }
+.top .login { color: var(--ink); background: var(--paper); }
+.eyebrow { font-family: var(--body); font-weight: 700; letter-spacing: .08em; }
+.card, .tablewrap { border: 0; box-shadow: var(--sh); border-radius: var(--r); }
+.services { border: 0; gap: 12px; } .svc { border: 0; border-radius: 18px; box-shadow: var(--sh); }
+.facts { background: transparent; border: 0; } .facts .wrap { gap: 12px; padding-block: 18px; } .fact { background: var(--paper); border: 0 !important; border-radius: 18px; box-shadow: var(--sh); } .fact b { font-weight: 800; }
+.st { border: 0; box-shadow: var(--sh); } .st.s { box-shadow: inset 0 0 0 1px var(--rule); }
+section.block { border-bottom: 0; }
+.freight-band { background: var(--paper); border: 0; }
+.lr { border-radius: 22px; box-shadow: var(--sh); border: 1px solid var(--rule); }
+.livestrip { background: var(--paper); box-shadow: var(--sh); border: 0; border-radius: 18px; color: var(--ink-2); }
+.livestrip .lh, .livestrip .nums b { color: var(--ink); } .livestrip a { color: var(--gold); }
+.demo .dc { border: 0; box-shadow: var(--sh); border-left: 4px solid #0c9b76; border-radius: 14px; }
+.demo .dc.o { border-left-color: var(--out); } .demo .dc.n { border-left-color: #d92d20; }
+.feat div { border-left-color: var(--gold); }
+.form input, .form select, .form textarea { border-radius: 14px; }
+footer { color: var(--ink-2); }
 </style>
 
 </head><body><header class="top">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="Movana Logistics home"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg></span><span><b>Movana Logistics</b><small>Punch · Freight</small></span></a>
+    <a class="brand" href="#top" aria-label="Movana Logistics home"><span class="mark" aria-hidden="true">ML</span><span><b>Movana Logistics</b><small>Punch · Freight</small></span></a>
     <nav aria-label="Sections"><a href="#how">How Punch works</a><a href="#live">Team live</a><a href="#app">Download</a><a href="#freight">Freight</a><a href="#contact">Contact</a></nav>
     <a class="btn login" id="loginBtn" href="https://naveen5531.github.io/portal/" target="_blank" rel="noopener">Staff login</a>
   </div>
@@ -200,7 +230,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: 
   <section class="hero">
     <div class="wrap ph">
       <div>
-        <p class="eyebrow" style="color:#d4a64a">Punch · attendance app for Movana teams</p>
+        <p class="eyebrow" style="color:#0c9b76">Punch · attendance app for Movana teams</p>
         <h1 style="margin-top:16px">Check in at the gate, <em>HR sees it live.</em></h1>
         <p class="lead">Staff check in and out on their phone at the workplace. Leave, comp off and attendance changes go to HR from the app. The staff portal shows who is in right now, requests to approve, the month's attendance and salary earned so far, updating by itself.</p>
         <div class="cta"><a class="btn gold" href="Punch.apk" download>Download Punch</a><a class="btn" href="https://naveen5531.github.io/portal/#punch" target="_blank" rel="noopener">Open Team live</a></div>
@@ -258,7 +288,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: 
   <section class="freight-band" id="freight">
     <div class="wrap">
       <div>
-        <p class="eyebrow" style="color:#d4a64a">Movana freight · Full truck · Part load · Last mile · Returns</p>
+        <p class="eyebrow" style="color:#0c9b76">Movana freight · Full truck · Part load · Last mile · Returns</p>
         <h2 style="margin-top:16px">Pincode to pincode, <em>every handover on record.</em></h2>
         <p class="lead">We pick up from your warehouse, run the linehaul, deliver to the door and bring returns back. Each consignment carries one LR from pickup to proof of delivery, so your invoice matches what actually moved.</p>
         <div class="cta"><a class="btn gold" href="#contact">Book a pickup</a><a class="btn" href="#services">Our services</a></div>
