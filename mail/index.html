@@ -94,7 +94,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <div class="menu" id="menu" role="menu" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="Mail folders"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <div id="cmpHost"></div>
-<script src="../portal/fb.js?v=20261026q"></script>
+<script src="../portal/fb.js?v=20261027a"></script>
 <script>
 (async function () {
 'use strict';
@@ -123,7 +123,8 @@ fs.collection('users').onSnapshot(s => { S.users = s.docs.map(d => Object.assign
 fs.collection('punch_emp').onSnapshot(s => { S.emps = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); later(); }, () => {});
 
 const nameOf = uid => uid === ME ? 'me' : ((S.users.find(u => u._id === uid) || {}).name || (S.emps.find(e => e._id === uid) || {}).name || 'Someone');
-const people = () => S.users.filter(u => u.name).map(u => { const e = S.emps.find(x => x._id === u._id) || {}; return { uid: u._id, name: u.name, sub: [e.eid, e.desg].filter(Boolean).join(' · ') || String(u.username || '').replace(/@staff\.movana\.app$/, '') }; }).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
+const mailOf = uid => (S.users.find(u => u._id === uid) || {}).mail || '';
+const people = () => S.users.filter(u => u.name).map(u => { const e = S.emps.find(x => x._id === u._id) || {}; return { uid: u._id, name: u.name, mail: u.mail || '', sub: [u.mail, e.eid, e.desg].filter(Boolean).join(' · ') || String(u.username || '').replace(/@staff\.movana\.app$/, '') }; }).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
 const st = m => (m.st || {})[ME] || {};
 const all = () => Object.values(S.msgs);
 const inInbox = m => (m.rcpt || []).includes(ME) && !st(m).t, inSent = m => m.from === ME && !st(m).t;
@@ -145,7 +146,7 @@ async function setSt(ids, patch) { for (const id of ids) { const m = S.msgs[id];
 function navHtml() {
   const u = all().filter(unread).length;
   return '<button class="compose-b" type="button" data-a="compose">' + svg('pen') + 'Compose</button>' + FOLD.map(([id, l, ic]) => '<a href="#/' + id + '"' + (S.folder === id && !S.th ? ' aria-current="page"' : '') + '>' + svg(ic) + '<span>' + l + '</span>' + (id === 'inbox' && u ? '<span class="n">' + u + '</span>' : '') + '</a>').join('') +
-    '<div class="g">Apps</div><a class="ext" href="../hr/">' + svg('people') + '<span>SN People (HR)</span></a><a class="ext" href="../portal/">' + svg('tower') + '<span>Control tower (portal)</span></a>';
+    (mailOf(ME) ? '<div class="mute small" style="padding:0 12px 10px;word-break:break-all">Your address<br><b style="color:var(--ink)">' + esc(mailOf(ME)) + '</b></div>' : '') + '<div class="g">Apps</div><a class="ext" href="../hr/">' + svg('people') + '<span>SN People (HR)</span></a><a class="ext" href="../portal/">' + svg('tower') + '<span>Control tower (portal)</span></a>';
 }
 function listHtml() {
   const f = FOLD.find(x => x[0] === S.folder) || FOLD[0], T = threads(f[3]);
@@ -160,7 +161,7 @@ function threadHtml() {
   const L = T.L, last = L[L.length - 1], trashed = L.every(m => st(m).t), stz = L.some(m => st(m).s);
   return '<div class="row" style="margin-bottom:12px;flex-wrap:wrap"><button class="btn" type="button" data-a="back">' + svg('back') + ' Back</button><button class="btn" type="button" data-a="t-star">' + (stz ? 'Unstar' : 'Star') + '</button><button class="btn" type="button" data-a="t-unread">Mark unread</button><button class="btn' + (trashed ? '' : ' d') + '" type="button" data-a="t-trash">' + (trashed ? 'Restore' : 'Move to trash') + '</button></div>' +
     '<h1 style="font-family:var(--disp);margin:0 0 12px">' + esc(last.subject || '(no subject)') + '</h1>' +
-    L.map(m => '<article class="msg"><div class="mh"><span class="av">' + esc(ini(m.fromName || nameOf(m.from))) + '</span><div class="g1"><b>' + esc(m.from === ME ? S.myName + ' (me)' : m.fromName || nameOf(m.from)) + '</b><div class="to">to ' + esc(Object.keys(m.toNames || {}).filter(u => (m.to || []).includes(u)).map(u => u === ME ? 'me' : m.toNames[u]).join(', ')) + ((m.cc || []).length ? ' · cc ' + esc((m.cc || []).map(u => u === ME ? 'me' : (m.toNames || {})[u] || nameOf(u)).join(', ')) : '') + '</div></div><span class="to">' + esc(full(m.at)) + '</span></div><div class="bd">' + esc(m.body || '') + '</div></article>').join('') +
+    L.map(m => '<article class="msg"><div class="mh"><span class="av">' + esc(ini(m.fromName || nameOf(m.from))) + '</span><div class="g1"><b>' + esc(m.from === ME ? S.myName + ' (me)' : m.fromName || nameOf(m.from)) + '</b>' + (mailOf(m.from) ? ' <span class="to">&lt;' + esc(mailOf(m.from)) + '&gt;</span>' : '') + '<div class="to">to ' + esc(Object.keys(m.toNames || {}).filter(u => (m.to || []).includes(u)).map(u => u === ME ? 'me' : m.toNames[u]).join(', ')) + ((m.cc || []).length ? ' · cc ' + esc((m.cc || []).map(u => u === ME ? 'me' : (m.toNames || {})[u] || nameOf(u)).join(', ')) : '') + '</div></div><span class="to">' + esc(full(m.at)) + '</span></div><div class="bd">' + esc(m.body || '') + '</div></article>').join('') +
     '<div class="row"><button class="btn p" type="button" data-a="reply">' + svg('reply') + ' Reply</button>' + ((last.rcpt || []).length > 1 ? '<button class="btn" type="button" data-a="replyall">' + svg('reply') + ' Reply all</button>' : '') + '<button class="btn" type="button" data-a="fwd">' + svg('fwd') + ' Forward</button></div>';
 }
 function render() {
@@ -180,12 +181,12 @@ function renderCmp() { const host = $('#cmpHost'); if (!S.cmp) { host.innerHTML 
   if (host.firstChild) { // keep typing in place: refresh only chips
     $('#c-to-chips').innerHTML = chips('to'); if ($('#c-cc-chips')) $('#c-cc-chips').innerHTML = chips('cc'); return; }
   host.innerHTML = '<section class="cmp" role="dialog" aria-label="New message"><div class="ch"><span>' + (c.thread ? 'Reply' : 'New message') + '</span><button type="button" data-a="c-close" aria-label="Close">×</button></div>' +
-    '<div class="cf"><span>To</span><span id="c-to-chips">' + chips('to') + '</span><input id="c-to-in" placeholder="Name or employee ID" autocomplete="off"><button class="btn s" type="button" data-a="c-cc">Cc</button><div class="sug" id="sug-to" hidden></div></div>' +
-    '<div class="cf" id="c-cc-row"' + (c.showCc || c.cc.length ? '' : ' hidden') + '><span>Cc</span><span id="c-cc-chips">' + chips('cc') + '</span><input id="c-cc-in" placeholder="Name or employee ID" autocomplete="off"><div class="sug" id="sug-cc" hidden></div></div>' +
+    '<div class="cf"><span>To</span><span id="c-to-chips">' + chips('to') + '</span><input id="c-to-in" placeholder="Name, employee ID or SN Mail ID" autocomplete="off"><button class="btn s" type="button" data-a="c-cc">Cc</button><div class="sug" id="sug-to" hidden></div></div>' +
+    '<div class="cf" id="c-cc-row"' + (c.showCc || c.cc.length ? '' : ' hidden') + '><span>Cc</span><span id="c-cc-chips">' + chips('cc') + '</span><input id="c-cc-in" placeholder="Name, employee ID or SN Mail ID" autocomplete="off"><div class="sug" id="sug-cc" hidden></div></div>' +
     '<div class="cf"><span>Subject</span><input id="c-sub" value="' + esc(c.subject) + '"></div><textarea id="c-body" aria-label="Message">' + esc(c.body) + '</textarea>' +
     '<div class="cb"><button class="btn p" type="button" data-a="c-send">' + svg('sent') + ' Send</button><span class="mute small" style="margin-left:auto">Only people you send to can read it.</span><button class="btn d s" type="button" data-a="c-discard">Discard</button></div></section>'; }
 function suggest(k) { const inp = $('#c-' + k + '-in'), box = $('#sug-' + k), q = lc(inp.value.trim()); if (!q) { box.hidden = true; return; }
-  const L = people().filter(p => p.uid !== ME && !S.cmp.to.includes(p.uid) && !S.cmp.cc.includes(p.uid) && lc(p.name + ' ' + p.sub).includes(q)).slice(0, 8);
+  const L = people().filter(p => p.uid !== ME && !S.cmp.to.includes(p.uid) && !S.cmp.cc.includes(p.uid) && lc(p.name + ' ' + p.sub + ' ' + p.mail).includes(q)).slice(0, 8);
   box.innerHTML = L.length ? L.map((p, i) => '<button type="button" class="' + (i ? '' : 'on') + '" data-pick="' + k + '|' + esc(p.uid) + '"><span class="av">' + esc(ini(p.name)) + '</span><span><b>' + esc(p.name) + '</b><br><span class="mute small">' + esc(p.sub) + '</span></span></button>').join('') : '<div class="empty" style="padding:10px">No one matches.</div>'; box.hidden = false; }
 async function send() { const c = S.cmp; c.subject = $('#c-sub').value.trim(); c.body = $('#c-body').value;
   if (!c.to.length) { toast('Add at least one person in To.'); return; } if (!c.subject && !c.body.trim()) { toast('Write a subject or a message.'); return; }
@@ -203,7 +204,7 @@ function replyTo(all_, fwd) { const T = threads(() => true).find(t => t.id === S
 document.addEventListener('click', async ev => {
   const t = ev.target.closest('[data-a],[data-open],[data-star],[data-pick],[data-rm]');
   if (ev.target.closest('#burger')) { document.body.classList.toggle('navopen'); return; }
-  if (ev.target.closest('#who')) { const m = $('#menu'); m.innerHTML = '<div class="h"><b>' + esc(S.myName) + '</b><span>SN Mail</span></div><a href="../hr/#/settings">' + svg('cog') + 'Settings</a><button type="button" class="out" id="logout">' + svg('exit') + 'Log out</button>'; m.hidden = !m.hidden; return; }
+  if (ev.target.closest('#who')) { const m = $('#menu'); m.innerHTML = '<div class="h"><b>' + esc(S.myName) + '</b><span>' + esc(mailOf(ME) || 'SN Mail') + '</span></div><a href="../hr/#/settings">' + svg('cog') + 'Settings</a><button type="button" class="out" id="logout">' + svg('exit') + 'Log out</button>'; m.hidden = !m.hidden; return; }
   if (ev.target.closest('#logout')) { await window.MOVANA_FB.signOut(); location.reload(); return; }
   if (!ev.target.closest('#menu')) $('#menu').hidden = true;
   if (!t) return;
@@ -228,6 +229,7 @@ document.addEventListener('keydown', ev => { const t = ev.target;
   if (t.id === 'c-to-in' || t.id === 'c-cc-in') { const k = t.id === 'c-to-in' ? 'to' : 'cc', box = $('#sug-' + k), bs = [...box.querySelectorAll('[data-pick]')], i = bs.findIndex(b => b.classList.contains('on'));
     if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && bs.length) { ev.preventDefault(); bs.forEach(b => b.classList.remove('on')); bs[(i + (ev.key === 'ArrowDown' ? 1 : -1) + bs.length) % bs.length].classList.add('on'); return; }
     if ((ev.key === 'Enter' || ev.key === ',') && !box.hidden && bs.length) { ev.preventDefault(); (bs[i] || bs[0]).click(); return; }
+    if ((ev.key === 'Enter' || ev.key === ',') && t.value.includes('@')) { ev.preventDefault(); const p = people().find(x => lc(x.mail) === lc(t.value.trim())); if (p && p.uid !== ME) { if (!S.cmp[k].includes(p.uid)) S.cmp[k].push(p.uid); t.value = ''; box.hidden = true; renderCmp(); keepDraft(); } else toast('No one has the address ' + t.value.trim() + '.'); return; }
     if (ev.key === 'Backspace' && !t.value && S.cmp[k].length) { S.cmp[k].pop(); renderCmp(); return; } }
   if (ev.key === 'Escape') { $('#menu').hidden = true; document.body.classList.remove('navopen'); }
   if ((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter' && S.cmp) { ev.preventDefault(); send(); } });
@@ -235,6 +237,7 @@ document.addEventListener('input', ev => { const t = ev.target;
   if (t.id === 'q') { S.q = t.value.trim(); if (S.th) location.hash = '#/' + S.folder; else render(); const q = $('#q'); q.focus(); return; }
   if (t.id === 'c-to-in') { suggest('to'); return; } if (t.id === 'c-cc-in') { suggest('cc'); return; }
   if (S.cmp && (t.id === 'c-sub' || t.id === 'c-body')) { S.cmp.subject = $('#c-sub').value; S.cmp.body = $('#c-body').value; keepDraft(); } });
+if (window.MOVANA_FB && MOVANA_FB.assignMailIds) MOVANA_FB.assignMailIds().catch(() => {});
 render();
 })();
 </script>

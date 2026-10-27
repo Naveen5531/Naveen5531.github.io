@@ -184,15 +184,28 @@
   window.claude = { use: async n => { await signedIn; return { db, user, downloads }[n] || null; } };
 
   // ---------- staff accounts, password, sign out (used by the portal screens) ----------
+  // ---------- SN Mail IDs: firstname.lastname@snlogistics, made from the person's name, never repeated ----------
+  const MAIL_DOMAIN = 'snlogistics';
+  const mailBase = n => String(n || '').toLowerCase().normalize('NFKD').replace(/[^a-z\s]/g, ' ').trim().split(/\s+/).filter(Boolean).join('.') || 'user';
+  const freeMail = (name, used) => { const b = mailBase(name); let m = b + '@' + MAIL_DOMAIN, i = 2; while (used.has(m)) m = b + (i++) + '@' + MAIL_DOMAIN; used.add(m); return m; };
+  const usedMails = async () => new Set((await fs.collection('users').get()).docs.map(d => d.data().mail).filter(Boolean));
   window.MOVANA_FB = {
-    domain: DOMAIN, toEmail, toUser,
+    domain: DOMAIN, toEmail, toUser, mailDomain: MAIL_DOMAIN, mailBase,
+    /** Give every login without an SN Mail ID one (admins and HR only – others are refused by the rules). Punch employees first, so they get the plain name. */
+    async assignMailIds() {
+      const q = await fs.collection('users').get(), U = q.docs.map(d => Object.assign({ id: d.id }, d.data())), used = new Set(U.map(u => u.mail).filter(Boolean));
+      let pe = new Set(); try { pe = new Set((await fs.collection('punch_emp').get()).docs.map(d => d.id)); } catch (e) {}
+      const todo = U.filter(u => !u.mail && u.name).sort((a, b) => (pe.has(b.id) ? 1 : 0) - (pe.has(a.id) ? 1 : 0) || (+a.createdAt || 0) - (+b.createdAt || 0));
+      let n = 0; for (const u of todo) { const m = freeMail(u.name, used); try { await fs.doc('users/' + u.id).update({ mail: m }); profCache[u.id] = Object.assign({}, profCache[u.id], { mail: m }); n++; } catch (e) { return n; } } return n;
+    },
     async createStaff(name, username, password) {
       // a second Firebase app creates the login without signing the admin out
       const sec = firebase.initializeApp(CFG, 'staff-' + Date.now());
       try {
         const cred = await sec.auth().createUserWithEmailAndPassword(toEmail(username), password);
         const uid = cred.user.uid;
-        await fs.doc('users/' + uid).set({ name, username: toUser(toEmail(username)), createdAt: Date.now(), createdBy: ME.user.uid });
+        let mail = ''; try { mail = freeMail(name, await usedMails()); } catch (e) {}
+        await fs.doc('users/' + uid).set(Object.assign({ name, username: toUser(toEmail(username)), createdAt: Date.now(), createdBy: ME.user.uid }, mail ? { mail } : {}));
         profCache[uid] = { name, username: toUser(toEmail(username)) };
         await sec.auth().signOut();
         return uid;

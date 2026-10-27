@@ -85,7 +85,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 </header>
 <div class="menu" id="menu" role="menu" hidden></div><div class="notif" id="notif" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="People"></nav><main id="main"><div class="empty">Loading…</div></main></div>
-<script src="../portal/fb.js?v=20261026q"></script>
+<script src="../portal/fb.js?v=20261027a"></script>
 <script src="../portal/offer.js?v=4"></script>
 <script src="../portal/payslip.js?v=2"></script>
 <script>
@@ -168,6 +168,7 @@ if (isHR()) { live('members', col('members')); live('docs', col('hr_docs')); liv
 else { live('docs', mineQ('hr_docs')); live('att', mineQ('punch_att')); live('mark', mineQ('punch_mark')); live('req', mineQ('punch_req')); liveDoc('bal', fs.doc('punch_bal/' + S.uid));
   ['enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => live(k, mineQ({ enrol: 'hr_enrol', goals: 'hr_goals', reviews: 'hr_reviews', exp: 'hr_expenses', exits: 'hr_exits', help: 'hr_help' }[k]))); }
 fs.collection('mail').where('rcpt', 'array-contains', S.uid).onSnapshot(q => { const n = q.docs.filter(d => { const m = d.data(), x = (m.st || {})[S.uid] || {}; return m.from !== S.uid && !x.r && !x.t; }).length; const b = $('#mailN'); if (b) { b.hidden = !n; b.textContent = n; } }, () => {});
+if ((canAppr() || isAdmin()) && MOVANA_FB.assignMailIds) MOVANA_FB.assignMailIds().catch(() => {});
 if (canSal()) { live('pexp', col('punch_exp')); live('pay', col('punch_pay')); live('offer', col('punch_offer')); }
 else { liveDoc('pexp', fs.doc('punch_exp/' + S.uid)); liveDoc('pay', fs.doc('punch_pay/' + S.uid)); liveDoc('offer', fs.doc('punch_offer/' + S.uid)); }
 /** One list of people: every Punch employee, plus everyone onboarded in the portal (Employees) who has no Punch login yet.
@@ -192,6 +193,7 @@ const nextEmpId = () => { const used = new Set(D.staff.map(r => r.empId).concat(
 /** Every new Punch login starts with this password; the employee then sets their own (profile menu › Settings, or the banner on Home). */
 const DEFAULT_PW = 'Welcome@123';
 const loginOf = uid => { const u = D.users.find(x => x._id === uid), n = u ? String(u.username || '').replace(/@staff\.movana\.app$/, '') : ''; return n.includes('@') ? '' : n; };
+const mailOf = uid => ((D.users.find(x => x._id === uid) || {}).mail || '');
 const onDefaultPw = () => { const u = D.users.find(x => x._id === S.uid); return !!(u && u.pwDefault); };
 /** Create the Punch app login for someone in the employee list: Punch ID = employee ID, password Welcome@123.
  *  Writes the login, the Punch profile and links the portal record, so the person shows "On Punch" everywhere. */
@@ -205,17 +207,17 @@ async function makePunchLogin(p) {
   try { uid = await MOVANA_FB.createStaff(p.name, eid, DEFAULT_PW); }
   catch (e) { toast(e && e.code === 'auth/email-already-in-use' ? 'A Punch login ' + eid + ' already exists. Change the employee ID and try again.' : e && e.code === 'auth/network-request-failed' ? 'No internet connection.' : 'Could not create the login (' + ((e && e.code) || 'error') + ').'); return null; }
   try {
-    await fs.doc('users/' + uid).set({ name: p.name, username: eid, pwDefault: true, createdAt: now, createdBy: S.uid });
+    await fs.doc('users/' + uid).set({ name: p.name, username: eid, pwDefault: true, createdAt: now, createdBy: S.uid }, { merge: true });
     await fs.doc('members/' + uid).set({ role: 'employee', status: 'Active', createdAt: now, updatedAt: now, addedBy: S.uid });
     await fs.doc('punch_emp/' + uid).set({ name: p.name, eid, desg: p.desg || st.role || '', grade: p.grade || st.grade || '', cat: p.cat || st.dept || '', join: p.join || st.joined || '', mgr: p.mgr || st.mgr || '', wp: { name: (p.wp || {}).name || st.hub || '' }, wo: [0], radius: 150, createdAt: now, updatedAt: now });
     await fs.doc('staff/' + sid).set(Object.assign(st, { empId: eid, puid: uid, updatedAt: now }));
   } catch (e) { toast('Login ' + eid + ' was made, but saving the profile failed. Try again.'); }
-  return { name: p.name, user: eid, uid };
+  const um = (await fs.doc('users/' + uid).get().catch(() => null)); return { name: p.name, user: eid, uid, mail: um && um.exists ? um.data().mail || '' : '' };
 }
 const credCard = () => { const c = S.creds; if (!c || !c.length) return '';
-  const txt = c.map(x => x.name + '\nPunch ID: ' + x.user + '\nPassword: ' + DEFAULT_PW).join('\n\n') + '\n\nInstall Punch: https://naveen5531.github.io/Punch.apk\nSign in with your Punch ID and password, then set your own password at https://naveen5531.github.io/hr/#/settings';
+  const txt = c.map(x => x.name + '\nPunch ID: ' + x.user + '\nPassword: ' + DEFAULT_PW + (x.mail ? '\nSN Mail ID: ' + x.mail : '')).join('\n\n') + '\n\nInstall Punch: https://naveen5531.github.io/Punch.apk\nSign in with your Punch ID and password, then set your own password at https://naveen5531.github.io/hr/#/settings';
   return '<section class="card" style="margin-bottom:14px;border:2px solid var(--in)"><h2>Punch login' + (c.length > 1 ? 's' : '') + ' created</h2><p class="mute small">Punch ID is the employee ID. Everyone starts with the password <b>' + DEFAULT_PW + '</b> and is asked to set their own after signing in.</p>' +
-    tbl(['Employee', 'Punch ID', 'Password'], c.map(x => '<tr><td>' + esc(x.name) + '</td><td><b>' + esc(x.user) + '</b></td><td>' + DEFAULT_PW + '</td></tr>')) +
+    tbl(['Employee', 'Punch ID', 'Password', 'SN Mail ID'], c.map(x => '<tr><td>' + esc(x.name) + '</td><td><b>' + esc(x.user) + '</b></td><td>' + DEFAULT_PW + '</td><td>' + esc(x.mail || '') + '</td></tr>')) +
     '<div class="row mt"><button class="btn p" type="button" data-a="cr-copy">Copy</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(txt) + '">Share on WhatsApp</a><button class="btn" type="button" data-a="cr-done">Done</button></div><textarea id="cr-txt" hidden>' + esc(txt) + '</textarea></section>'; };
 const pwCard = () => '<section class="card" id="pwcard"><h2>' + svg('key') + ' Set your own password</h2>' + (onDefaultPw() ? '<p class="mute">You are still on the starting password. Choose your own – it works for the Punch app and this site.</p>' : '<p class="mute small">Changes the password for the Punch app and this site.</p>') +
   '<div class="form">' + fld('pw-old', 'Current password', 'password') + fld('pw-n1', 'New password', 'password') + fld('pw-n2', 'New password again', 'password') + '</div><div class="row mt"><button class="btn p" type="button" data-a="pw-set">Save password</button></div></section>';
@@ -320,7 +322,7 @@ function pend() { return { docs: D.docs.filter(d => d.s === 'Submitted').length,
 function vProfile() {
   const e = meEmp(), u = D.users.find(x => x._id === S.self) || {};
   return ph('My profile', 'Kept by HR. Raise an HR ticket to change anything.') + '<section class="card"><div class="row" style="gap:16px;margin-bottom:14px"><span class="av lg">' + esc(ini(e.name)) + '</span><div><h2>' + esc(e.name || S.me.name) + '</h2><div class="mute">' + esc([e.desg, e.grade && 'Grade ' + e.grade].filter(Boolean).join(' · ')) + '</div><div class="row mt">' + S.roles.map(r => pill(roleName(r), 'info')).join('') + '</div></div></div>' +
-    '<div class="kv">' + [['Employee ID', e.eid], ['Designation', e.desg], ['Grade', e.grade], ['Department', e.cat], ['Workplace', (e.wp || {}).name], ['Date of joining', fmtD(e.join)], ['Weekly off', (e.wo || []).map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ')], ['Login', u.username || S.me.email]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>';
+    '<div class="kv">' + [['Employee ID', e.eid], ['SN Mail ID', mailOf(S.uid)], ['Designation', e.desg], ['Grade', e.grade], ['Department', e.cat], ['Workplace', (e.wp || {}).name], ['Date of joining', fmtD(e.join)], ['Weekly off', (e.wo || []).map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ')], ['Login', u.username || S.me.email]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>';
 }
 const ROLE_N = { superadmin: 'Super admin', admin_head: 'Admin head', hr_head: 'HR head', hr_manager: 'HR manager', hr_exec: 'HR executive', employee: 'Employee', none: 'No role yet' };
 const roleName = r => ROLE_N[r] || r.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -478,7 +480,7 @@ function vSeparation() {
 function vPeople() {
   const q = lc(S.q.people || ''), E = D.emp.filter(e => !q || lc([e.name, e.eid, e.desg, e.cat].join(' ')).includes(q)).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), cur = S.open.person && empOf(S.open.person);
   return ph('People', D.emp.length + ' employees', '<input id="q-people" type="search" class="btn" placeholder="Name, ID or designation" value="' + esc(S.q.people || '') + '" style="min-width:min(260px,100%)">') +
-    (cur ? '<section class="card" style="margin-bottom:14px"><div class="row" style="gap:14px"><span class="av lg">' + esc(ini(cur.name)) + '</span><div><h2>' + esc(cur.name) + '</h2><div class="mute">' + esc([cur.desg, cur.grade].filter(Boolean).join(' · ')) + '</div></div><button class="btn s" type="button" data-a="pp-close" style="margin-left:auto">Close</button></div><div class="kv mt">' + [['Employee ID', cur.eid], ['Department', cur.cat], ['Workplace', (cur.wp || {}).name], ['Reports to', cur.mgr], ['Team', teamOf(cur).map(o => o.name).join(', ')], ['Date of joining', fmtD(cur.join)]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>' : '') +
+    (cur ? '<section class="card" style="margin-bottom:14px"><div class="row" style="gap:14px"><span class="av lg">' + esc(ini(cur.name)) + '</span><div><h2>' + esc(cur.name) + '</h2><div class="mute">' + esc([cur.desg, cur.grade].filter(Boolean).join(' · ')) + '</div></div><button class="btn s" type="button" data-a="pp-close" style="margin-left:auto">Close</button></div><div class="kv mt">' + [['Employee ID', cur.eid], ['SN Mail ID', mailOf(cur._id)], ['Department', cur.cat], ['Workplace', (cur.wp || {}).name], ['Reports to', cur.mgr], ['Team', teamOf(cur).map(o => o.name).join(', ')], ['Date of joining', fmtD(cur.join)]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>' : '') +
     '<div class="grid g3">' + E.map(e => '<button type="button" class="card li" style="border:0;text-align:left;background:var(--card)" data-a="pp-open" data-x="' + esc(e._id) + '"><span class="av">' + esc(ini(e.name)) + '</span><div class="g1"><b>' + esc(e.name) + '</b><span>' + esc([e.eid, e.desg].filter(Boolean).join(' · ')) + '</span></div></button>').join('') + '</div>';
 }
 const mgrOf = e => e.mgr ? D.emp.find(o => o._id !== e._id && normN(o.name) === normN(e.mgr)) : null;

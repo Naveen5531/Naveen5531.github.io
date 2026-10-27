@@ -446,7 +446,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261026q"></script><script src="offer.js?v=3"></script><script>
+<script src="fb.js?v=20261027a"></script><script src="offer.js?v=3"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -3705,6 +3705,6 @@ boot();
 /* Employee-only logins use SN People (HR); the control tower is for staff with other roles. */
 (async () => { try { if (!window.claude || !window.claude.use || !window.firebase) return; await window.claude.use('user'); const u = firebase.auth().currentUser; if (!u) return;
   const [m, o] = await Promise.all([firebase.firestore().doc('members/' + u.uid).get(), firebase.firestore().doc('settings/owner').get().catch(() => null)]);
-  if (o && o.exists && o.data().uid === u.uid) return; if (m.exists) { const d = m.data(), r = [d.role].concat(d.roles || []).filter(Boolean); if (r.length && r.every(x => x === 'employee')) location.replace('../hr/'); } } catch (e) {} })();
+  if (o && o.exists && o.data().uid === u.uid) { if (window.MOVANA_FB && MOVANA_FB.assignMailIds) MOVANA_FB.assignMailIds().catch(() => {}); return; } if (m.exists) { const d = m.data(), r = [d.role].concat(d.roles || []).filter(Boolean); if (r.length && r.every(x => x === 'employee')) location.replace('../hr/'); else if (window.MOVANA_FB && MOVANA_FB.assignMailIds && r.some(x => ['superadmin', 'admin_head'].includes(x))) MOVANA_FB.assignMailIds().catch(() => {}); } } catch (e) {} })();
 </script>
 </body></html>
