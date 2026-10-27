@@ -1143,7 +1143,7 @@ function listView(k, opts) {
   [...sel].forEach(id => { if (!rows.some(r => r._id === id)) sel.delete(id); });
   const bulk = writable(k) && sc.stages && !sc.noBulk && opts.bulk !== false;
   if (bulk && sel.size) {
-    h += '<div class="bulk"><b>' + sel.size + ' selected</b><select id="bulkStage" aria-label="Move selected to"><option value="">Move to status…</option>' + sc.stages.concat(sc.extraStages || []).map(s => '<option>' + esc(s) + '</option>').join('') + '</select>' +
+    h += '<div class="bulk"><b>' + sel.size + ' selected</b>' + (k === 'shipments' ? '' : '<select id="bulkStage" aria-label="Move selected to"><option value="">Move to status…</option>' + sc.stages.concat(sc.extraStages || []).map(s => '<option>' + esc(s) + '</option>').join('') + '</select>') +
       '<button class="btn small" type="button" data-act="bulk-clear">Clear selection</button>' + (canDelete(k) ? '<button class="btn small danger" type="button" data-act="bulk-delete">Delete selected</button>' : '') + '</div>';
   }
   const cols = opts.cols || sc.cols;
@@ -1534,11 +1534,15 @@ HOOK.actions.shipments = r => {
   const s = stageOf('shipments', r);
   const i = SHIP_STAGES.indexOf(s);
   let h = '<div class="actions">';
-  if (i >= 0 && i < SHIP_STAGES.length - 1 && s !== 'Out for delivery') h += '<button class="btn primary small" type="button" data-stage-to="' + esc(SHIP_STAGES[i + 1]) + '">→ ' + esc(SHIP_STAGES[i + 1]) + '</button>';
+  /* Shipment status moves only through the real operation – never picked by hand */
+  const NEXT_OP = { Booked: 'Moves to Picked up when the executive scans every box in SN Pickup.', 'Picked up': 'Moves to Pickup in transit when the pickup is completed in SN Pickup.',
+    'Pickup in transit': 'Moves to At origin hub when hub staff receive it in SN Pickup › Inbound.', 'At origin hub': 'Moves to In transit when it is dispatched on a Linehaul trip.',
+    'In transit': 'Moves to At destination hub when its trip arrives.', 'At destination hub': 'Moves to Out for delivery when it is put on a runsheet (DRS) and the run starts.' };
+  if (NEXT_OP[s]) h += '<p class="help" style="margin:0">' + esc(NEXT_OP[s]) + '</p>';
   if (s === 'Out for delivery') h += '<button class="btn primary small" type="button" data-act="deliver">Delivered</button><button class="btn small" type="button" data-act="ndr">Delivery failed</button>';
   if (s === 'NDR') h += '<button class="btn primary small" type="button" data-act="reattempt">Re-attempt</button><button class="btn small danger" type="button" data-act="rto">Return to origin</button>';
   if (!SCHEMA.shipments.doneStages.includes(s) && s !== 'NDR') h += '<button class="btn small danger" type="button" data-act="rto">Start RTO</button>';
-  h += '<select id="stageJump" aria-label="Set status" style="width:auto"><option value="">Set status…</option>' + SHIP_STAGES.concat(SCHEMA.shipments.extraStages).filter(x => x !== s).map(x => '<option>' + esc(x) + '</option>').join('') + '</select></div>';
+  h += '</div>';
   if (D && D.sub === 'deliver') h += '<div class="form" style="align-items:end"><label>Received by<input id="podName" type="text" value="' + esc(r.consignee || '') + '"></label>' + (r.mode === 'COD' ? '<label>COD collected (₹)<input id="podCod" type="number" step="any" value="' + esc(r.cod) + '"></label>' : '') + '<button class="btn primary" type="button" data-act="deliver-save">Save delivery</button></div>';
   if (D && D.sub === 'ndr') h += '<div class="form" style="align-items:end"><label>Why did delivery fail?<select id="ndrReason">' + NDR_REASONS.map(x => '<option>' + esc(x) + '</option>').join('') + '</select></label><label>Next attempt<input id="ndrDate" type="date" value="' + addDays(today(), 1) + '"></label><button class="btn primary" type="button" data-act="ndr-save">Save failed attempt</button></div>';
   return h;
@@ -3699,7 +3703,7 @@ document.addEventListener('click', async e => {
   if (ds.import) { IMPORT = null; openDrawer({ mode: 'import', k: ds.import }); return; }
   if (ds.export) { exportCSV(ds.export); return; }
   if (ds.chip) { const i = ds.chip.indexOf('|'); const k = ds.chip.slice(0, i); S.filt[k] = ds.chip.slice(i + 1); S.sel[k].clear(); render(); return; }
-  if (ds.stageTo && D) { await setStage(D.k, D.id, ds.stageTo); return; }
+  if (ds.stageTo && D) { if (D.k === 'shipments') { toast('Shipment status changes only through its operation (scan, hub receive, trip, runsheet).', true); return; } await setStage(D.k, D.id, ds.stageTo); return; }
   if (ds.raise) { t.disabled = true; await raiseInvoice(ds.raise); return; }
   if (ds.remit) { const [c, amt] = ds.remit.split('|'); const id = await save('payments', null, { ref: nextCode('PAY', 'payments', 'ref'), type: 'COD remittance to client', party: c, amount: num(amt), mode: 'NEFT', due: addDays(today(), 2), stage: 'Pending', events: [{ s: 'Pending', t: Date.now(), n: 'From COD reconciliation' }] }, 'COD remittance queued for ' + c); if (id) { toast('Remittance of ' + money(amt) + ' queued'); openDrawer({ mode: 'view', k: 'payments', id }); } return; }
   if (ds.period) { const d = new Date(); if (ds.period === 'month') { S.from = today().slice(0, 8) + '01'; S.to = today(); } else if (ds.period === 'last') { const f = new Date(d.getFullYear(), d.getMonth() - 1, 1); S.from = iso(f); S.to = iso(new Date(d.getFullYear(), d.getMonth(), 0)); } else { const y = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1; S.from = y + '-04-01'; S.to = today(); } render(); return; }
@@ -3795,8 +3799,8 @@ document.addEventListener('change', async e => {
     if (D.k === 'pickups') liveCost();
     return;
   }
-  if (id === 'stageJump' && e.target.value && D) { await setStage(D.k, D.id, e.target.value, 'Set manually'); return; }
-  if (id === 'bulkStage' && e.target.value) { const k = curTabKey(); const to = e.target.value; let n = 0; for (const rid of [...S.sel[k]]) { if (await setStage(k, rid, to, 'Bulk update', {}, true)) n++; } S.sel[k].clear(); toast(n + ' moved to ' + to); return; }
+  if (id === 'stageJump' && e.target.value && D && D.k !== 'shipments') { await setStage(D.k, D.id, e.target.value, 'Set manually'); return; }
+  if (id === 'bulkStage' && e.target.value && curTabKey() !== 'shipments') { const k = curTabKey(); const to = e.target.value; let n = 0; for (const rid of [...S.sel[k]]) { if (await setStage(k, rid, to, 'Bulk update', {}, true)) n++; } S.sel[k].clear(); toast(n + ' moved to ' + to); return; }
   if (id === 'csvFile') { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => previewImport(String(rd.result)); rd.readAsText(f); return; }
   if (id.startsWith('bill-')) { S.bill[id.slice(5)] = e.target.value; render(); return; }
   if (id === 'p-from') { S.from = e.target.value; render(); return; }
