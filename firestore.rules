@@ -130,6 +130,20 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ----- Website enquiries: the admin desk's query mailbox (SN Mail › Queries) -----
+    // Anyone on the website may send one (checked fields, sizes and status "New"); only Super admin / Admin head read and answer them.
+    function qs(d, k, n) { return d.get(k, '') is string && d.get(k, '').size() <= n; }
+    match /queries/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['ref', 'kind', 'name', 'company', 'phone', 'email', 'from', 'to', 'vehicle', 'date', 'msg', 's', 'at'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
+        && request.resource.data.phone is string && request.resource.data.phone.size() >= 8 && request.resource.data.phone.size() <= 20
+        && qs(request.resource.data, 'ref', 20) && qs(request.resource.data, 'kind', 60) && qs(request.resource.data, 'company', 80)
+        && qs(request.resource.data, 'email', 120) && qs(request.resource.data, 'from', 60) && qs(request.resource.data, 'to', 60)
+        && qs(request.resource.data, 'vehicle', 60) && qs(request.resource.data, 'date', 20) && qs(request.resource.data, 'msg', 1500)
+        && request.resource.data.s == 'New' && request.resource.data.at is int;
+      allow read, update, delete: if isAdmin();
+    }
+
     // "Is the portal set up yet?" – readable before login so the first screen knows what to show.
     match /public/{d} {
       allow read: if true;
@@ -188,9 +202,9 @@ service cloud.firestore {
     // Everything else: shipments, pickups, trips, invoices, payments, staff, leave, payroll, tickets …
     // Punch employees are kept out of all of this; Punch data has its own rules above.
     match /{coll}/{id} {
-      allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*') && coll != 'mail';
+      allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*') && !(coll in ['mail', 'queries']);
       allow write: if canWrite() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*')
-        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail']);
+        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'queries']);
     }
   }
 }

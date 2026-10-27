@@ -216,12 +216,17 @@ section.block { border-bottom: 0; }
 .feat div { border-left-color: var(--gold); }
 .form input, .form select, .form textarea { border-radius: 14px; }
 footer { color: var(--ink-2); }
+.ind-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; background: var(--card, #fff); border: 1px solid var(--line, #e5e7eb); margin-bottom: 16px; max-width: 520px; }
+.ind-tabs button { border: 0; background: none; padding: 10px 8px; border-radius: 12px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; color: inherit; line-height: 1.25; }
+.ind-tabs button[aria-selected="true"] { background: var(--in, #0c9b76); color: #fff; }
+.ind .svc ul { margin-top: 6px; }
+.status.ok { color: var(--in, #0c9b76); font-weight: 700; } .status.bad { color: #d92d20; font-weight: 600; }
 </style>
 
 </head><body><header class="top">
   <div class="wrap">
     <a class="brand" href="#top" aria-label="SN Logistics home"><img src="brand/sn-icon-64.png" alt="SN Logistics" width="38" height="38" style="width:38px;height:38px;border-radius:10px;display:block;flex:none;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)"><span><b>SN Logistics</b><small>Punch · Freight</small></span></a>
-    <nav aria-label="Sections"><a href="#how">How Punch works</a><a href="#live">Team live</a><a href="#app">Download</a><a href="#freight">Freight</a><a href="#contact">Contact</a><a href="hr/">HR portal</a></nav>
+    <nav aria-label="Sections"><a href="#how">How Punch works</a><a href="#live">Team live</a><a href="#app">Download</a><a href="#freight">Freight</a><a href="#about">About</a><a href="#induction">Induction</a><a href="#contact">Contact</a><a href="hr/">HR portal</a></nav>
     <a class="btn login" id="loginBtn" href="https://naveen5531.github.io/portal/" target="_blank" rel="noopener">Staff login</a>
   </div>
 </header>
@@ -385,12 +390,50 @@ footer { color: var(--ink-2); }
     </div>
   </section>
 
+  <section class="block" id="about">
+    <div class="wrap">
+      <div class="sec-head"><p class="eyebrow">About us</p><h2>SN Logistics – speed &amp; trust on every lane</h2><p class="lead">SN Logistics moves freight by road across India: pickups, full and part truckloads, hub operations, last-mile delivery and returns. Our teams run on Punch for attendance and on the SN Control Tower for trips, billing and payouts, so every handover is on record.</p></div>
+      <div class="services">
+        <article class="svc"><span class="code">WHAT WE DO</span><h3>Road freight, end to end</h3><p>First mile, linehaul, hubs, last mile and reverse logistics, booked one leg at a time or as a full chain.</p></article>
+        <article class="svc"><span class="code">HOW WE WORK</span><h3>One record per consignment</h3><p>LR, manifests, proof of delivery and the GST invoice all come from the same record, so customers, drivers and accounts see the same numbers.</p></article>
+        <article class="svc"><span class="code">OUR PEOPLE</span><h3>Teams on the ground</h3><p>Drivers, hub staff and the operations desk check in with Punch at the workplace; HR sees attendance and requests live.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="induction">
+    <div class="wrap">
+      <div class="sec-head"><p class="eyebrow">Induction</p><h2>Joining SN Logistics</h2><p class="lead">Everything a new team member or vehicle partner needs for the first day. Questions? Ask the admin desk below – it reaches us directly.</p></div>
+      <div class="ind-tabs" role="tablist" aria-label="Induction">
+        <button type="button" role="tab" aria-selected="true" data-ind="staff">New staff</button>
+        <button type="button" role="tab" aria-selected="false" data-ind="partner">Vehicle partners &amp; vendors</button>
+      </div>
+      <div class="ind" data-ip="staff">
+        <div class="services">
+          <article class="svc"><span class="code">BEFORE DAY 1</span><h3>Documents to bring</h3><ul><li>Aadhaar and PAN card (self-attested copies)</li><li>Two passport-size photographs</li><li>Education certificates and mark sheets</li><li>Relieving / experience letters and last 3 payslips, if any</li><li>Cancelled cheque or bank passbook page, UAN if you have one</li></ul></article>
+          <article class="svc"><span class="code">DAY 1</span><h3>Your first day</h3><ul><li>Report to the HR desk at the start of your shift</li><li>Sign the offer letter and joining forms</li><li>Get your Punch login – install the app and check in at the workplace</li><li>Safety walk-through of the hub, loading bays and vehicle area</li><li>Meet your reporting manager and team</li></ul></article>
+          <article class="svc"><span class="code">EVERY DAY</span><h3>How we work</h3><ul><li>Check in and out on Punch within the workplace radius</li><li>Apply leave and attendance changes in Punch; HR approves them there</li><li>Salary slips are in Punch every month</li><li>Safety shoes and ID card on the floor at all times</li><li>Follow the code of conduct in your offer letter</li></ul></article>
+        </div>
+        <div class="row" style="margin-top:14px"><a class="btn gold" href="Punch.apk" download>Download Punch</a><button class="btn" type="button" data-ask="Staff induction">Ask a question</button></div>
+      </div>
+      <div class="ind" data-ip="partner" hidden>
+        <div class="services">
+          <article class="svc"><span class="code">ELIGIBILITY</span><h3>Who can attach</h3><ul><li>Truck owners and fleet operators – Tata Ace to 40 ft trailers</li><li>Vehicles with valid papers and a trained driver</li><li>Transporters and vendors for hubs and loading</li></ul></article>
+          <article class="svc"><span class="code">DOCUMENTS</span><h3>Vehicle &amp; owner papers</h3><ul><li>RC, insurance, fitness, permit and PUC – all current</li><li>Driver's licence of every driver</li><li>Owner PAN, Aadhaar and GST (if registered)</li><li>Cancelled cheque for payouts</li></ul></article>
+          <article class="svc"><span class="code">ONBOARDING</span><h3>How it works</h3><ul><li>Send an enquiry with your vehicle type and base city</li><li>Papers verified and vehicle inspected</li><li>Rate agreed per trip or per month (dedicated)</li><li>Trips, daily vehicle reports and payouts tracked on the control tower</li></ul></article>
+        </div>
+        <div class="row" style="margin-top:14px"><button class="btn gold" type="button" data-ask="Vehicle partner / vendor">Attach my vehicle</button></div>
+      </div>
+    </div>
+  </section>
+
   <section class="block" id="contact">
     <div class="wrap">
-      <div class="sec-head"><p class="eyebrow">Contact</p><h2>Book a pickup or ask for a quote</h2><p class="lead">Tell us the lane and the load. Our operations desk replies with a confirmed rate and pickup slot.</p></div>
+      <div class="sec-head"><p class="eyebrow">Contact · admin desk</p><h2>Ask us anything</h2><p class="lead">Quotes, pickups, jobs, induction or attaching a vehicle – your message goes straight to the SN Logistics admin desk (query mailbox) and we call or mail you back.</p></div>
       <div class="contact">
         <form class="card" id="enq" novalidate>
           <div class="form">
+            <label class="wide">I am asking about<select id="q-kind"><option>Freight quote / pickup</option><option>Staff induction</option><option>Job / career</option><option>Vehicle partner / vendor</option><option>Other</option></select></label>
             <label>Your name<input id="q-name" required autocomplete="name"></label>
             <label>Company<input id="q-co" autocomplete="organization"></label>
             <label>Phone<input id="q-phone" type="tel" required autocomplete="tel" inputmode="tel"></label>
@@ -399,10 +442,10 @@ footer { color: var(--ink-2); }
             <label>To (city or pincode)<input id="q-to" list="cities"></label>
             <label>Vehicle<select id="q-veh"><option value="">Not sure – suggest one</option></select></label>
             <label>Pickup date<input id="q-date" type="date"></label>
-            <label class="wide">Load details<textarea id="q-notes" placeholder="e.g. 120 cartons, 1.8 tonnes, 6 CBM, palletised"></textarea></label>
+            <label class="wide">Message<textarea id="q-notes" placeholder="Your question, or the load: e.g. 120 cartons, 1.8 tonnes, 6 CBM, palletised"></textarea></label>
           </div>
           <p class="status" id="enqMsg" role="status"></p>
-          <div class="row"><button class="btn gold" type="submit" id="enqSend">Send enquiry</button><button class="btn" type="button" id="enqCopy">Copy enquiry</button></div>
+          <div class="row"><button class="btn gold" type="submit" id="enqSend">Send to admin desk</button><button class="btn" type="button" id="enqCopy">Copy enquiry</button></div>
         </form>
         <aside class="card">
           <h3>Operations desk</h3>
@@ -549,18 +592,40 @@ footer { color: var(--ink-2); }
   steps.innerHTML = '<li>Tap <b>Download for Android</b>. Chrome saves <b>Movana.apk</b>.</li><li>Open it from the download bar or Files. If Android asks, allow installs from Chrome for this one time.</li><li>Open <b>Movana</b> and tap <b>Open control tower</b>. Sign in with the username and password your administrator gave you.</li>';
   // enquiries go to WhatsApp or email
   const enquiry = () => ({ name: $('#q-name').value.trim(), company: $('#q-co').value.trim(), phone: $('#q-phone').value.trim(), email: $('#q-email').value.trim(), from: $('#q-from').value.trim(), to: $('#q-to').value.trim(), vehicle: $('#q-veh').value, date: $('#q-date').value, notes: $('#q-notes').value.trim() });
-  const asText = q => 'Pickup / quote request – SN Logistics\nName: ' + q.name + (q.company ? ' (' + q.company + ')' : '') + '\nPhone: ' + q.phone + (q.email ? '\nEmail: ' + q.email : '') + '\nLane: ' + (q.from || '?') + ' → ' + (q.to || '?') + '\nVehicle: ' + (q.vehicle || 'suggest') + (q.date ? '\nPickup date: ' + q.date : '') + (q.notes ? '\nLoad: ' + q.notes : '');
-  $('#enqSend').textContent = waNum ? 'Send on WhatsApp' : (SITE.email ? 'Send by email' : 'Send enquiry');
+  const asText = q => 'Enquiry – SN Logistics (' + $('#q-kind').value + ')\nName: ' + q.name + (q.company ? ' (' + q.company + ')' : '') + '\nPhone: ' + q.phone + (q.email ? '\nEmail: ' + q.email : '') + '\nLane: ' + (q.from || '?') + ' → ' + (q.to || '?') + '\nVehicle: ' + (q.vehicle || 'suggest') + (q.date ? '\nPickup date: ' + q.date : '') + (q.notes ? '\nLoad: ' + q.notes : '');
   $('#enqCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(asText(enquiry())); toast('Enquiry copied'); } catch (e) { $('#enqMsg').textContent = asText(enquiry()); } });
-  $('#enq').addEventListener('submit', e => {
+  // Induction tabs and "Ask a question" buttons
+  document.querySelectorAll('[data-ind]').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('[data-ind]').forEach(x => x.setAttribute('aria-selected', x === t ? 'true' : 'false'));
+    document.querySelectorAll('[data-ip]').forEach(p => { p.hidden = p.dataset.ip !== t.dataset.ind; });
+  }));
+  document.querySelectorAll('[data-ask]').forEach(bt => bt.addEventListener('click', () => {
+    const k = $('#q-kind'); [...k.options].forEach(o => { if (o.text === bt.dataset.ask) k.value = o.text; });
+    $('#contact').scrollIntoView({ behavior: 'smooth' }); setTimeout(() => $('#q-name').focus(), 500);
+  }));
+  // Enquiries go to the admin desk's query mailbox in SN Mail (Firestore "queries"; anyone may send, only admins read).
+  const FB = { project: 'movana-72ea4', key: 'AIzaSyCPBeYX4XuRnj0x6vIbWr58ARCAR8Y9KHk' };
+  const sv = v => ({ stringValue: String(v || '').slice(0, 1500) });
+  $('#enq').addEventListener('submit', async e => {
     e.preventDefault();
-    const q = enquiry(), msg = $('#enqMsg');
-    if (!q.name || !/^[+\d][\d\s-]{7,}$/.test(q.phone)) { msg.textContent = 'Add your name and a phone number we can call back.'; return; }
-    const text = encodeURIComponent(asText(q));
-    if (waNum) location.href = 'https://wa.me/' + waNum + '?text=' + text;
-    else if (SITE.email) location.href = 'mailto:' + SITE.email + '?subject=' + encodeURIComponent('Pickup / quote request') + '&body=' + text;
-    else msg.textContent = 'Use Copy enquiry and send it to us.';
+    const q = enquiry(), msg = $('#enqMsg'), btn = $('#enqSend'); msg.className = 'status';
+    if (!q.name || !/^[+\d][\d\s-]{7,}$/.test(q.phone)) { msg.textContent = 'Add your name and a phone number we can call back.'; msg.className = 'status bad'; return; }
+    if (q.email && !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(q.email)) { msg.textContent = 'That email address looks wrong.'; msg.className = 'status bad'; return; }
+    const d = new Date(), ref = 'Q' + String(d.getFullYear()).slice(2) + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const kind = $('#q-kind').value;
+    const fields = { ref: sv(ref), kind: sv(kind), name: sv(q.name.slice(0, 80)), company: sv(q.company.slice(0, 80)), phone: sv(q.phone.slice(0, 20)), email: sv(q.email.slice(0, 120)),
+      from: sv(q.from.slice(0, 60)), to: sv(q.to.slice(0, 60)), vehicle: sv(q.vehicle.slice(0, 60)), date: sv(q.date), msg: sv(q.notes), s: sv('New'), at: { integerValue: String(Date.now()) } };
+    btn.disabled = true; msg.textContent = 'Sending…';
+    try {
+      const r = await fetch('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/queries?key=' + FB.key, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      msg.textContent = 'Sent to the admin desk. Your reference is ' + ref + '. We will call or mail you back.'; msg.className = 'status ok';
+      $('#enq').reset(); toast('Enquiry sent · ' + ref);
+    } catch (err) {
+      msg.textContent = 'Could not send right now. Please try again, or use Copy enquiry.'; msg.className = 'status bad';
+    } finally { btn.disabled = false; }
   });
+
 })();
 </script>
 <script>

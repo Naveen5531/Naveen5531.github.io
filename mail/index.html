@@ -116,7 +116,7 @@ const fs = firebase.firestore(), U = firebase.auth().currentUser, ME = U.uid;
 const S = { msgs: {}, users: [], emps: [], folder: 'inbox', th: null, q: '', cmp: null };
 /* Only the super admin can mail outside addresses (sent through their own Gmail until the company has a mail domain). Everyone else: internal SN Mail only. */
 { const [m, o] = await Promise.all([fs.doc('members/' + ME).get().catch(() => null), fs.doc('settings/owner').get().catch(() => null)]); const md = m && m.exists ? m.data() : {};
-  S.superAdmin = !!(o && o.exists && o.data().uid === ME) || [md.role].concat(md.roles || []).includes('superadmin'); S.extFrom = ((U.providerData || []).find(p => p && p.providerId === 'google.com') || {}).email || ''; }
+  S.superAdmin = !!(o && o.exists && o.data().uid === ME) || [md.role].concat(md.roles || []).includes('superadmin'); S.admin = S.superAdmin || [md.role].concat(md.roles || []).includes('admin_head'); S.extFrom = ((U.providerData || []).find(p => p && p.providerId === 'google.com') || {}).email || ''; }
 const twinOnly = (a, b) => a.length + b.length > 0;
 const isExt = k => k.startsWith('ext:'), EMAIL_RE = /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i;
 { const u = await fs.doc('users/' + ME).get().catch(() => null); S.myName = (u && u.exists && u.data().name) || String(U.email || '').split('@')[0]; }
@@ -127,6 +127,8 @@ let rq = false; const later = () => { if (rq) return; rq = true; requestAnimatio
 const SRC = { in: {}, out: {} }, take = k => snap => { SRC[k] = {}; snap.docs.forEach(d => { SRC[k][d.id] = Object.assign({ _id: d.id }, d.data()); }); S.msgs = Object.assign({}, SRC.in, SRC.out); later(); };
 fs.collection('mail').where('rcpt', 'array-contains', ME).onSnapshot(take('in'), e => { toast('Mail could not load (' + (e.code || 'error') + ').'); });
 fs.collection('mail').where('from', '==', ME).onSnapshot(take('out'), () => {});
+/* Queries: the admin desk's mailbox for enquiries sent from the website (Super admin and Admin head only). */
+S.qs = []; if (S.admin) fs.collection('queries').onSnapshot(s => { S.qs = s.docs.map(d => Object.assign({ _id: d.id }, d.data())).sort((a, b) => num(b.at) - num(a.at)); later(); }, e => { if (S.folder === 'queries') toast('Queries could not load (' + (e.code || 'error') + '). Publish the latest Firestore rules.'); });
 fs.collection('users').onSnapshot(s => { S.users = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); later(); }, () => {});
 fs.collection('punch_emp').onSnapshot(s => { S.emps = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); later(); }, () => {});
 
@@ -164,6 +166,7 @@ async function setSt(ids, patch) { for (const id of ids) { const m = S.msgs[id];
 function navHtml() {
   const u = all().filter(unread).length;
   return '<button class="compose-b" type="button" data-a="compose">' + svg('pen') + 'Compose</button>' + FOLD.map(([id, l, ic]) => '<a href="#/' + id + '"' + (S.folder === id && !S.th ? ' aria-current="page"' : '') + '>' + svg(ic) + '<span>' + l + '</span>' + (id === 'inbox' && u ? '<span class="n">' + u + '</span>' : '') + '</a>').join('') +
+    (S.admin ? (() => { const n = S.qs.filter(q => q.s === 'New').length; return '<a href="#/queries"' + (S.folder === 'queries' ? ' aria-current="page"' : '') + '>' + svg('inbox') + '<span>Queries <span class="mute small">query@ · website</span></span>' + (n ? '<span class="n">' + n + '</span>' : '') + '</a>'; })() : '') +
     (mailOf(ME) ? '<div class="mute small" style="padding:0 12px 10px;word-break:break-all">Your address<br><b style="color:var(--ink)">' + esc(mailOf(ME)) + '</b></div>' : '') + (S.superAdmin ? '<div class="mute small" style="padding:0 12px 10px">Super admin: you can also type an outside email address – it opens in your Gmail' + (S.extFrom ? ' (' + esc(S.extFrom) + ')' : '') + '.</div><a class="ext" href="https://mail.google.com/' + (S.extFrom ? '?authuser=' + encodeURIComponent(S.extFrom) : '') + '" target="_blank" rel="noopener">' + svg('all') + '<span>Outside mail (Gmail)</span></a>' : '') + '<div class="g">Apps</div><a class="ext" href="../hr/">' + svg('people') + '<span>SN People (HR)</span></a><a class="ext" href="../portal/">' + svg('tower') + '<span>Control tower (portal)</span></a>';
 }
 function listHtml() {
@@ -182,7 +185,26 @@ function threadHtml() {
     L.map(m => '<article class="msg"><div class="mh"><span class="av">' + esc(ini(m.fromName || nameOf(m.from))) + '</span><div class="g1"><b>' + esc(MY().has(m.from) ? (m.fromName || S.myName) + ' (me)' : m.fromName || nameOf(m.from)) + '</b>' + ((m.fromMail || mailOf(m.from)) ? ' <span class="to">&lt;' + esc(m.fromMail || mailOf(m.from)) + '&gt;</span>' : '') + '<div class="to">to ' + esc(whoList(m, 'to', true)) + ((m.cc || []).length ? ' · cc ' + esc(whoList(m, 'cc', true)) : '') + '</div></div><span class="to">' + esc(full(m.at)) + '</span></div><div class="bd">' + esc(m.body || '') + '</div></article>').join('') +
     '<div class="row"><button class="btn p" type="button" data-a="reply">' + svg('reply') + ' Reply</button>' + ((last.rcpt || []).length > 1 ? '<button class="btn" type="button" data-a="replyall">' + svg('reply') + ' Reply all</button>' : '') + '<button class="btn" type="button" data-a="fwd">' + svg('fwd') + ' Forward</button></div>';
 }
+const QST = { New: '#f26a1b', Replied: '#3557b5', Closed: '#0c9b76' };
+function qText(q) { return 'Website enquiry ' + (q.ref || '') + ' (' + (q.kind || 'General') + ')\nName: ' + (q.name || '') + (q.company ? ' (' + q.company + ')' : '') + '\nPhone: ' + (q.phone || '') + (q.email ? '\nEmail: ' + q.email : '') + ((q.from || q.to) ? '\nLane: ' + (q.from || '?') + ' → ' + (q.to || '?') : '') + (q.vehicle ? '\nVehicle: ' + q.vehicle : '') + (q.date ? '\nDate: ' + q.date : '') + (q.msg ? '\n\n' + q.msg : ''); }
+function queriesHtml() {
+  const L = S.qs.filter(q => !S.q || lc(qText(q)).includes(lc(S.q)));
+  return '<div class="ph"><div><h1>Queries</h1><p>Enquiries from the website go to this admin mailbox (query@). ' + S.qs.filter(q => q.s === 'New').length + ' new · ' + L.length + ' in all</p></div></div>' +
+    (L.length ? '<div class="ml">' + L.map(q => '<div class="mr' + (q.s === 'New' ? ' un' : '') + '" role="button" tabindex="0" data-qopen="' + esc(q._id) + '"><span class="star" style="color:' + (QST[q.s] || '#6b7280') + ';font-size:.7rem;font-weight:800;width:auto;padding:0 6px">' + esc(q.s || 'New') + '</span><span class="fr">' + esc(q.name || '') + '</span><span class="tx"><span class="sj">' + esc(q.kind || 'Enquiry') + '</span> – ' + esc(String(q.msg || ((q.from || '') + (q.to ? ' → ' + q.to : ''))).replace(/\s+/g, ' ').slice(0, 120)) + '</span><span class="dt">' + when(q.at) + '</span></div>').join('') + '</div>'
+      : '<div class="empty">No enquiries yet. They arrive here from the Contact form on the website.</div>');
+}
+function queryHtml(id) {
+  const q = S.qs.find(x => x._id === id); if (!q) return queriesHtml();
+  const ph = String(q.phone || '').replace(/[^\d+]/g, ''), wa = ph.replace(/\D/g, ''), waN = wa.length === 10 ? '91' + wa : wa;
+  const kv = [['Reference', q.ref], ['About', q.kind], ['Name', q.name], ['Company', q.company], ['Phone', q.phone], ['Email', q.email], ['From', q.from], ['To', q.to], ['Vehicle', q.vehicle], ['Date', q.date], ['Received', full(q.at)], ['Status', q.s]].filter(r => r[1]);
+  return '<div class="row" style="margin-bottom:12px;flex-wrap:wrap"><button class="btn" type="button" data-qa="back">' + svg('back') + ' Back</button>' + ['New', 'Replied', 'Closed'].filter(x => x !== q.s).map(x => '<button class="btn" type="button" data-qa="st" data-v="' + x + '">Mark ' + x.toLowerCase() + '</button>').join('') + '</div>' +
+    '<h1 style="font-family:var(--disp);margin:0 0 12px">' + esc(q.kind || 'Enquiry') + ' · ' + esc(q.name || '') + '</h1>' +
+    '<article class="msg"><div class="mh"><span class="av">' + esc(ini(q.name)) + '</span><div class="g1"><b>' + esc(q.name || '') + '</b> <span class="to">via website</span><div class="to">to query@ (admin desk)</div></div><span class="to">' + esc(full(q.at)) + '</span></div>' +
+    '<div class="bd">' + kv.map(r => '<div><span class="mute">' + esc(r[0]) + ':</span> <b>' + esc(r[1]) + '</b></div>').join('') + (q.msg ? '<p style="white-space:pre-wrap;margin-top:12px">' + esc(q.msg) + '</p>' : '') + '</div></article>' +
+    '<div class="row" style="flex-wrap:wrap">' + (ph ? '<a class="btn p" href="tel:' + esc(ph) + '">Call</a><a class="btn" href="https://wa.me/' + esc(waN) + '" target="_blank" rel="noopener">WhatsApp</a>' : '') + (q.email ? '<a class="btn" href="mailto:' + esc(q.email) + '?subject=' + encodeURIComponent('Re: your enquiry ' + (q.ref || '')) + '">Email</a>' : '') + '<button class="btn" type="button" data-qa="fwd">' + svg('fwd') + ' Forward to a colleague</button></div>';
+}
 function render() {
+  { const hq = (location.hash.match(/^#\/(queries|q)(?:\/(.+))?/) || []); if (hq[1] && S.admin) { S.folder = 'queries'; S.th = null; $('#nav').innerHTML = navHtml(); $('#main').innerHTML = hq[1] === 'q' ? queryHtml(decodeURIComponent(hq[2] || '')) : queriesHtml(); renderCmp(); document.title = 'Queries · SN Mail'; return; } }
   const h = (location.hash.match(/^#\/([\w-]+)(?:\/(.+))?/) || []); S.folder = FOLD.some(f => f[0] === h[1]) ? h[1] : h[1] === 't' ? S.folder : 'inbox'; S.th = h[1] === 't' ? decodeURIComponent(h[2] || '') : null;
   $('#nav').innerHTML = navHtml(); $('#main').innerHTML = S.th ? threadHtml() : listHtml(); renderCmp();
   const u = all().filter(unread).length; document.title = (u ? '(' + u + ') ' : '') + (S.th ? 'Mail' : (FOLD.find(f => f[0] === S.folder) || FOLD[0])[1]) + ' · SN Mail';
@@ -228,6 +250,12 @@ function replyTo(all_, fwd) { const T = threads(() => true).find(t => t.id === S
 
 /* ----- events ----- */
 document.addEventListener('click', async ev => {
+  { const o = ev.target.closest('[data-qopen]'); if (o) { location.hash = '#/q/' + encodeURIComponent(o.dataset.qopen); return; } }
+  { const b = ev.target.closest('[data-qa]'); if (b) { const id = decodeURIComponent((location.hash.match(/^#\/q\/(.+)/) || [])[1] || ''), q = S.qs.find(x => x._id === id);
+    if (b.dataset.qa === 'back') { location.hash = '#/queries'; return; }
+    if (!q) return;
+    if (b.dataset.qa === 'st') { try { await fs.doc('queries/' + id).update({ s: b.dataset.v, by: ME, byName: S.myName, upd: Date.now() }); toast('Marked ' + b.dataset.v.toLowerCase()); } catch (e) { toast('Could not update (' + (e.code || 'error') + ').'); } return; }
+    if (b.dataset.qa === 'fwd') { openCmp({ subject: 'Fwd: ' + (q.kind || 'Enquiry') + ' – ' + (q.name || '') + ' (' + (q.ref || '') + ')', body: qText(q) }); return; } } }
   const t = ev.target.closest('[data-a],[data-open],[data-star],[data-pick],[data-rm]');
   if (ev.target.closest('#burger')) { document.body.classList.toggle('navopen'); return; }
   if (ev.target.closest('#who')) { const m = $('#menu'); m.innerHTML = '<div class="h"><b>' + esc(S.myName) + '</b><span>' + esc(mailOf(ME) || 'SN Mail') + '</span></div><a href="../hr/#/settings">' + svg('cog') + 'Settings</a><button type="button" class="out" id="logout">' + svg('exit') + 'Log out</button>'; m.hidden = !m.hidden; return; }
