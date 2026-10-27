@@ -1,14 +1,14 @@
 {
-  "versionCode": 55,
-  "versionName": "7.1",
+  "versionCode": 56,
+  "versionName": "7.2",
   "date": "27 Oct 2026",
-  "size": 3057660,
+  "size": 3055592,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": [
-    "Attendance policy: shift timing, late marks, early out and overtime rules (Admin › Attendance policy).",
-    "Late marks show on the calendar, reports and Home; every N late marks can cost half a day.",
-    "New update screen with version, size and what's new, updating inside the app.",
-    "PAN, UAN and bank details on the payslip; joining documents in the offer letter.",
-    "Home: quick actions and the next holiday."
+  "notes": "New update screen, payslip and Home improvements.",
+  "list": [
+    "New update screen with version, size and what's new.",
+    "PAN, UAN and bank details on the payslip.",
+    "Joining documents in the offer letter.",
+    "Home: quick buttons and the next holiday."
   ]
 }
