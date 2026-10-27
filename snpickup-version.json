@@ -1,1 +1,8 @@
-{"versionCode":4,"versionName":"1.3","size":95000,"url":"x","list":["Update from inside the app."]}
+{
+  "versionCode": 4,
+  "versionName": "1.3",
+  "date": "27 Oct 2026",
+  "size": 96428,
+  "url": "https://naveen5531.github.io/SNPickup.apk",
+  "list": ["Update SN Pickup from inside the app.", "Google sign-in button opens Chrome."]
+}
