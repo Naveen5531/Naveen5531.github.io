@@ -2084,17 +2084,46 @@ async function invoicePayment(r) {
   D.sub = null;
   await setStage('invoices', r._id, paid >= num(r.total) - 0.5 ? 'Paid' : 'Part paid', money(amt) + ' received' + (tds ? ' + TDS ' + money(tds) : ''), { paid });
 }
-function invoiceHtml(r) {
-  const st = SET();
-  const row = (a, b) => '<tr><td>' + a + '</td><td style="text-align:right">' + b + '</td></tr>';
-  return '<!doctype html><html><head><meta charset="utf-8"><title>Invoice ' + esc(r.no) + '</title><style>body{font:13px/1.45 Arial,sans-serif;color:#111;max-width:820px;margin:24px auto;padding:0 16px}h1{font-size:22px;margin:0}table{border-collapse:collapse;width:100%;margin-top:12px}th,td{border:1px solid #bbb;padding:6px 8px;text-align:left}th{background:#eef2f3}.r{text-align:right}.top{display:flex;justify-content:space-between;gap:24px}.tot td{font-weight:bold}</style></head><body>' +
-    '<div class="top"><div><h1>' + esc(st.company) + '</h1><div>' + esc(st.address) + '</div><div>GSTIN: ' + esc(st.gstin || '—') + ' · State: ' + esc(st.state) + '</div></div><div><h1>TAX INVOICE</h1><div>No: <b>' + esc(r.no) + '</b></div><div>Date: ' + esc(fmtDate(r.date)) + '</div><div>Due: ' + esc(fmtDate(r.due)) + '</div></div></div>' +
-    '<p><b>Place of supply:</b> ' + esc(((partyOf(r.customer) || {}).state || st.state) + ' (' + gstCodeOf((partyOf(r.customer) || {}).state || st.state) + ')') + '</p><p><b>Bill to:</b> ' + esc(r.customer) + (partyOf(r.customer) ? '<br>' + esc(partyOf(r.customer).address || '') + '<br>GSTIN: ' + esc(partyOf(r.customer).gstin || '—') : '') + '<br>Service: Goods transport (SAC 996511) · Period ' + esc(fmtDate(r.from)) + ' – ' + esc(fmtDate(r.to)) + '</p>' +
-    '<table><thead><tr><th>#</th><th>AWB</th><th>Date</th><th>Destination</th><th class="r">Chg kg</th><th class="r">Freight</th><th class="r">Fuel</th><th class="r">Other</th><th class="r">Amount</th></tr></thead><tbody>' +
-    (r.lines || []).map((l, i) => '<tr><td>' + (i + 1) + '</td><td>' + esc(l.awb) + '</td><td>' + esc(fmtDate(l.date)) + '</td><td>' + esc(l.dest) + '</td><td class="r">' + l.chg + '</td><td class="r">' + inr2.format(l.freight) + '</td><td class="r">' + inr2.format(l.fuel) + '</td><td class="r">' + inr2.format(l.other) + '</td><td class="r">' + inr2.format(l.amt) + '</td></tr>').join('') + '</tbody></table>' +
-    '<table style="width:340px;margin-left:auto">' + row('Taxable value', inr2.format(r.sub)) + (num(r.igst) ? row('IGST', inr2.format(r.igst)) : num(r.cgst) ? row('CGST', inr2.format(r.cgst)) + row('SGST', inr2.format(r.sgst)) : '') + (num(r.rcmTax) ? row('GST payable by recipient under reverse charge', inr2.format(r.rcmTax)) : '') + '<tr class="tot"><td>Total (₹)</td><td style="text-align:right">' + inr2.format(r.total) + '</td></tr></table>' +
-    '<p style="margin-top:28px">For ' + esc(st.company) + '<br><br><br>Authorised signatory</p></body></html>';
+/* Invoice in the same letterhead as the payslip and offer letter: SN Logistics logo, colour bar, A4 page */
+const _w1 = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'], _w2 = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+const _wTwo = n => n < 20 ? _w1[n] : _w2[Math.floor(n / 10)] + (n % 10 ? ' ' + _w1[n % 10] : ''), _wThree = n => n > 99 ? _w1[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + _wTwo(n % 100) : '') : _wTwo(n);
+function inWords(n) { n = Math.floor(n); if (n <= 0) return 'Zero'; const cr = Math.floor(n / 1e7), l = Math.floor(n % 1e7 / 1e5), t = Math.floor(n % 1e5 / 1e3), r = n % 1000, p = [];
+  if (cr) p.push(inWords(cr) + ' Crore'); if (l) p.push(_wTwo(l) + ' Lakh'); if (t) p.push(_wTwo(t) + ' Thousand'); if (r) p.push(_wThree(r)); return p.join(' '); }
+const rupeesInWords = v => { const n = Math.round(num(v) * 100), rs = Math.floor(n / 100), ps = n % 100; return 'Rupees ' + inWords(rs) + (ps ? ' and ' + _wTwo(ps) + ' Paise' : '') + ' Only'; };
+const LOGO_URL = (() => { try { return new URL('../brand/sn-logo-120h.png', location.href).href; } catch (e) { return 'https://naveen5531.github.io/brand/sn-logo-120h.png'; } })();
+function invoiceHtml(r, logo) {
+  const st = SET(), col = '#2459a5', pty = partyOf(r.customer) || {}, pos = pty.state || st.state, two = r.rcmTax ? true : false;
+  const lines = r.lines || [], kv = (k, v) => v ? '<tr><td class="k">' + k + '</td><td>' + v + '</td></tr>' : '';
+  const row = (a, b, cls) => '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + a + '</td><td class="r">' + b + '</td></tr>';
+  const tax = num(r.igst) ? row('IGST', inr2.format(r.igst)) : num(r.cgst) ? row('CGST', inr2.format(r.cgst)) + row('SGST', inr2.format(r.sgst)) : '';
+  const css = '*{box-sizing:border-box}body{margin:0;background:#eef1f5;font:13px/1.45 Arial,Helvetica,sans-serif;color:#1b2430;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '.pg{width:794px;min-height:1123px;margin:16px auto;background:#fff;padding:40px 44px;box-shadow:0 4px 24px rgba(0,0,0,.08)}' +
+    '.lh{display:flex;align-items:center;gap:16px;padding-bottom:10px}.lh img{height:58px;width:auto;object-fit:contain}.lht{margin-left:auto;text-align:right;font-size:11px;color:#4b5563;line-height:1.5}.lht b{color:#1b2430;font-size:12px}' +
+    '.bar{height:4px;border-radius:2px;background:linear-gradient(90deg,' + col + ',#c9d6ee);margin-bottom:14px}' +
+    '.dt{text-align:center;font-weight:800;font-size:16px;letter-spacing:.6px;padding:7px 0;border-bottom:1px solid #d6dae0;margin-bottom:14px}' +
+    '.two{display:flex;gap:14px;margin-bottom:14px}.box{flex:1;border:1px solid #d6dae0;border-radius:8px;padding:10px 12px}.box h4{margin:0 0 6px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:' + col + '}' +
+    '.box table td{padding:2px 0;vertical-align:top}.box td.k{color:#6a7686;width:42%}' +
+    'table{width:100%;border-collapse:collapse}.it th{background:' + col + ';color:#fff;font-weight:700;font-size:12px;padding:7px 6px;text-align:left}.it th.r{text-align:right}.it td{border-bottom:1px solid #e3e7ec;padding:7px 6px;font-size:12px}.it tr:nth-child(even) td{background:#f7f9fc}' +
+    '.r{text-align:right;font-variant-numeric:tabular-nums}.sum{display:flex;gap:14px;margin-top:14px;align-items:flex-start}.words{flex:1;border:1px solid #d6dae0;border-radius:8px;padding:10px 12px}.words b{display:block;font-size:11px;color:#6a7686;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}' +
+    '.tot{width:320px;border:1px solid #d6dae0;border-collapse:separate;border-spacing:0;border-radius:8px;overflow:hidden}.tot td{padding:6px 10px;border-bottom:1px solid #eef0f3}.tot tr.g td{background:' + col + ';color:#fff;font-weight:800;font-size:14px;border:0}' +
+    '.sign{display:flex;justify-content:space-between;align-items:flex-end;margin-top:40px}.sign .s{text-align:center;min-width:200px}.sign .s div{border-top:1px solid #9aa0a6;margin-top:46px;padding-top:4px;font-size:12px}' +
+    '.ft{margin-top:26px;font-size:11px;color:#6a7686;border-top:1px solid #e3e7ec;padding-top:8px;text-align:center}' +
+    '@media print{body{background:#fff}.pg{margin:0;box-shadow:none;width:auto;min-height:0;padding:28px 32px}@page{size:A4;margin:0}}' +
+    '';
+  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=820"><title>Invoice ' + esc(r.no) + '</title><style>' + css + '</style></head><body><div class="pg">' +
+    '<div class="lh"><img src="' + esc(logo || LOGO_URL) + '" alt="' + esc(st.company) + '"><div class="lht"><b>' + esc(st.company) + '</b>' + (st.address ? '<br>' + esc(st.address) : '') + '<br>GSTIN: ' + esc(st.gstin || '—') + ' · State: ' + esc(st.state) + ' (' + esc(gstCodeOf(st.state)) + ')</div></div><div class="bar"></div>' +
+    '<div class="dt">TAX INVOICE</div>' +
+    '<div class="two"><div class="box"><h4>Bill to</h4><table>' + kv('Name', '<b>' + esc(r.customer) + '</b>') + kv('Address', esc(pty.address || '')) + kv('GSTIN', esc(pty.gstin || '—')) + kv('Place of supply', esc(pos + ' (' + gstCodeOf(pos) + ')')) + '</table></div>' +
+    '<div class="box"><h4>Invoice details</h4><table>' + kv('Invoice no', '<b>' + esc(r.no) + '</b>') + kv('Invoice date', esc(fmtDate(r.date))) + kv('Due date', esc(fmtDate(r.due))) + kv('Period', esc(fmtDate(r.from) + ' – ' + fmtDate(r.to))) + kv('Service', 'Goods transport (SAC 996511)') + (two ? kv('Reverse charge', 'Yes') : '') + '</table></div></div>' +
+    '<table class="it"><thead><tr><th>#</th><th>AWB / LR</th><th>Date</th><th>Destination</th><th class="r">Chg kg</th><th class="r">Freight</th><th class="r">Fuel</th><th class="r">Other</th><th class="r">Amount (₹)</th></tr></thead><tbody>' +
+    lines.map((l, i) => '<tr><td>' + (i + 1) + '</td><td>' + esc(l.awb) + '</td><td>' + esc(fmtDate(l.date)) + '</td><td>' + esc(l.dest) + '</td><td class="r">' + esc(l.chg) + '</td><td class="r">' + inr2.format(l.freight) + '</td><td class="r">' + inr2.format(l.fuel) + '</td><td class="r">' + inr2.format(l.other) + '</td><td class="r"><b>' + inr2.format(l.amt) + '</b></td></tr>').join('') + '</tbody></table>' +
+    '<div class="sum"><div class="words"><b>Amount in words</b>' + esc(rupeesInWords(r.total)) + (num(r.rcmTax) ? '<p style="margin:8px 0 0;font-size:11px;color:#6a7686">GST of ₹' + inr2.format(r.rcmTax) + ' is payable by the recipient under reverse charge.</p>' : '') + '</div>' +
+    '<table class="tot">' + row('Taxable value', inr2.format(r.sub)) + tax + (num(r.rcmTax) ? row('GST under reverse charge', inr2.format(r.rcmTax)) : '') + row('Total (₹)', inr2.format(r.total), 'g') + '</table></div>' +
+    '<div class="sign"><div style="font-size:11px;color:#6a7686">Payment due by ' + esc(fmtDate(r.due)) + '.<br>Please quote the invoice number with your payment.</div><div class="s">For <b>' + esc(st.company) + '</b><div>Authorised signatory</div></div></div>' +
+    '<div class="ft">This is a computer-generated invoice. ' + esc(st.company) + ' – Speed &amp; Trust</div></div>' +
+    '<script>(function(){function f(){var w=document.documentElement.clientWidth||innerWidth,k=w/826;document.body.style.zoom=k<1?k:"";}f();addEventListener("resize",f);addEventListener("beforeprint",function(){document.body.style.zoom="";});addEventListener("afterprint",f);})()<\/script></body></html>';
 }
+async function logoData() { try { const b = await (await fetch(LOGO_URL)).blob(); return await new Promise(ok => { const f = new FileReader(); f.onload = () => ok(f.result); f.onerror = () => ok(LOGO_URL); f.readAsDataURL(b); }); } catch (e) { return LOGO_URL; } }
 
 // ---- payments ----
 HOOK.onStage.payments = async (r, to, from, extra) => {
@@ -3845,7 +3874,7 @@ document.addEventListener('click', async e => {
       for (const s of S.data.shipments.filter(x => x.invoiceNo === r.no)) await save('shipments', s._id, { invoiceNo: '' });
       await setStage('invoices', r._id, 'Cancelled', 'Shipments released for re-billing'); return;
     }
-    case 'inv-download': saveFile(r.no + '.html', invoiceHtml(r)); return;
+    case 'inv-download': saveFile(r.no + '.html', invoiceHtml(r, await logoData())); return;
     case 'jv-new': openDrawer({ mode: 'custom', render: journalForm }); return;
     case 'jl-add': readJournalForm(); D.lines.push({ a: 'Bank', dr: '', cr: '' }); drawDrawer(); return;
     case 'jv-save': { readJournalForm(); if (!D.jnarr) { toast('Write a narration.'); return; } const ok = await postJournal(D.jdate, D.jnarr, D.lines.map(l => ({ a: l.a, dr: num(l.dr), cr: num(l.cr) })), 'Manual'); if (ok) { audit('journal', 'Manual voucher: ' + D.jnarr); toast('Voucher posted'); closeDrawer(); } return; }
