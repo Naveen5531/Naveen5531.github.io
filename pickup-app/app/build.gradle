@@ -6,8 +6,8 @@ android {
         applicationId 'com.snlogistics.pickup'
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName '1.0'
+        versionCode 2
+        versionName '1.1'
     }
     // Signing key comes from the GitHub secret SNP_KEYSTORE (never stored in this public repo).
     // Without it the build uses a temporary key, and each new APK must be installed fresh.

@@ -18,7 +18,9 @@ import android.webkit.*;
  *  the camera for barcode scanning, and printing 4 x 6 inch box labels through Android's print service. */
 public class MainActivity extends Activity {
     static final String HOME = "https://naveen5531.github.io/pickup/";
-    static final int CAM_REQ = 41;
+    static final int CAM_REQ = 41, LOC_REQ = 42, FILE_REQ = 43;
+    private ValueCallback<Uri[]> fileCb;
+    private GeolocationPermissions.Callback geoCb; private String geoOrigin;
     private WebView web;
     private PermissionRequest pending;
 
@@ -50,7 +52,22 @@ public class MainActivity extends Activity {
                 }
             }
         });
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, LOC_REQ);
         web.setWebChromeClient(new WebChromeClient() {
+            /** pickup location (proof of pickup) */
+            @Override public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback cb) {
+                if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) cb.invoke(origin, true, false);
+                else { geoCb = cb; geoOrigin = origin; requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, LOC_REQ); }
+            }
+            /** photo of the boxes / invoice: opens the camera or gallery */
+            @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams params) {
+                if (fileCb != null) fileCb.onReceiveValue(null);
+                fileCb = cb;
+                try { Intent i = params.createIntent(); i.addCategory(Intent.CATEGORY_OPENABLE); startActivityForResult(Intent.createChooser(i, "Photo"), FILE_REQ); }
+                catch (Exception e) { fileCb = null; return false; }
+                return true;
+            }
             @Override public void onPermissionRequest(PermissionRequest r) {
                 runOnUiThread(() -> {
                     if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) r.grant(r.getResources());
@@ -62,7 +79,13 @@ public class MainActivity extends Activity {
         web.loadUrl(HOME);
     }
 
+    @Override protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        if (req == FILE_REQ && fileCb != null) { fileCb.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(res, data)); fileCb = null; }
+    }
+
     @Override public void onRequestPermissionsResult(int code, String[] p, int[] res) {
+        if (code == LOC_REQ && geoCb != null) { geoCb.invoke(geoOrigin, res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED, false); geoCb = null; }
         if (code == CAM_REQ && pending != null) {
             if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) pending.grant(pending.getResources()); else pending.deny();
             pending = null;

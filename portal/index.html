@@ -36,6 +36,7 @@ button.who:hover { background: var(--surface-2); }
 .hike-list { display: grid; gap: 10px; margin: 6px 0 12px; } .hike-row { display: grid; grid-template-columns: minmax(0, 140px) minmax(0, 220px); gap: 12px; }
 @media (max-width: 520px) { .hike-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 .offer-edit { padding: 6px 2px 10px; } .offer-edit .section-title { margin: 12px 0 6px; }
+.kv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px 14px;margin:6px 0 10px}.kv-grid>div>div{font-weight:600}
 </style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="../brand/sn-icon-64.png"><link rel="apple-touch-icon" href="../brand/sn-apple-180.png"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><title>SN Control Tower</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -940,7 +941,7 @@ const SCHEMA = {
       F('pieces', 'No. of boxes', 'number', { req: 1 }), F('l', 'Box length L (cm)', 'number'), F('b', 'Box breadth B (cm)', 'number'), F('h', 'Box height H (cm)', 'number'), F('weight', 'Total weight (kg)', 'number'), F('material', 'Material'),
       F('vtype', 'Vehicle type needed', 'ref', { src: 'vtypes' }), F('vehicle', 'Assign vehicle', 'ref', { src: 'vehicles' }), F('driver', 'Driver', 'text', { list: 'staff' }), F('driverPhone', 'Driver phone'),
       F('km', 'Distance km (auto)', 'number'), F('vendor', 'Transporter (who gets paid)', 'ref', { src: 'customers' }), F('vendorRate', 'Transporter payout ₹ (auto)', 'money'), F('clientRate', 'Client freight ₹ (auto)', 'money'), F('notes', 'Notes', 'textarea')],
-    cols: ['no', 'date', 'customer', 'route', 'pieces', 'cbm', 'vehicle', 'clientRate', 'chain', 'stage'] },
+    cols: ['no', 'lr', 'date', 'customer', 'route', 'pieces', 'hht', 'vehicle', 'clientRate', 'chain', 'stage'] },
   trips: { label: 'Linehaul trips', noun: 'trip', code: 'no', prefix: 'TR', stages: ['Planned', 'Dispatched', 'Arrived', 'Closed'], doneStages: ['Arrived', 'Closed'],
     fields: [F('no', 'Trip / manifest no', 'code'), F('from', 'From warehouse', 'ref', { src: 'hubs', req: 1 }), F('to', 'To warehouse', 'ref', { src: 'hubs', req: 1 }),
       F('vehicle', 'Vehicle', 'ref', { src: 'vehicles', req: 1 }), F('driver', 'Driver', 'text', { list: 'staff' }), F('vendor', 'Transporter (if hired)', 'text', { list: 'vendors' }),
@@ -1065,7 +1066,7 @@ const statusOf = (k, r) => HOOK.title.status ? HOOK.title.status(k, r) : stageOf
 
 // ---------- list ----------
 function colLabel(k, c) {
-  const sp = { route: 'Route', cbm: 'CBM', chain: 'Progress', dims: 'Body size', fleet: 'In fleet', cbm: 'CBM', ratePerKm: 'Rate / km', stage: 'Status', sla: 'SLA', level: 'Level', docs: 'Papers', chg: 'Chg kg', total: 'Charge', zone: 'Zone', count: 'Shipments', codExp: 'COD due', codGot: 'COD got', gross: 'Payable', linked: 'Linked', book: 'Book value', levels: 'Approver', att: 'Present (month)', kmpl: 'km / l', outstanding: 'Outstanding', load: 'Today' };
+  const sp = { hht: 'SN Pickup', lr: 'LR', route: 'Route', cbm: 'CBM', chain: 'Progress', dims: 'Body size', fleet: 'In fleet', cbm: 'CBM', ratePerKm: 'Rate / km', stage: 'Status', sla: 'SLA', level: 'Level', docs: 'Papers', chg: 'Chg kg', total: 'Charge', zone: 'Zone', count: 'Shipments', codExp: 'COD due', codGot: 'COD got', gross: 'Payable', linked: 'Linked', book: 'Book value', levels: 'Approver', att: 'Present (month)', kmpl: 'km / l', outstanding: 'Outstanding', load: 'Today' };
   if (sp[c]) return sp[c];
   const f = SCHEMA[k].fields.find(x => x.k === c); return f ? f.label : c;
 }
@@ -1471,7 +1472,7 @@ HOOK.title.status = (k, r) => {
 };
 HOOK.cell.shipments = {
   chg: r => inr2.format(shipPrice(r).chg).replace('.00', ''),
-  total: r => money(shipTotal(r)),
+  total: r => COST_OK() ? money(shipTotal(r)) : '<span class="mini">—</span>',
   zone: r => esc(shipPrice(r).zone),
   promised: r => '<span class="' + (isLate(r) ? 'bad-t' : '') + '">' + esc(fmtDate(r.promised)) + '</span>',
   stage: r => pill(stageOf('shipments', r)) + (r.attempts ? ' <span class="mini">×' + r.attempts + '</span>' : '') + (r.invoiceNo ? ' <span class="mini">billed</span>' : '')
@@ -1511,7 +1512,7 @@ function priceTable(p, manual) {
 HOOK.title.shipments = r => (isLate(r) ? pill('Past promised date', 'bad') : '') + (r.mode === 'COD' ? pill('COD ' + money(r.cod), 'warn') : '') + (r.invoiceNo ? pill('Billed ' + r.invoiceNo, 'neutral') : '') + (r.tripNo ? pill('Trip ' + r.tripNo, 'neutral') : '') + (r.drsNo ? pill('DRS ' + r.drsNo, 'neutral') : '');
 /** The price working (zone, freight, surcharges, GST) is for admins only; others book and the price is worked out in the background. */
 const PRICE_ADMIN = () => hasRoleAny(['superadmin', 'admin_head']);
-HOOK.detail.shipments = r => HOOK.detail.shipments_chain(r) + (PRICE_ADMIN() ? '<h4 class="section-title">Charges</h4>' + priceTable(shipPrice(r), num(r.manualFreight)) : '') + (r.ndrReason ? '<p class="banner">Last failed attempt: ' + esc(r.ndrReason) + ' · attempts ' + (r.attempts || 0) + ' of ' + SET().maxAttempts + '</p>' : '');
+HOOK.detail.shipments = r => HOOK.detail.shipments_chain(r) + ((PRICE_ADMIN() || COST_OK()) ? '<h4 class="section-title">Charges</h4>' + priceTable(shipPrice(r), num(r.manualFreight)) : '') + (r.ndrReason ? '<p class="banner">Last failed attempt: ' + esc(r.ndrReason) + ' · attempts ' + (r.attempts || 0) + ' of ' + SET().maxAttempts + '</p>' : '');
 HOOK.actions.shipments = r => {
   const s = stageOf('shipments', r);
   const i = SHIP_STAGES.indexOf(s);
@@ -1657,10 +1658,16 @@ function fillFromHub(prefix, hubName) {
   const set = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
   set('f-' + prefix + 'Pin', h.pincode); set('f-' + prefix + 'City', h.city); set('f-' + prefix + 'State', h.state); if (h.address) set('f-' + prefix + 'Address', h.address);
 }
+/* LR cost / freight: only accounts, operations manager and above, and management see it */
+const COST_ROLES = ['superadmin', 'admin_head', 'director', 'gm', 'ops_manager', 'ops_mgr', 'ops_srm', 'ops_gm', 'ops_sgm', 'ops_avp', 'ops_vp', 'ops_svp', 'fin_head', 'fin_manager', 'accountant', 'billing_exec', 'ar_exec', 'ap_exec', 'cashier', 'tax_exec'].concat(['exec', 'sr', 'tl', 'am', 'mgr', 'srm', 'gm', 'sgm', 'avp', 'vp', 'svp'].map(g => 'fin_' + g));
+const COST_OK = () => !!(S.isOwner || hasRoleAny(COST_ROLES));
+const HHT_C = { Assigned: 'neutral', Accepted: 'warn', Labelled: 'warn', Completed: 'good', Rejected: 'bad' };
 HOOK.cell.pickups = {
+  hht: r => r.hht || r.exec ? pill(r.hht || 'Assigned', HHT_C[r.hht] || 'neutral') + ' <span class="mini">' + esc(r.execName || '') + (r.hht === 'Labelled' && (r.boxes || []).length ? ' · ' + Object.keys(r.scanned || {}).length + '/' + r.boxes.length + ' scanned' : '') + '</span>' : '<span class="mini">Not assigned</span>',
+  lr: r => r.lr ? '<span class="code">' + esc(r.lr) + '</span>' : '',
   route: r => esc((r.fromCity || r.from || '—') + ' → ' + (r.toCity || r.to || '—')) + (num(r.km) ? ' <span class="mini">' + inr.format(num(r.km)) + ' km</span>' : ''),
   cbm: r => pickupCbm(r) ? String(pickupCbm(r)) : '',
-  clientRate: r => num(r.clientRate) ? money(r.clientRate) : '',
+  clientRate: r => COST_OK() && num(r.clientRate) ? money(r.clientRate) : '',
   chain: r => { const c = chainOf(r); return '<span class="mini">' + c.done + '/' + c.total + '</span> <span class="meter"><em style="width:' + (c.done / c.total * 100).toFixed(0) + '%"></em></span>'; } };
 HOOK.beforeSave.pickups = (b, old) => {
   if (b.from && b.to && lc(b.from) === lc(b.to)) return 'From and To must be different.';
@@ -1701,9 +1708,25 @@ HOOK.actions.pickups = r => {
   if (D && D.sub === 'pu-deliver') h += '<div class="form" style="align-items:end"><label>Received by (POD)<input id="pu-pod" type="text"></label><button class="btn primary" type="button" data-act="pu-deliver-save">Save delivery</button></div>';
   return h;
 };
+/* SN Pickup (HHT) progress for this pickup, live: executive, accept, vendor, invoice, LR, boxes scanned, proof */
+const pkName = id => { const n = S.names && S.names[id]; return String((typeof n === 'string' ? n : n && n.name) || id).replace(/ \(@[^)]*\)$/, ''); };
+function hhtHtml(r) {
+  const ops = (S.data.members || []).filter(m => m.status !== 'Suspended' && [m.role].concat(m.roles || []).some(x => /^(ops_|pickup_coord|hub_sup|rider|booking_exec|vendor_coord|lastmile_lead)/.test(x)));
+  try { wantNames(ops.map(m => m._id)); } catch (e) {}
+  const can = writable() && !['Completed'].includes(r.hht || '');
+  let h = '<h4 class="section-title">SN Pickup (HHT)</h4><div class="kv-grid">';
+  const kv = [['Executive', r.execName || 'Not assigned'], ['Status', r.hht || (r.exec ? 'Assigned' : '—')], ['Assigned', r.assignedAt ? fmtTime(r.assignedAt) + (r.assignedBy ? ' by ' + r.assignedBy : '') : ''], ['Accepted', r.acceptedAt ? fmtTime(r.acceptedAt) : ''], ['Rejected', r.rejectWhy ? r.rejectWhy + (r.rejectedBy ? ' (' + r.rejectedBy + ')' : '') : ''],
+    ['Vendor', r.vendor ? r.vendor.name + (r.vendor.gstin ? ' · ' + r.vendor.gstin : '') : ''], ['Invoice', r.invoice ? r.invoice.no + ' · ' + fmtDate(r.invoice.date) + (COST_OK() ? ' · ' + money(r.invoice.value) : '') + (r.invoice.ewb ? ' · EWB ' + r.invoice.ewb : '') : ''],
+    ['Consignee', r.consignee ? r.consignee.name + (r.consignee.phone ? ' · ' + r.consignee.phone : '') : ''], ['LR', r.lr || ''], ['Boxes', (r.boxes || []).length ? r.boxes.length + ' · ' + r2(r.boxes.reduce((a, b) => a + num(b.kg), 0)) + ' kg' + (r.lr ? ' · ' + Object.keys(r.scanned || {}).length + '/' + r.boxes.length + ' labels scanned' : '') : ''],
+    ['Picked up', r.pickedAt ? fmtTime(r.pickedAt) : ''], ['Pickup location', r.gps ? '<a href="https://maps.google.com/?q=' + r.gps.lat + ',' + r.gps.lng + '" target="_blank" rel="noopener">Map (±' + Math.round(r.gps.acc || 0) + ' m)</a>' : ''], ['Hub', r.inbound === 'Received' ? 'Received – reached inbound' : r.inbound === 'Pending' ? 'Pickup in transit' : '']].filter(x => x[1]);
+  h += kv.map(x => '<div><span class="mini">' + x[0] + '</span><div>' + (x[0] === 'Pickup location' ? x[1] : esc(x[1])) + '</div></div>').join('') + '</div>';
+  if (r.photo) h += '<p><img src="' + esc(r.photo) + '" alt="Pickup photo" style="max-width:260px;border-radius:12px;border:1px solid var(--line)"></p>';
+  if (can) h += '<div class="actions"><label class="mini">Assign to <select data-pkexec="' + esc(r._id) + '" style="width:auto"><option value="">' + (r.execName ? esc(r.execName) : 'Choose executive…') + '</option>' + ops.map(m => '<option value="' + esc(m._id) + '">' + esc(pkName(m._id)) + '</option>').join('') + '</select></label></div>';
+  return h;
+}
 HOOK.detail.pickups = r => {
   const c = pickupRoute(r);
-  let h = chainHtml(r) + '<h4 class="section-title">Route cost · ' + esc(r.gstMode || SET().gtaGst) + '</h4>' + routeTable(Object.assign(c, num(r.vendorRate) ? { payout: num(r.vendorRate) } : {}, num(r.clientRate) ? { client: num(r.clientRate), gst: r2(num(r.clientRate) * c.gstRate / 100), total: r2(num(r.clientRate) * (1 + (c.rcm ? 0 : c.gstRate / 100))) } : {})) + (pickupCbm(r) ? '<p class="mini">Cargo ' + num(r.pieces) + ' boxes × ' + [r.l, r.b, r.h].map(x => num(x)).join(' × ') + ' cm = ' + pickupCbm(r) + ' CBM</p>' : '');
+  let h = hhtHtml(r) + chainHtml(r) + '<h4 class="section-title">Route cost · ' + esc(r.gstMode || SET().gtaGst) + '</h4>' + routeTable(Object.assign(c, num(r.vendorRate) ? { payout: num(r.vendorRate) } : {}, num(r.clientRate) ? { client: num(r.clientRate), gst: r2(num(r.clientRate) * c.gstRate / 100), total: r2(num(r.clientRate) * (1 + (c.rcm ? 0 : c.gstRate / 100))) } : {})) + (pickupCbm(r) ? '<p class="mini">Cargo ' + num(r.pieces) + ' boxes × ' + [r.l, r.b, r.h].map(x => num(x)).join(' × ') + ' cm = ' + pickupCbm(r) + ' CBM</p>' : '');
   const linked = pickupShips(r);
   const st = stageOf('pickups', r);
   if (linked.length) h += '<h4 class="section-title">Shipments (' + linked.length + ')</h4>' + linked.map(s => '<div class="pickrow" data-open="shipments|' + s._id + '"><span class="code">' + esc(s.awb) + '</span><span class="grow">' + esc((s.consignee || '') + ' · ' + (s.pieces || 0) + ' boxes') + '</span>' + pill(stageOf('shipments', s)) + '</div>').join('');
@@ -2938,6 +2961,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('change', async e => {
   const el = e.target, ds = el.dataset || {};
+  if (ds.pkexec && el.value) { const nm = pkName(el.value); await save('pickups', ds.pkexec, { exec: el.value, execName: nm, hht: 'Assigned', assignedBy: (S.me && S.me.name) || '', assignedAt: Date.now(), rejectWhy: '' }, 'Pickup assigned to ' + nm); toast('Assigned to ' + nm + ' – it is on their SN Pickup now.'); return; }
   if (ds.pmod && S.roleDraft) { readRoleHead(); S.roleDraft.perms[ds.pmod] = +el.value; render(); return; }
   if (ds.ptab && S.roleDraft) { readRoleHead(); if (el.value === '') delete S.roleDraft.perms[ds.ptab]; else S.roleDraft.perms[ds.ptab] = +el.value; render(); return; }
   if (ds.pdept && S.roleDraft && el.value !== '') { readRoleHead(); NAV.filter(m => m.dept === ds.pdept && !m.always).forEach(m => { S.roleDraft.perms[m.id] = +el.value; }); render(); return; }

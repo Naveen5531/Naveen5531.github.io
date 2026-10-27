@@ -163,6 +163,9 @@ function listen() {
   const byNew = (a, b) => num(b.createdAt) - num(a.createdAt);
   if (canAssign() || canCost()) L(fs.collection('pickups').orderBy('createdAt', 'desc').limit(300), 'pickups');
   else L(fs.collection('pickups').where('exec', '==', S.me), 'pickups', byNew);
+  /* alert the executive the moment a new pickup is assigned to them */
+  let seen = null; S.unsub.push(fs.collection('pickups').where('exec', '==', S.me).onSnapshot(s => { const ids = s.docs.filter(d => d.data().hht === 'Assigned').map(d => d.id);
+    if (seen) { const fresh = ids.filter(i => !seen.has(i)); if (fresh.length) { beep(true); setTimeout(() => beep(true), 250); toast('New pickup assigned to you' + (fresh.length > 1 ? ' (' + fresh.length + ')' : '') + '.'); } } seen = new Set(ids); }, () => {}));
   if (canInbound()) L(fs.collection('shipments').where('inbound', '==', 'Pending'), 'ships', (a, b) => num(b.pickedAt) - num(a.pickedAt));
   L(fs.collection('pvendors'), 'vendors', (a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
   if (canAssign()) {
@@ -309,7 +312,9 @@ function scanHtml(p) {
     '<div class="big">' + n + ' / ' + N + ' <span class="mute small">scanned</span></div>' +
     '<div class="scanbox" style="margin-top:10px"><input class="in" id="scan" placeholder="Scan label (HHT trigger)" autocomplete="off" autocapitalize="characters" enterkeyhint="go" aria-label="Scan label"><button class="btn" type="button" data-act="cam" aria-label="Scan with camera">📷</button></div>' +
     '<p class="err" id="se"></p><div class="grid">' + Array.from({ length: N }, (_, i) => '<span class="' + (sc[i + 1] ? 'on' : '') + '">' + (i + 1) + '/' + N + '</span>').join('') + '</div>' +
-    '<button class="btn p full" type="button" data-act="complete" style="margin-top:14px"' + (all ? '' : ' disabled') + '>' + (all ? 'Pickup complete' : 'Scan all ' + N + ' labels to complete') + '</button></div>';
+    '<div class="row" style="margin-top:14px"><button class="btn" type="button" data-act="photo">📸 ' + (p.photo ? 'Retake photo' : 'Photo of boxes / invoice') + '</button>' + (p.photo ? '<span class="ok small" style="flex:0 0 auto">Photo saved ✓</span>' : '') + '</div>' +
+    '<button class="btn p full" type="button" data-act="complete" style="margin-top:10px"' + (all ? '' : ' disabled') + '>' + (all ? 'Pickup complete' : 'Scan all ' + N + ' labels to complete') + '</button>' +
+    '<button class="btn sm d" type="button" data-act="relabel" style="margin-top:10px">Wrong boxes? Cancel LR &amp; relabel</button></div>';
 }
 function summaryHtml(p) {
   const B = p.boxes || [];
@@ -331,7 +336,7 @@ function shipHtml(s) {
     '<div class="card"><h2>Receive at hub</h2><p class="mute small">Scan each box label to check all ' + N + ' arrived.</p><div class="big">' + n + ' / ' + N + '</div>' +
     '<div class="scanbox" style="margin-top:10px"><input class="in" id="scan" placeholder="Scan label (HHT trigger)" autocomplete="off" autocapitalize="characters" enterkeyhint="go"><button class="btn" type="button" data-act="cam">📷</button></div><p class="err" id="se"></p>' +
     '<div class="grid">' + Array.from({ length: N }, (_, i) => '<span class="' + (sc[i + 1] ? 'on' : '') + '">' + (i + 1) + '/' + N + '</span>').join('') + '</div>' +
-    '<button class="btn p full" type="button" data-act="receive" style="margin-top:14px"' + (n >= N ? '' : ' disabled') + '>' + (n >= N ? 'Receive at hub' : 'Scan all boxes to receive') + '</button></div>' + (canCost() ? costHtml(Object.assign({ boxes: s.boxes, customer: s.customer, fromCity: s.originCity, toCity: s.destCity, fromState: s.originState, toState: s.destState, price: s.price }, {})) : '');
+    '<button class="btn p full" type="button" data-act="receive" style="margin-top:14px"' + (n >= N ? '' : ' disabled') + '>' + (n >= N ? 'Receive at hub' : 'Scan all boxes to receive') + '</button>' + (n && n < N ? '<button class="btn d full" type="button" data-act="short" style="margin-top:8px">Receive with ' + (N - n) + ' box' + (N - n > 1 ? 'es' : '') + ' short</button>' : '') + '</div>' + (canCost() ? costHtml(Object.assign({ boxes: s.boxes, customer: s.customer, fromCity: s.originCity, toCity: s.destCity, fromState: s.originState, toState: s.destState, price: s.price }, {})) : '');
 }
 
 /* ================= render ================= */
@@ -370,6 +375,9 @@ document.addEventListener('click', async e => {
   if (act === 'print') { const x = p || null; if (x) printLabels(x); return; }
   if (act === 'cam') { camScan(v => onScan(v)); return; }
   if (act === 'complete' && p) { await complete(p, a); return; }
+  if (act === 'photo' && p) { takePhoto(p); return; }
+  if (act === 'relabel' && p) { if (!confirm('Cancel LR ' + p.lr + ' and its labels? Remove the old labels from the boxes. A new LR is made after you fix the boxes.')) return; await save(p, { lr: '', scanned: {}, hht: 'Accepted', oldLrs: (p.oldLrs || []).concat([p.lr]) }, 'LR cancelled. Fix the boxes, then create a new LR.'); S.edit = 'boxes'; S.force = true; render(); return; }
+  if (act === 'short') { await receive(a, true); return; }
   if (act === 'receive') { await receive(a); return; }
 });
 document.addEventListener('change', async e => {
@@ -492,24 +500,48 @@ async function camScan(cb) {
   catch (e) { stop(); toast('Camera scanning is not supported here. Use the HHT trigger or type the code.', true); }
 }
 
+/* ---- website tracking (no login): the app updates the public status itself at every step, so it is live even when
+   nobody has the portal open. Only cities, pieces, status and times – never names, phones, addresses or value. */
+async function writeTrack(sh) {
+  const key = v => String(v || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  const body = { awb: sh.awb, stage: sh.stage, from: sh.originCity || '', to: sh.destCity || '', pieces: num(sh.pieces), promised: sh.promised || '', deliveredAt: 0, events: (sh.events || []).slice(-30).map(e => ({ s: String(e.s || ''), t: num(e.t) })), updatedAt: Date.now() };
+  const ids = [key(sh.awb)].concat(key(sh.ref).length >= 4 ? ['R-' + key(sh.ref)] : []);
+  for (const id of ids) { try { await fs.collection('track').doc(id).set(body); } catch (e) {} }
+}
 /* ---- pickup complete: create the LR as a shipment ("Picked up", inbound pending) ---- */
+/* where the pickup happened (for proof); never blocks completion */
+function where() { return new Promise(ok => { if (!navigator.geolocation) return ok(null); const t = setTimeout(() => ok(null), 8000);
+  navigator.geolocation.getCurrentPosition(x => { clearTimeout(t); ok({ lat: +x.coords.latitude.toFixed(6), lng: +x.coords.longitude.toFixed(6), acc: Math.round(x.coords.accuracy || 0), at: Date.now() }); }, () => { clearTimeout(t); ok(null); }, { enableHighAccuracy: true, timeout: 7500, maximumAge: 60000 }); }); }
+/* optional photo of the boxes / invoice, shrunk on the phone so it saves fast */
+function takePhoto(p) {
+  const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.setAttribute('capture', 'environment');
+  i.onchange = () => { const f = i.files && i.files[0]; if (!f) return; const img = new Image(), u = URL.createObjectURL(f);
+    img.onload = async () => { const m = 900, sc = Math.min(1, m / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
+      const d = c.toDataURL('image/jpeg', .6); if (d.length > 700000) { toast('Photo is too large. Try again closer.', true); return; } await save(p, { photo: d, photoAt: Date.now() }, 'Photo saved.'); };
+    img.src = u; };
+  i.click();
+}
 async function complete(p, btn) {
   const B = p.boxes || [], N = B.length; if (Object.keys(p.scanned || {}).length < N) { toast('Scan all labels first.', true); return; }
-  btn.disabled = true; const now = Date.now(), kg = r2(B.reduce((s, b) => s + num(b.kg), 0)), price = costOf(p);
+  btn.disabled = true; btn.textContent = 'Saving…'; const gps = await where(), now = Date.now(), kg = r2(B.reduce((s, b) => s + num(b.kg), 0)), price = costOf(p);
   const ship = { awb: p.lr, ref: p.ref || p.invoice.no, customer: p.customer || p.vendor.name, origin: p.vendor.name, originPin: p.fromPin, originCity: p.fromCity, originState: p.fromState || '',
     consignee: p.consignee.name, phone: p.consignee.phone || '', address: p.consignee.address, pincode: p.toPin, destCity: p.toCity, destState: p.toState || '',
     pieces: N, weight: kg, l: B[0].l, w: B[0].b, h: B[0].h, boxes: B, material: p.material || '', value: p.invoice.value, invoice: p.invoice, vendor: p.vendor, mode: 'Prepaid', priority: 'Standard',
-    promised: addDays(today(), price.tat), price, stage: 'Pickup in transit', inbound: 'Pending', inScan: {}, pickupId: p._id, pickupNo: p.no || '', pickedAt: now, pickedBy: S.me, pickedByName: S.name,
+    promised: addDays(today(), price.tat), price, stage: 'Pickup in transit', inbound: 'Pending', inScan: {}, pickupId: p._id, pickupNo: p.no || '', pickedAt: now, gps: gps || null, pickedBy: S.me, pickedByName: S.name,
     events: [{ s: 'Booked', t: num(p.labelledAt) || now, n: 'LR created in SN Pickup' }, { s: 'Picked up', t: now, n: N + ' boxes scanned by ' + S.name }, { s: 'Pickup in transit', t: now + 1, n: 'On the way to the hub' }], createdAt: now, updatedAt: now, createdBy: S.me };
   try {
     const b = fs.batch(); b.set(fs.collection('shipments').doc('LR-' + p.lr), ship);
-    b.set(fs.collection('pickups').doc(p._id), { hht: 'Completed', stage: 'In transit', pickedAt: now, shipment: 'LR-' + p.lr, inbound: 'Pending', updatedAt: now, events: (p.events || []).concat([{ s: 'Picked up', t: now, n: 'LR ' + p.lr + ' · ' + N + ' boxes' }]).slice(-60) }, { merge: true });
-    await b.commit(); beep(true); toast('Pickup complete · LR ' + p.lr + ' is now Pickup in transit.'); S.force = true; render();
+    b.set(fs.collection('pickups').doc(p._id), { hht: 'Completed', stage: 'In transit', pickedAt: now, gps: gps || null, shipment: 'LR-' + p.lr, inbound: 'Pending', updatedAt: now, events: (p.events || []).concat([{ s: 'Picked up', t: now, n: 'LR ' + p.lr + ' · ' + N + ' boxes' }]).slice(-60) }, { merge: true });
+    await b.commit(); writeTrack(ship); beep(true); toast('Pickup complete · LR ' + p.lr + ' is now Pickup in transit.'); S.force = true; render();
   } catch (x) { btn.disabled = false; toast('Could not complete (' + (x.code || 'error') + ').', true); }
 }
-async function receive(btn) {
-  const s = S.ships.find(x => x._id === S.open.id); if (!s) return; btn.disabled = true; const now = Date.now();
-  try { await fs.collection('shipments').doc(s._id).update({ stage: 'At origin hub', inbound: 'Received', receivedAt: now, receivedBy: S.name, updatedAt: now, events: (s.events || []).concat([{ s: 'At origin hub', t: now, n: 'Received at hub – reached inbound. All ' + s.pieces + ' boxes scanned in by ' + S.name }]).slice(-60) });
+async function receive(btn, short) {
+  const s = S.ships.find(x => x._id === S.open.id); if (!s) return; const N = num(s.pieces), got = Object.keys(s.inScan || {}).map(Number), miss = Array.from({ length: N }, (_, i) => i + 1).filter(i => !got.includes(i));
+  let why = ''; if (short) { why = prompt('Boxes missing: ' + miss.map(i => i + '/' + N).join(', ') + '. Reason (e.g. not loaded, damaged):'); if (!why) return; }
+  btn.disabled = true; const now = Date.now(), note = short ? 'Received at hub with ' + miss.length + ' short (' + miss.join(', ') + '): ' + why + ' – ' + S.name : 'Received at hub – reached inbound. All ' + N + ' boxes scanned in by ' + S.name;
+  try { const ev = (s.events || []).concat([{ s: 'At origin hub', t: now, n: note }]).slice(-60);
+    await fs.collection('shipments').doc(s._id).update(Object.assign({ stage: 'At origin hub', inbound: 'Received', receivedAt: now, receivedBy: S.name, updatedAt: now, events: ev }, short ? { shortBoxes: miss, shortWhy: why.slice(0, 200) } : {}));
+    writeTrack(Object.assign({}, s, { stage: 'At origin hub', events: ev }));
     if (s.pickupId) upd('pickups', s.pickupId, { inbound: 'Received', stage: 'Delivered', hubAt: now }).catch(() => {});
     toast('LR ' + s.awb + ' received – reached inbound. Ready for mid mile.'); S.open = null; S.force = true; render(); }
   catch (x) { btn.disabled = false; toast('Could not receive (' + (x.code || 'error') + ').', true); }
