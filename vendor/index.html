@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c9b76"><meta name="robots" content="noindex"><title>SN Logistics · Vendor</title>
+<link rel="icon" href="../brand/sn-icon-64.png"><link rel="apple-touch-icon" href="../brand/sn-apple-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&display=swap">
+<style>
+/* SN Pickup – first-mile app for pickup executives (HHT / phone). Same look as Punch and the portal. */
+:root{--bg:#f2f3f7;--card:#fff;--ink:#101828;--ink2:#344054;--mute:#6b7280;--line:#e9ebf1;--soft:#f3f4f8;--in:#0c9b76;--in2:#25cf9f;--out:#f26a1b;--bad:#d92d20;--warn:#b54708;--info:#3557b5;
+  --disp:"Bricolage Grotesque",-apple-system,system-ui,sans-serif;--body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#090b0f;--card:#15181e;--ink:#f3f4f6;--ink2:#d0d5dd;--mute:#9aa1ad;--line:#252a33;--soft:#1d2129;--in:#2fd1a0;--in2:#6ff0c8;--out:#ff8a4c}}
+:root[data-theme="dark"]{--bg:#090b0f;--card:#15181e;--ink:#f3f4f6;--ink2:#d0d5dd;--mute:#9aa1ad;--line:#252a33;--soft:#1d2129;--in:#2fd1a0;--in2:#6ff0c8;--out:#ff8a4c}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--body);-webkit-font-smoothing:antialiased;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+[hidden]{display:none!important}button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
+h1,h2,h3{font-family:var(--disp);font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.15}h1{font-size:1.5rem}h2{font-size:1.1rem}h3{font-size:1rem}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top img{width:34px;height:34px;border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}.top b{font:800 1.1rem var(--disp)}.top small{display:block;color:var(--mute);font-size:.72rem}
+.top .sp{flex:1}.pill{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:99px;background:var(--soft);color:var(--ink2);white-space:nowrap}
+.ib{border:0;background:var(--soft);width:36px;height:36px;border-radius:50%;display:grid;place-items:center}.ib svg{width:18px;height:18px}
+main{max-width:640px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:4px 2px 12px}.ph p{margin:2px 0 0;color:var(--mute);font-size:.85rem}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1 1 140px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:700;color:var(--ink2);margin-bottom:10px}
+.f input,.f select,.f textarea,input.in{width:100%;padding:12px 13px;border-radius:13px;border:1px solid var(--line);background:var(--soft);font-size:16px;font-weight:500;color:var(--ink)}
+.f textarea{min-height:64px;resize:vertical}
+.btn{border:0;border-radius:999px;padding:12px 18px;font-weight:800;background:var(--soft);color:var(--ink);font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn.p{background:linear-gradient(145deg,var(--in2),var(--in));color:#fff}.btn.o{background:var(--out);color:#fff}.btn.d{background:color-mix(in srgb,var(--bad) 12%,var(--card));color:var(--bad)}
+.btn:disabled{opacity:.5}.btn.full{width:100%}.btn.sm{padding:8px 14px;font-size:13px}
+.pk{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:18px;padding:14px;margin-bottom:10px}
+.pk .t{display:flex;justify-content:space-between;gap:8px;align-items:center}.pk b{font-size:1rem}.pk .m{color:var(--mute);font-size:.84rem;margin-top:4px}
+.st{font-size:.72rem;font-weight:800;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,var(--c,#6b7280) 14%,transparent);color:var(--c,#6b7280);white-space:nowrap}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:4px 0 14px}.steps i{height:5px;border-radius:5px;background:var(--line)}.steps i.on{background:var(--in)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.88rem}.kv span{color:var(--mute)}.kv b{font-weight:600;text-align:right}
+.mute{color:var(--mute)}.small{font-size:.8rem}.err{color:var(--bad);font-weight:600;font-size:.85rem;min-height:1em}.ok{color:var(--in);font-weight:700}
+table.bx{width:100%;border-collapse:collapse;font-size:.85rem}table.bx th{font-size:.7rem;color:var(--mute);text-align:left;font-weight:700;padding:4px}table.bx td{padding:3px}table.bx input{width:100%;padding:9px 6px;border-radius:10px;border:1px solid var(--line);background:var(--soft);font-size:15px;text-align:center}
+table.bx td:first-child{font-weight:800;text-align:center;width:44px}
+.scanbox{display:flex;gap:8px}.scanbox input{flex:1;font-size:18px;letter-spacing:.04em;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin-top:12px}.grid span{text-align:center;padding:8px 0;border-radius:10px;background:var(--soft);font-weight:800;font-size:.85rem;color:var(--mute)}.grid span.on{background:var(--in);color:#fff}
+.big{font:800 2rem var(--disp)}.cost{border:1px dashed color-mix(in srgb,var(--info) 50%,transparent);background:color-mix(in srgb,var(--info) 6%,var(--card))}
+nav.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--card);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+nav.bar button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.72rem;font-weight:700;color:var(--mute);padding:6px 0;position:relative}
+nav.bar button svg{width:22px;height:22px}nav.bar button[aria-current="page"]{color:var(--in)}nav.bar .n{position:absolute;top:0;right:calc(50% - 22px);min-width:17px;height:17px;border-radius:9px;background:var(--out);color:#fff;font-size:.65rem;display:grid;place-items:center;padding:0 4px}
+svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#101828;color:#fff;padding:11px 16px;border-radius:14px;font-weight:600;z-index:90;max-width:92vw;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)}
+.toast.bad{background:var(--bad)}
+#login{min-height:100vh;display:grid;place-items:center;padding:20px}#login .card{width:100%;max-width:380px;padding:24px}#login img{height:56px;display:block;margin:0 auto 10px}
+.cam{position:fixed;inset:0;z-index:80;background:#000;display:flex;flex-direction:column}.cam video{flex:1;width:100%;object-fit:cover}.cam .ov{position:absolute;left:10%;right:10%;top:35%;height:22%;border:3px solid var(--in2);border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+.cam .cb{position:absolute;left:0;right:0;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:10px}.cam .ct{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;color:#fff;font-weight:700}
+
+.banner{border-radius:16px;padding:12px 14px;margin-bottom:12px;font-weight:600;font-size:.9rem}.banner.w{background:color-mix(in srgb,var(--warn) 12%,var(--card));color:var(--warn)}.banner.g{background:color-mix(in srgb,var(--in) 12%,var(--card));color:var(--in)}.banner.b{background:color-mix(in srgb,var(--bad) 10%,var(--card));color:var(--bad)}
+</style></head><body>
+<div id="login" hidden><div class="card">
+  <img src="../brand/sn-logo-full.png" alt="SN Logistics – Speed &amp; Trust">
+  <h1 style="text-align:center">Vendor login</h1><p class="mute" style="text-align:center;margin:4px 0 18px">Raise pickups and track your LRs</p>
+  <form id="lf"><label class="f">Username<input id="lu" autocomplete="username" autocapitalize="none" required></label>
+  <label class="f">Password<input id="lp" type="password" autocomplete="current-password" required></label>
+  <p class="err" id="le"></p><button class="btn p full" id="lb">Sign in</button></form>
+  <div class="mute small" style="text-align:center;margin:14px 0 8px">SN Logistics admins</div><button class="btn full" type="button" id="lg"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="stroke:none"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.2V7.2H2.1a11 11 0 0 0 0 9.8z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.2L5.8 10c.9-2.7 3.3-4.6 6.2-4.6z"/></svg>Sign in with Google</button>
+</div></div>
+<div id="app" hidden>
+  <header class="top"><img src="../brand/sn-icon-64.png" alt=""><div><b id="vn">Vendor</b><small id="vc"></small></div><span class="sp"></span>
+    <button class="ib" id="out" aria-label="Sign out"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg></button></header>
+  <main id="main"></main><nav class="bar" id="bar" aria-label="Main"></nav>
+</div>
+<script src="../portal/firebase-config.js?v=1"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="vendor.js?v=1"></script>
+</body></html>

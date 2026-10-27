@@ -144,6 +144,39 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // ----- Vendors (SN Pickup › Vendors, vendor portal at /vendor) -----
+    // A vendor login has no members record, so it reaches nothing else in the database: only its own vendor record,
+    // its own documents and its own pickups. Staff onboard vendors; only a checker who did not onboard the vendor
+    // (operations manager and above, admin, finance head) can verify, reject or block one.
+    function staffOps() { return isMember() && !isEmpOnly() && canWrite(); }
+    function vendorChecker() { return hasRole(['superadmin', 'director', 'gm', 'admin_head', 'ops_manager', 'ops_mgr', 'ops_srm', 'ops_gm', 'ops_sgm', 'ops_avp', 'ops_vp', 'ops_svp', 'fin_head', 'fin_manager', 'fin_mgr']); }
+    function vStatusOk(oldS, newS, maker) {
+      return newS == oldS
+        || (newS in ['Draft', 'Submitted'] && oldS in ['Draft', 'Submitted', 'Rejected'])
+        || (newS in ['Verified', 'Rejected', 'Blocked'] && vendorChecker() && maker != request.auth.uid)
+        || (newS == 'Rejected' && oldS == 'Submitted' && vendorChecker());
+    }
+    function myVendor(vid) { return signedIn() && exists(/databases/$(db)/documents/pvendors/$(vid)) && get(/databases/$(db)/documents/pvendors/$(vid)).data.get('uid', '') == request.auth.uid; }
+    match /pvendors/{id} {
+      allow read: if (isMember() && !isEmpOnly()) || (signedIn() && resource.data.get('uid', '') == request.auth.uid);
+      allow create: if staffOps() && request.resource.data.get('status', 'Draft') == 'Draft';
+      allow update: if (staffOps() && vStatusOk(resource.data.get('status', 'Draft'), request.resource.data.get('status', 'Draft'), resource.data.get('createdBy', '')))
+        || (signedIn() && resource.data.get('uid', '') == request.auth.uid && !(resource.data.get('status', '') in ['Verified', 'Blocked'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['docs', 'status', 'updatedAt']) && request.resource.data.status in ['Submitted', resource.data.get('status', '')]);
+      allow delete: if isAdmin();
+    }
+    match /pvdocs/{id} {
+      allow read: if (isMember() && !isEmpOnly()) || (signedIn() && resource.data.get('vendorUid', '') == request.auth.uid);
+      allow create, update: if staffOps() || (request.resource.data.vendorUid == request.auth.uid && myVendor(request.resource.data.vid) && id == request.resource.data.vid + '_' + request.resource.data.type);
+      allow delete: if isAdmin();
+    }
+    // a verified vendor raises pickup requests and sees its own pickups (staff use the general rule below)
+    match /pickups/{id} {
+      allow read: if signedIn() && resource.data.get('vendorUid', '') == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.vendorUid == request.auth.uid && request.resource.data.source == 'vendor' && request.resource.data.stage == 'Requested'
+        && !('exec' in request.resource.data) && myVendor(request.resource.data.vendorId) && get(/databases/$(db)/documents/pvendors/$(request.resource.data.vendorId)).data.status == 'Verified';
+    }
+
     // ----- Public tracking (website "Track", no login) -----
     // Anyone may look up ONE consignment by its exact AWB / reference (get); nobody can list them. Staff who can edit keep them current.
     match /track/{id} {
@@ -210,9 +243,9 @@ service cloud.firestore {
     // Everything else: shipments, pickups, trips, invoices, payments, staff, leave, payroll, tickets …
     // Punch employees are kept out of all of this; Punch data has its own rules above.
     match /{coll}/{id} {
-      allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*') && !(coll in ['mail', 'queries']);
+      allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*') && !(coll in ['mail', 'queries', 'pvendors', 'pvdocs']);
       allow write: if canWrite() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*')
-        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'queries']);
+        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'queries', 'pvendors', 'pvdocs']);
     }
   }
 }

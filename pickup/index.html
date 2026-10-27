@@ -72,6 +72,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-l
     <form id="lf"><label class="f">Username<input id="lu" autocomplete="username" autocapitalize="none" required></label>
     <label class="f">Password<input id="lp" type="password" autocomplete="current-password" required></label>
     <p class="err" id="le"></p><button class="btn p full" id="lb">Sign in</button></form>
+    <div id="gwrap"><div class="mute small" style="text-align:center;margin:14px 0 8px">Admins</div><button class="btn full" type="button" id="lg"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="stroke:none"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.2V7.2H2.1a11 11 0 0 0 0 9.8z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.2L5.8 10c.9-2.7 3.3-4.6 6.2-4.6z"/></svg>Sign in with Google</button></div>
   </div>
 </div>
 
@@ -107,7 +108,8 @@ const I = {
   list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
   assign: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.6 3-5.5 6-5.5s5.4 1.9 6 5.5M17 8v6M14 11h6"/>',
   inbound: '<path d="M3 9l9-6 9 6v11H3z"/><path d="M12 11v6M9 14l3 3 3-3"/>',
-  done: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>'
+  done: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+  vendor: '<path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6M3 21h18"/>'
 };
 const svg = k => '<svg viewBox="0 0 24 24" aria-hidden="true">' + I[k] + '</svg>';
 const ST_C = { Assigned: '#3557b5', Accepted: '#b54708', Labelled: '#f26a1b', Completed: '#0c9b76', Rejected: '#d92d20', Requested: '#6b7280' };
@@ -139,11 +141,26 @@ $('#lf').addEventListener('submit', async e => { e.preventDefault(); const b = $
   try { await auth.signInWithEmailAndPassword(toEmail($('#lu').value), $('#lp').value); $('#lp').value = ''; }
   catch (x) { $('#le').textContent = ({ 'auth/invalid-credential': 'Wrong username or password.', 'auth/wrong-password': 'Wrong username or password.', 'auth/user-not-found': 'Wrong username or password.', 'auth/too-many-requests': 'Too many tries. Wait a few minutes.', 'auth/network-request-failed': 'No internet connection.' })[x.code] || ('Could not sign in (' + (x.code || 'error') + ').'); }
   finally { b.disabled = false; } });
+/* Google sign-in for admins (same Gmail approvals as the portal). Google does not allow its sign-in inside app
+   web views, so in the SN Pickup APK the button opens this page in Chrome instead. */
+if (/SNPickup\//.test(navigator.userAgent)) { $('#lg').textContent = 'Admin: sign in with Google in Chrome'; $('#lg').onclick = () => { location.href = 'intent://naveen5531.github.io/pickup/#Intent;scheme=https;package=com.android.chrome;end'; }; }
+else $('#lg').addEventListener('click', async () => {
+  const b = $('#lg'), le = $('#le'); b.disabled = true; le.textContent = '';
+  try {
+    const pr = new firebase.auth.GoogleAuthProvider(); pr.setCustomParameters({ prompt: 'select_account' });
+    S.gpend = true; const r = await auth.signInWithPopup(pr); let ok = false;
+    try { ok = (await fs.doc('members/' + r.user.uid).get()).exists; } catch (x) {}
+    if (!ok) { const em = String(r.user.email || '').toLowerCase(); let g = null; try { const d = await fs.doc('gmail/' + em).get(); g = d.exists ? d.data() : null; } catch (x) {}
+      if (g && g.role) { const now = Date.now(); try { await fs.doc('members/' + r.user.uid).set({ role: g.role, status: 'Active', staff: g.staff || '', google: em, createdAt: now, updatedAt: now, addedBy: r.user.uid }); await fs.doc('users/' + r.user.uid).set({ name: g.name || r.user.displayName || em, username: em, createdAt: now }); ok = true; } catch (x) {} } }
+    if (!ok) { const em = r.user.email; try { r.additionalUserInfo && r.additionalUserInfo.isNewUser ? await r.user.delete() : await auth.signOut(); } catch (x) { await auth.signOut(); } S.gpend = false; le.textContent = em + ' is not approved. In the portal: Settings › Gmail sign-in for staff, approve it with a role, or link Google to your login.'; }
+  } catch (x) { if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(x.code)) le.textContent = x.code === 'auth/popup-blocked' ? 'Allow pop-ups for this site, then try again.' : 'Google sign-in failed (' + (x.code || 'error') + ').'; }
+  finally { b.disabled = false; if (S.gpend) { S.gpend = false; onUser(auth.currentUser); } }
+});
 $('#out').addEventListener('click', async () => { if (!confirm('Sign out of SN Pickup?')) return; S.unsub.forEach(f => f()); S.unsub = []; await auth.signOut(); });
 const net = () => { const n = $('#net'); n.textContent = navigator.onLine ? '● Online' : '● Offline – saving on phone'; n.style.color = navigator.onLine ? 'var(--in)' : 'var(--warn)'; };
 addEventListener('online', net); addEventListener('offline', net);
 
-auth.onAuthStateChanged(async u => {
+const onUser = async u => {
   S.unsub.forEach(f => f()); S.unsub = [];
   if (!u) { showLogin(); return; }
   try {
@@ -155,7 +172,8 @@ auth.onAuthStateChanged(async u => {
   } catch (x) { showLogin('Could not check your access (' + (x.code || 'error') + ').'); return; }
   $('#login').hidden = true; $('#app').hidden = false; $('#who').textContent = S.name; net();
   S.tab = 'mine'; listen(); render();
-});
+};
+auth.onAuthStateChanged(u => { if (!S.gpend) onUser(u); });
 
 /* ================= live data ================= */
 function listen() {
@@ -180,6 +198,7 @@ function listen() {
     fs.collection('rates').get().then(s => { S.rates = s.docs.map(d => d.data()); }).catch(() => {});
   }
 }
+window.SNP = { $, $$, esc, num, toast, fs, S, fd, fdt, pinInfo: (...a) => pinInfo(...a), canAssign: () => canAssign(), has: l => has(l), renderNow: f => { if (f) S.force = true; render(); } };
 let rq = false; const later = () => { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); }); };
 
 /* ================= cost (same rules as the portal's price calculation) ================= */
@@ -217,12 +236,12 @@ async function pinInfo(pin) {
 }
 
 /* ================= screens ================= */
-const STEP = p => p.hht === 'Completed' ? 5 : p.scanned && Object.keys(p.scanned).length ? 4 : p.lr ? 4 : (p.boxes || []).length ? 3 : p.vendor ? 2 : p.hht === 'Accepted' ? 1 : 0;
+const STEP = p => p.hht === 'Completed' ? 5 : p.scanned && Object.keys(p.scanned).length ? 4 : p.lr ? 4 : (p.boxes || []).length ? 3 : p.invoice ? 2 : p.hht === 'Accepted' ? 1 : 0;
 const mine = () => S.pickups.filter(p => p.exec === S.me);
 function navHtml() {
   const open = mine().filter(p => ['Assigned', 'Accepted', 'Labelled'].includes(p.hht)).length;
   const T = [['mine', 'My pickups', 'list', open]].concat(canAssign() ? [['assign', 'Assign', 'assign', S.pickups.filter(p => !p.exec && !['Completed', 'Cancelled'].includes(p.hht || '') && !['Picked up', 'Delivered', 'Closed', 'Cancelled'].includes(p.stage || '')).length]] : [])
-    .concat(canInbound() ? [['inbound', 'Inbound', 'inbound', S.ships.length]] : []).concat([['done', 'Done', 'done', 0]]);
+    .concat(canInbound() ? [['inbound', 'Inbound', 'inbound', S.ships.length]] : []).concat(window.SNP.canVendors && SNP.canVendors() ? [['vendors', 'Vendors', 'vendor', S.vendors.filter(v => v.status === 'Submitted' && v.createdBy !== S.me).length]] : []).concat([['done', 'Done', 'done', 0]]);
   return T.map(([id, l, ic, n]) => '<button type="button" data-tab="' + id + '"' + (S.tab === id && !S.open ? ' aria-current="page"' : '') + '>' + svg(ic) + l + (n ? '<span class="n">' + n + '</span>' : '') + '</button>').join('');
 }
 function pkCard(p, extra) {
@@ -275,11 +294,13 @@ function pickupHtml(p) {
   return h + scanHtml(p) + costHtml(p);
 }
 function vendorHtml(p) {
-  const v = p.vendor || {}, c = p.consignee || {}, inv = p.invoice || {};
-  return '<form class="card" id="vf"><h2>1 · Vendor &amp; invoice</h2><p class="mute small">Pick the vendor (shipper) or add a new one. Their details fill in by themselves.</p>' +
-    '<label class="f">Vendor<select name="vid"><option value="">+ New vendor</option>' + S.vendors.map(x => '<option value="' + esc(x._id) + '"' + (v.id === x._id ? ' selected' : '') + '>' + esc(x.name) + (x.city ? ' · ' + esc(x.city) : '') + '</option>').join('') + '</select></label>' +
-    '<label class="f">Vendor name<input name="vname" required value="' + esc(v.name || '') + '"></label>' +
-    '<div class="row"><label class="f">Vendor GSTIN<input name="vgst" maxlength="15" value="' + esc(v.gstin || '') + '" autocapitalize="characters"></label><label class="f">Vendor phone<input name="vphone" type="tel" value="' + esc(v.phone || '') + '"></label></div>' +
+  const v = p.vendor || {}, c = p.consignee || p.consigneeHint || {}, inv = p.invoice || {};
+  const VV = S.vendors.filter(x => x.status === 'Verified');
+  return '<form class="card" id="vf"><h2>1 · Vendor &amp; invoice</h2><p class="mute small">Only verified vendors can be picked. A new vendor must be onboarded with all documents and verified first (Vendors).</p>' +
+    (VV.length ? '' : '<p class="err">No verified vendors yet. Ask your manager to onboard and verify the vendor.</p>') +
+    '<label class="f">Vendor *<select name="vid" required><option value="">Choose vendor…</option>' + VV.map(x => '<option value="' + esc(x._id) + '"' + (v.id === x._id ? ' selected' : '') + '>' + esc(x.name) + (x.city ? ' · ' + esc(x.city) : '') + '</option>').join('') + '</select></label>' +
+    '<input type="hidden" name="vname" value="' + esc(v.name || '') + '"><input type="hidden" name="vgst" value="' + esc(v.gstin || '') + '"><input type="hidden" name="vphone" value="' + esc(v.phone || '') + '">' +
+    '<p class="small mute" id="vsum">' + (v.name ? esc(v.name + ' · ' + (v.gstin || '') + ' · ' + (v.phone || '')) : '') + '</p>' +
     '<label class="f">Shipping (pickup) address<textarea name="vaddr" required>' + esc(v.address || p.fromAddress || '') + '</textarea></label>' +
     '<div class="row"><label class="f">From pincode<input name="fromPin" required inputmode="numeric" maxlength="6" value="' + esc(p.fromPin || v.pin || '') + '"></label><label class="f">From city<input name="fromCity" required value="' + esc(p.fromCity || v.city || '') + '"></label><label class="f">From state<input name="fromState" value="' + esc(p.fromState || v.state || '') + '"></label></div>' +
     '<h3 style="margin:8px 0 8px">Destination (consignee)</h3>' +
@@ -350,6 +371,7 @@ function render() {
   if (S.open && S.open.k === 'p') { const p = S.pickups.find(x => x._id === S.open.id); h = p ? pickupHtml(p) : '<div class="card">This pickup is no longer available.</div>'; }
   else if (S.open && S.open.k === 's') { const s = S.ships.find(x => x._id === S.open.id); h = s ? shipHtml(s) : '<div class="card ok">Received at hub ✓</div><button class="btn" type="button" data-act="back">← Inbound</button>'; }
   else if (S.open && S.open.k === 'new') h = newHtml();
+  else if (S.tab === 'vendors' && SNP.canVendors && SNP.canVendors()) h = SNP.vendorsView();
   else h = S.tab === 'assign' && canAssign() ? assignHtml() : S.tab === 'inbound' && canInbound() ? inboundHtml() : S.tab === 'done' ? doneHtml() : mineHtml();
   $('#main').innerHTML = h;
   const sc = $('#scan'); if (sc) setTimeout(() => sc.focus(), 50);
@@ -360,7 +382,7 @@ const go = o => { S.open = o; S.edit = null; S.force = true; render(); scrollTo(
 /* ================= actions ================= */
 const cur = () => S.open && S.open.k === 'p' ? S.pickups.find(x => x._id === S.open.id) : null;
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-tab]'); if (t) { S.tab = t.dataset.tab; go(null); return; }
+  const t = e.target.closest('[data-tab]'); if (t) { S.tab = t.dataset.tab; if (SNP.vendorsReset) SNP.vendorsReset(); go(null); return; }
   const o = e.target.closest('[data-open]'); if (o && !e.target.closest('select')) { go({ k: 'p', id: o.dataset.open }); return; }
   const sh = e.target.closest('[data-ship]'); if (sh) { go({ k: 's', id: sh.dataset.ship }); return; }
   const a = e.target.closest('[data-act]'); if (!a) return; const act = a.dataset.act, p = cur();
@@ -384,7 +406,7 @@ document.addEventListener('change', async e => {
   const s = e.target.closest('[data-assign]'); if (s && s.value) { const p = S.pickups.find(x => x._id === s.dataset.assign), who = S.people.find(x => x.uid === s.value); if (!p || !who) return;
     try { await upd('pickups', p._id, { exec: who.uid, execName: who.name, hht: 'Assigned', assignedBy: S.name, assignedAt: Date.now(), rejectWhy: '' }); toast('Assigned to ' + who.name); } catch (x) { toast('Could not assign (' + (x.code || 'error') + ').', true); } return; }
   if (e.target.name === 'vid') { const v = S.vendors.find(x => x._id === e.target.value) || {}, f = e.target.form;
-    f.vname.value = v.name || ''; f.vgst.value = v.gstin || ''; f.vphone.value = v.phone || ''; f.vaddr.value = v.address || ''; f.fromPin.value = v.pin || f.fromPin.value; f.fromCity.value = v.city || f.fromCity.value; f.fromState.value = v.state || f.fromState.value; return; }
+    f.vname.value = v.name || ''; f.vgst.value = v.gstin || ''; f.vphone.value = v.phone || ''; $('#vsum').textContent = v.name ? v.name + ' · ' + (v.gstin || '') + ' · ' + (v.phone || '') : ''; f.vaddr.value = v.address || ''; f.fromPin.value = v.pin || f.fromPin.value; f.fromCity.value = v.city || f.fromCity.value; f.fromState.value = v.state || f.fromState.value; return; }
   if (e.target.name === 'fromPin' || e.target.name === 'toPin') { const k = e.target.name === 'fromPin' ? 'from' : 'to', i = await pinInfo(e.target.value.trim()), f = e.target.form; if (i && f[k + 'City'] && !f[k + 'City'].value) { f[k + 'City'].value = i.city; f[k + 'State'].value = i.state; } return; }
   if (e.target.id === 'bn') { const n = Math.max(1, Math.min(999, parseInt(e.target.value) || 1)), cur0 = readBoxes(); $('#bt').innerHTML = boxRows(n, cur0, cur0[0] || {}); boxTotals(); return; }
 });
@@ -408,10 +430,10 @@ document.addEventListener('submit', async e => {
     if (d.vgst && !/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/i.test(d.vgst)) { er.textContent = 'GSTIN looks wrong (15 characters, like 36ABCDE1234F1Z5).'; return; }
     if (!(num(d.ival) > 0)) { er.textContent = 'Enter the invoice value.'; return; }
     if (num(d.ival) >= 50000 && !d.iewb) { if (!confirm('Invoice is ₹50,000 or more – an e-way bill is usually needed. Continue without it?')) return; }
-    let vid = d.vid; const vend = { name: d.vname.trim(), gstin: d.vgst.toUpperCase(), phone: d.vphone, address: d.vaddr, pin: d.fromPin, city: d.fromCity, state: d.fromState };
-    try { if (!vid) { const r = fs.collection('pvendors').doc(); await r.set(Object.assign({}, vend, { createdAt: Date.now(), createdBy: S.me })); vid = r.id; } else await upd('pvendors', vid, vend); } catch (x) { er.textContent = 'Could not save the vendor (' + (x.code || 'error') + ').'; return; }
+    const vid = d.vid, vv = S.vendors.find(x => x._id === vid && x.status === 'Verified'); if (!vv) { er.textContent = 'Choose a verified vendor.'; return; }
+    const vend = { name: vv.name, code: vv.code || '', gstin: vv.gstin || '', phone: vv.phone || '', address: d.vaddr, pin: d.fromPin, city: d.fromCity, state: d.fromState, uid: vv.uid || '' };
     S.edit = null;
-    await save(p, { vendor: Object.assign({ id: vid }, vend), consignee: { name: d.cname, phone: d.cphone, address: d.caddr }, fromPin: d.fromPin, fromCity: d.fromCity, fromState: d.fromState, fromAddress: d.vaddr, toPin: d.toPin, toCity: d.toCity, toState: d.toState, toAddress: d.caddr,
+    await save(p, { vendor: Object.assign({ id: vid }, vend), vendorId: vid, vendorUid: vv.uid || '', consignee: { name: d.cname, phone: d.cphone, address: d.caddr }, fromPin: d.fromPin, fromCity: d.fromCity, fromState: d.fromState, fromAddress: d.vaddr, toPin: d.toPin, toCity: d.toCity, toState: d.toState, toAddress: d.caddr,
       invoice: { no: d.ino.trim(), date: d.idate, value: r2(num(d.ival)), ewb: d.iewb.trim() }, material: d.material }, 'Saved. Now the boxes.');
     return;
   }
@@ -548,4 +570,5 @@ async function receive(btn, short) {
 }
 })();
 </script>
+<script src="vendors.js?v=2"></script>
 </body></html>
