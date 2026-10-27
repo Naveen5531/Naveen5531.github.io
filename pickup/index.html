@@ -35,7 +35,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:
 table.bx{width:100%;border-collapse:collapse;font-size:.85rem}table.bx th{font-size:.7rem;color:var(--mute);text-align:left;font-weight:700;padding:4px}table.bx td{padding:3px}table.bx input{width:100%;padding:9px 6px;border-radius:10px;border:1px solid var(--line);background:var(--soft);font-size:15px;text-align:center}
 table.bx td:first-child{font-weight:800;text-align:center;width:44px}
 .scanbox{display:flex;gap:8px}.scanbox input{flex:1;font-size:18px;letter-spacing:.04em;text-transform:uppercase}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin-top:12px}.grid span{text-align:center;padding:8px 0;border-radius:10px;background:var(--soft);font-weight:800;font-size:.85rem;color:var(--mute)}.grid span.on{background:var(--in);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin-top:12px}.grid span{text-align:center;padding:8px 0;border-radius:10px;background:var(--soft);font-weight:800;font-size:.85rem;color:var(--mute)}.grid span.on{background:var(--in);color:#fff}.grid .tl{text-align:center;padding:8px 0;border-radius:10px;background:var(--soft);font-weight:800;font-size:.85rem;color:var(--ink);border:1px dashed var(--mute);font-family:inherit}
 .big{font:800 2rem var(--disp)}.cost{border:1px dashed color-mix(in srgb,var(--info) 50%,transparent);background:color-mix(in srgb,var(--info) 6%,var(--card))}
 nav.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--card);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
 nav.bar button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.72rem;font-weight:700;color:var(--mute);padding:6px 0;position:relative}
@@ -134,6 +134,22 @@ const has = list => S.owner || S.roles.some(r => list.includes(r));
 /* On the HHT (SN Pickup app) only the executive's work is shown: assigned pickups, accept, pickup details,
    labels, scanning and pickup complete. Assigning, inbound, vendor onboarding and costs are on the web only. */
 const HHT = /SNPickup\//.test(navigator.userAgent);
+/* Scan options: camera scan and typing / tapping boxes by hand are OFF for executives until a manager turns them on
+   (SN Pickup › Assign › Scan options, saved in settings/pickup). Managers always have both. Off = HHT scan trigger only. */
+const SCAN_MGR = ['superadmin', 'director', 'gm', 'admin_head', 'branch_manager', 'ops_mgr', 'ops_manager', 'ops_srm', 'ops_gm', 'ops_sgm', 'ops_avp', 'ops_vp', 'ops_svp'];
+const scanMgr = () => S.owner || (S.roles || []).some(r => SCAN_MGR.includes(r));
+const camOK = () => scanMgr() || !!(S.scanCfg && S.scanCfg.cam), manOK = () => scanMgr() || !!(S.scanCfg && S.scanCfg.manual);
+function scanBox() {
+  return '<div class="scanbox" style="margin-top:10px"><input class="in" id="scan" placeholder="' + (manOK() ? 'Scan label (HHT trigger) or type it' : 'Press the HHT scan trigger') + '" autocomplete="off" autocapitalize="characters" enterkeyhint="go" aria-label="Scan label"' + (manOK() ? '' : ' inputmode="none" data-noman="1"') + '>' +
+    (camOK() ? '<button class="btn" type="button" data-act="cam" aria-label="Scan with camera">📷</button>' : '') + '</div>';
+}
+const tiles = (N, sc) => Array.from({ length: N }, (_, i) => manOK() && !sc[i + 1] ? '<button type="button" class="tl" data-act="tick" data-i="' + (i + 1) + '" title="Tap to mark this box by hand">' + (i + 1) + '/' + N + '</button>' : '<span class="' + (sc[i + 1] ? 'on' : '') + '">' + (i + 1) + '/' + N + '</span>').join('');
+function scanOptsHtml() {
+  if (!scanMgr()) return '';
+  const c = S.scanCfg || {}, row = (k, t, d) => '<label style="display:flex;gap:10px;align-items:flex-start;margin-top:10px"><input type="checkbox" data-scanopt="' + k + '"' + (c[k] ? ' checked' : '') + ' style="width:20px;height:20px;margin-top:2px;flex:none"><span><b>' + t + '</b><br><span class="mute small">' + d + '</span></span></label>';
+  return '<div class="card"><h2>Scan options for executives</h2><p class="mute small">Off = executives can only scan with the HHT scan trigger. Managers always have both.</p>' +
+    row('cam', 'Camera scan', 'Show the 📷 button to scan labels with the phone camera.') + row('manual', 'Type label / tap boxes by hand', 'Allow typing the label number and tapping a box to mark it scanned.') + '</div>';
+}
 const canAssign = () => !HHT && has(MGMT.concat(MGR_UP, ['admin_head', 'branch_manager', 'pickup_coord', 'ops_tl', 'ops_am']));
 const canInbound = () => !HHT && (canAssign() || has(['hub_sup']));
 const canCost = () => !HHT && has(MGMT.concat(MGR_UP, ACCOUNTS));        // accounts, or operations manager and above
@@ -210,6 +226,7 @@ function listen() {
     }, () => {}));
   }
   fs.doc('settings/main').get().then(d => { S.settings = d.exists ? d.data() : {}; }).catch(() => {});
+  S.unsub.push(fs.doc('settings/pickup').onSnapshot(d => { S.scanCfg = d.exists ? d.data() : {}; later(); }, () => {}));
   if (canCost()) {
     fs.collection('rates').get().then(s => { S.rates = s.docs.map(d => d.data()); }).catch(() => {});
   }
@@ -282,7 +299,7 @@ function doneHtml() {
 function assignHtml() {
   const open = S.pickups.filter(p => !['Completed', 'Cancelled'].includes(p.hht || '') && !['Picked up', 'Delivered', 'Closed', 'Cancelled'].includes(p.stage || ''));
   const ppl = S.people.map(x => '<option value="' + esc(x.uid) + '">' + esc(x.label || x.name) + '</option>').join('');
-  return '<div class="ph"><div><h1>Assign pickups</h1><p>' + open.length + ' open · ' + S.people.length + ' executives</p></div><button class="btn p sm" type="button" data-act="new">+ New pickup</button></div>' +
+  return '<div class="ph"><div><h1>Assign pickups</h1><p>' + open.length + ' open · ' + S.people.length + ' executives</p></div><button class="btn p sm" type="button" data-act="new">+ New pickup</button></div>' + scanOptsHtml() +
     (open.length ? open.map(p => '<div class="card"><div class="t" style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(p.customer || (p.shipper && p.shipper.name) || 'Pickup') + '</b><span class="st" style="--c:' + (ST_C[p.hht || (p.exec ? 'Assigned' : 'Requested')] || '#6b7280') + '">' + esc(p.hht || (p.exec ? 'Assigned' : 'Requested')) + '</span></div>' +
       '<div class="mute small" style="margin:4px 0 10px">' + esc(p.no || '') + ' · ' + esc(fd(p.date)) + ' · ' + esc((p.fromCity || p.fromPin || '—') + ' → ' + (p.toCity || p.toPin || '—')) + (p.pieces ? ' · ' + esc(p.pieces) + ' boxes' : '') + (p.rejectWhy ? '<br><span style="color:var(--bad)">Rejected: ' + esc(p.rejectWhy) + '</span>' : '') + '</div>' +
       (p.shipper ? '<div class="small" style="margin:-4px 0 8px">Vendor: <b>' + esc(p.shipper.name) + '</b>' + (p.shipper.code ? ' (' + esc(p.shipper.code) + ')' : '') + '</div>' : '') +
@@ -365,8 +382,8 @@ function scanHtml(p) {
   return '<div class="card"><h2>4 · Print &amp; scan labels</h2><p class="mute small">LR <b>' + esc(p.lr) + '</b> · ' + N + ' labels. Print, stick one on each box, then scan every label.</p>' +
     '<div class="row" style="margin:10px 0"><button class="btn" type="button" data-act="print">🖨 Print ' + N + ' labels (4×6)</button></div>' +
     '<div class="big">' + n + ' / ' + N + ' <span class="mute small">scanned</span></div>' +
-    '<div class="scanbox" style="margin-top:10px"><input class="in" id="scan" placeholder="Scan label (HHT trigger)" autocomplete="off" autocapitalize="characters" enterkeyhint="go" aria-label="Scan label"><button class="btn" type="button" data-act="cam" aria-label="Scan with camera">📷</button></div>' +
-    '<p class="err" id="se"></p><div class="grid">' + Array.from({ length: N }, (_, i) => '<span class="' + (sc[i + 1] ? 'on' : '') + '">' + (i + 1) + '/' + N + '</span>').join('') + '</div>' +
+    scanBox() +
+    '<p class="err" id="se"></p><div class="grid">' + tiles(N, sc) + '</div>' +
     '<div class="row" style="margin-top:14px"><button class="btn" type="button" data-act="photo">📸 ' + (p.photo ? 'Retake photo' : 'Photo of boxes / invoice') + '</button>' + (p.photo ? '<span class="ok small" style="flex:0 0 auto">Photo saved ✓</span>' : '') + '</div>' +
     '<button class="btn p full" type="button" data-act="complete" style="margin-top:10px"' + (all ? '' : ' disabled') + '>' + (all ? 'Pickup complete' : 'Scan all ' + N + ' labels to complete') + '</button>' +
     '<button class="btn sm d" type="button" data-act="relabel" style="margin-top:10px">Wrong boxes? Cancel LR &amp; relabel</button></div>';
@@ -389,8 +406,8 @@ function shipHtml(s) {
   return '<button class="btn sm" type="button" data-act="back">← Back</button><div class="ph" style="margin-top:12px"><div><h1>LR ' + esc(s.awb) + '</h1><p>' + esc(s.origin || '') + ' → ' + esc(s.consignee || '') + '</p></div><span class="st" style="--c:#f26a1b">Pickup in transit</span></div>' +
     '<div class="card"><div class="kv">' + [['From', s.originPin + ' ' + s.originCity], ['To', s.pincode + ' ' + s.destCity], ['Boxes', N], ['Weight', s.weight + ' kg'], ['Invoice', s.invoice && (s.invoice.no + ' · ' + inr(s.invoice.value))], ['Picked', fdt(s.pickedAt) + ' · ' + (s.pickedByName || '')], ['Pickup no', s.pickupNo]].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div></div>' +
     '<div class="card"><h2>Receive at hub</h2><p class="mute small">Scan each box label to check all ' + N + ' arrived.</p><div class="big">' + n + ' / ' + N + '</div>' +
-    '<div class="scanbox" style="margin-top:10px"><input class="in" id="scan" placeholder="Scan label (HHT trigger)" autocomplete="off" autocapitalize="characters" enterkeyhint="go"><button class="btn" type="button" data-act="cam">📷</button></div><p class="err" id="se"></p>' +
-    '<div class="grid">' + Array.from({ length: N }, (_, i) => '<span class="' + (sc[i + 1] ? 'on' : '') + '">' + (i + 1) + '/' + N + '</span>').join('') + '</div>' +
+    scanBox() + '<p class="err" id="se"></p>' +
+    '<div class="grid">' + tiles(N, sc) + '</div>' +
     '<button class="btn p full" type="button" data-act="receive" style="margin-top:14px"' + (n >= N ? '' : ' disabled') + '>' + (n >= N ? 'Receive at hub' : 'Scan all boxes to receive') + '</button>' + (n && n < N ? '<button class="btn d full" type="button" data-act="short" style="margin-top:8px">Receive with ' + (N - n) + ' box' + (N - n > 1 ? 'es' : '') + ' short</button>' : '') + '</div>' + (canCost() ? costHtml(Object.assign({ boxes: s.boxes, customer: s.customer, fromCity: s.originCity, toCity: s.destCity, fromState: s.originState, toState: s.destState, price: s.price }, {})) : '');
 }
 
@@ -451,7 +468,11 @@ document.addEventListener('click', async e => {
   if (act === 'same') { const r = $$('#bt tr'), f = r[0] && [...r[0].querySelectorAll('input')].map(i => i.value); r.forEach((tr, i) => { if (i) [...tr.querySelectorAll('input')].forEach((inp, j) => { inp.value = f[j]; }); }); boxTotals(); return; }
   if (act === 'lr' && p) { await makeLR(p, a); return; }
   if (act === 'print') { const x = p || null; if (x) printLabels(x); return; }
-  if (act === 'cam') { camScan(v => onScan(v)); return; }
+  if (act === 'cam') { if (camOK()) camScan(v => onScan(v)); else toast('Camera scan is off. Ask your manager.', true); return; }
+  if (act === 'tick') { if (!manOK()) { toast('Marking by hand is off. Ask your manager.', true); return; }
+    const i = +a.dataset.i, sh = S.open && S.open.k === 's' ? S.ships.find(x => x._id === S.open.id) : null, x = sh ? null : cur();
+    const lr = sh ? sh.awb : x && x.lr, N = sh ? num(sh.pieces) : x ? (x.boxes || []).length : 0;
+    if (lr && N && confirm('Mark box ' + i + '/' + N + ' as scanned without scanning its label?')) onScan(code(lr, i, N)); return; }
   if (act === 'complete' && p) { await complete(p, a); return; }
   if (act === 'photo' && p) { takePhoto(p); return; }
   if (act === 'relabel' && p) { if (!confirm('Cancel LR ' + p.lr + ' and its labels? Remove the old labels from the boxes. A new LR is made after you fix the boxes.')) return; await save(p, { lr: '', scanned: {}, hht: 'Accepted', oldLrs: (p.oldLrs || []).concat([p.lr]) }, 'LR cancelled. Fix the boxes, then create a new LR.'); S.edit = 'boxes'; S.force = true; render(); return; }
@@ -459,6 +480,9 @@ document.addEventListener('click', async e => {
   if (act === 'receive') { await receive(a); return; }
 });
 document.addEventListener('change', async e => {
+  { const so = e.target.closest && e.target.closest('[data-scanopt]'); if (so) { if (!scanMgr()) return; const k = so.dataset.scanopt, v = so.checked;
+    try { await fs.doc('settings/pickup').set({ [k]: v, updatedAt: Date.now(), updatedBy: S.me }, { merge: true }); toast((k === 'cam' ? 'Camera scan' : 'Typing / tapping by hand') + (v ? ' turned on' : ' turned off') + ' for executives.'); }
+    catch (x) { so.checked = !v; toast('Could not save (' + (x.code || 'error') + '). Publish the latest Firebase rules.', true); } return; } }
   const pv = e.target.closest('[data-pvend]'); if (pv && pv.value) { const p = S.pickups.find(x => x._id === pv.dataset.pvend), vv = S.vendors.find(v => v._id === pv.value); if (!p || !vv) return;
     try { await upd('pickups', p._id, vendorPatch(vv)); toast('Vendor ' + vv.name + ' set on ' + (p.no || 'the pickup')); } catch (x) { toast('Could not save (' + (x.code || 'error') + ').', true); } return; }
   const s = e.target.closest('[data-assign]'); if (s && s.value) { const p = S.pickups.find(x => x._id === s.dataset.assign), who = S.people.find(x => x.uid === s.value); if (!p || !who) return;
@@ -591,7 +615,15 @@ function printLabels(p) {
 
 /* ---- scanning: HHT scanner types into the box and presses Enter; the camera is the backup ---- */
 let scanT;
-document.addEventListener('keydown', e => { if (e.target.id === 'scan' && e.key === 'Enter') { e.preventDefault(); const v = e.target.value; e.target.value = ''; onScan(v); } });
+/* HHT scanners "type" a whole label in a few milliseconds; slow key-by-key typing is a person – blocked unless a manager allows it */
+let kt = [];
+document.addEventListener('keydown', e => { if (e.target.id !== 'scan') return;
+  if (e.key !== 'Enter') { if (e.key.length === 1) kt.push(Date.now()); return; }
+  e.preventDefault(); const v = e.target.value, t = kt; kt = []; e.target.value = '';
+  const slow = t.length > 3 && (t[t.length - 1] - t[0]) / (t.length - 1) > 60;
+  if (e.target.dataset.noman && slow) { beep(false); const er = $('#se'); if (er) er.textContent = 'Typing labels is off. Use the HHT scan trigger (a manager can allow typing).'; return; }
+  onScan(v); });
+document.addEventListener('paste', e => { if (e.target.id === 'scan' && e.target.dataset.noman) { e.preventDefault(); const er = $('#se'); if (er) er.textContent = 'Pasting labels is off. Use the HHT scan trigger.'; } });
 document.addEventListener('input', e => { if (e.target.id !== 'scan') return; clearTimeout(scanT); scanT = setTimeout(() => { const v = e.target.value; if (/^SN\d{11}-\d{3}-\d{3}$/i.test(v.trim())) { e.target.value = ''; onScan(v); } }, 180); });
 async function onScan(raw) {
   const v = String(raw || '').trim().toUpperCase(), er = $('#se'), m = /^(SN\d{11})-(\d{3})-(\d{3})$/.exec(v);

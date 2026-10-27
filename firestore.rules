@@ -220,6 +220,11 @@ service cloud.firestore {
       allow create: if signedIn() && !exists(ownerDoc()) && request.resource.data.uid == request.auth.uid;
       allow update, delete: if false;
     }
+    // SN Pickup scan options (camera / by hand): every login reads them; managers set them
+    match /settings/pickup {
+      allow read: if signedIn();
+      allow write: if isAdmin() || (isMember() && myRoles().hasAny(['director', 'gm', 'branch_manager', 'ops_mgr', 'ops_manager', 'ops_srm', 'ops_gm', 'ops_sgm', 'ops_avp', 'ops_vp', 'ops_svp']));
+    }
     match /settings/{id} {
       allow read: if isMember();
       allow write: if id != 'owner' && isAdmin();
