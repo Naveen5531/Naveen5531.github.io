@@ -227,6 +227,8 @@ function listen() {
   let seen = null; S.unsub.push(fs.collection('pickups').where('exec', '==', S.me).onSnapshot(s => { const ids = s.docs.filter(d => d.data().hht === 'Assigned').map(d => d.id);
     if (seen) { const fresh = ids.filter(i => !seen.has(i)); if (fresh.length) { beep(true); setTimeout(() => beep(true), 250); toast('New pickup assigned to you' + (fresh.length > 1 ? ' (' + fresh.length + ')' : '') + '.'); } } seen = new Set(ids); }, () => {}));
   if (canInbound()) L(fs.collection('shipments').where('inbound', '==', 'Pending'), 'ships', (a, b) => num(b.pickedAt) - num(a.pickedAt));
+  if (canInbound()) { S.tripsP = []; S.tripsD = []; const upT = () => { S.trips = S.tripsP.concat(S.tripsD).filter(t => ['First mile', 'Mid mile'].includes(t.kind || (t.pickupNo ? 'Direct (FTL)' : 'Mid mile'))); };
+    L(fs.collection('trips').where('stage', '==', 'Planned'), 'tripsP'); L(fs.collection('trips').where('stage', '==', 'Dispatched'), 'tripsD'); S.unsub.push(() => {}); S._upT = upT; }
   if (SNP.canVendors && SNP.canVendors()) L(fs.collection('pvendors'), 'vendors', (a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
   else L(fs.collection('pvlist'), 'vendors', (a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
   if (canAssign()) {
@@ -286,12 +288,12 @@ async function pinInfo(pin) {
 /* ================= screens ================= */
 const STEP = p => p.hht === 'Completed' ? 5 : p.scanned && Object.keys(p.scanned).length ? 4 : p.lr ? 4 : (p.boxes || []).length ? 3 : p.invoice ? 2 : p.hht === 'Accepted' ? 1 : 0;
 const mine = () => S.pickups.filter(p => p.exec === S.me);
-const SEEN_K = { mine: 'pickups_mine', assign: 'pickups', inbound: 'ships_inbound', vendors: 'pvendors' };
+const SEEN_K = { mine: 'pickups_mine', assign: 'pickups', inbound: 'ships_inbound', vendors: 'pvendors', trips: 'trips_hub' };
 if (window.SNSeen) SNSeen.on(() => { try { const nv = $('#bar'); if (nv && S.me) nv.innerHTML = navHtml(); } catch (e) {} });
 function navHtml() {
   const open = mine().filter(p => ['Assigned', 'Accepted', 'Labelled'].includes(p.hht));
   const T = [['mine', 'My pickups', 'list', open]].concat(canAssign() ? [['assign', 'Assign', 'assign', S.pickups.filter(p => !p.exec && !['Completed', 'Cancelled'].includes(p.hht || '') && !['Picked up', 'Delivered', 'Closed', 'Cancelled'].includes(p.stage || ''))]] : [])
-    .concat(canInbound() ? [['inbound', 'Inbound', 'inbound', S.ships]] : []).concat(window.SNP.canVendors && SNP.canVendors() ? [['vendors', 'Vendors', 'vendor', S.vendors.filter(v => v.status === 'Submitted' && v.createdBy !== S.me)]] : []).concat([['done', 'Done', 'done', []]]);
+    .concat(canInbound() ? [['inbound', 'Inbound', 'inbound', S.ships], ['trips', 'Trips', 'list', (S._upT && S._upT(), S.trips || [])]] : []).concat(window.SNP.canVendors && SNP.canVendors() ? [['vendors', 'Vendors', 'vendor', S.vendors.filter(v => v.status === 'Submitted' && v.createdBy !== S.me)]] : []).concat([['done', 'Done', 'done', []]]);
   /* counts = new since that tab was last opened; reading clears it in the portal and every other device too (seen.js) */
   T.forEach(r => { const k = SEEN_K[r[0]], L = r[3]; if (window.SNSeen && k && S.tab === r[0] && !S.open && SNSeen.count(L, k)) SNSeen.mark(k); r[3] = window.SNSeen && k ? SNSeen.count(L, k) : L.length; });
   return T.map(([id, l, ic, n]) => '<button type="button" data-tab="' + id + '"' + (S.tab === id && !S.open ? ' aria-current="page"' : '') + '>' + svg(ic) + l + (n ? '<span class="n">' + n + '</span>' : '') + '</button>').join('');
@@ -350,7 +352,9 @@ function pickupHtml(p) {
   const st = p.hht || (p.exec ? 'Assigned' : 'Requested'), step = STEP(p), me = p.exec === S.me, done = st === 'Completed';
   let h = '<button class="btn sm" type="button" data-act="back">← Back</button><div class="ph" style="margin-top:12px"><div><h1>' + esc(p.shipper ? p.shipper.name : (p.customer || 'Pickup')) + '</h1><p>' + esc(p.no || '') + (p.lr ? ' · LR <b>' + esc(p.lr) + '</b>' : '') + '</p></div><span class="st" style="--c:' + (ST_C[st] || '#6b7280') + '">' + esc(st) + '</span></div>' +
     '<div class="steps" aria-hidden="true">' + [1, 2, 3, 4, 5].map(i => '<i class="' + (step >= i ? 'on' : '') + '"></i>').join('') + '</div>' +
-    '<div class="card"><div class="kv">' + [['Client', p.customer], ['Date', fd(p.date) + (p.slot ? ' · ' + p.slot : '')], ['From', [p.fromPin, p.fromCity].filter(Boolean).join(' · ')], ['To', [p.toPin, p.toCity].filter(Boolean).join(' · ')], ['Expected boxes', p.pieces], ['Client ref', p.ref], ['Executive', p.execName], ['Notes', p.notes]].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' + (p.fromAddress ? '<p class="small mute" style="margin:8px 0 0;white-space:pre-wrap">' + esc(p.fromAddress) + '</p>' : '') + '</div>';
+    '<div class="card"><div class="kv">' + [['Client', p.customer], ['Date', fd(p.date) + (p.slot ? ' · ' + p.slot : '')], ['From', [p.fromPin, p.fromCity].filter(Boolean).join(' · ')], ['To', [p.toPin, p.toCity].filter(Boolean).join(' · ')], ['Expected boxes', p.pieces], ['Client ref', p.ref], ['Executive', p.execName], ['Notes', p.notes]].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' + (p.fromAddress ? '<p class="small mute" style="margin:8px 0 0;white-space:pre-wrap">' + esc(p.fromAddress) + '</p>' : '') +
+    (() => { const ph = (p.shipper && p.shipper.phone) || p.phone || '', ad = [p.fromAddress || (p.shipper && p.shipper.address) || '', p.fromCity, p.fromPin].filter(Boolean).join(', ');
+      return ph || ad ? '<div class="row" style="margin-top:10px">' + (ph ? '<button class="btn sm" type="button" data-act="call" data-v="' + esc(ph) + '">📞 Call ' + esc(ph) + '</button>' : '') + (ad ? '<button class="btn sm" type="button" data-act="nav" data-v="' + esc(ad) + '">🧭 Navigate</button>' : '') + '</div>' : ''; })() + '</div>';
   if (!me && !done) return h + (canAssign() ? '<div class="card mute">Assigned to ' + esc(p.execName || 'nobody yet') + '. Only the assigned executive works on this pickup.</div>' : '') + costHtml(p);
   if (done) return h + summaryHtml(p) + costHtml(p);
   if (st === 'Assigned' || st === 'Rejected') return h + '<div class="card"><h2>New pickup for you</h2><p class="mute">Accept to start. Reject if you cannot do it, with a reason for your manager.</p><div class="row"><button class="btn d" type="button" data-act="reject">Reject</button><button class="btn p" type="button" data-act="accept">Accept pickup</button></div></div>';
@@ -459,6 +463,8 @@ function render() {
   if (S.open && S.open.k === 'p') { const p = S.pickups.find(x => x._id === S.open.id); h = p ? pickupHtml(p) : '<div class="card">This pickup is no longer available.</div>'; }
   else if (S.open && S.open.k === 's') { const s = S.ships.find(x => x._id === S.open.id); h = s ? shipHtml(s) : '<div class="card ok">Received at hub ✓</div><button class="btn" type="button" data-act="back">← Inbound</button>'; }
   else if (S.open && S.open.k === 'new') h = newHtml();
+  else if (S.open && S.open.k === 't') { const t = (S.trips || []).find(x => x._id === S.open.id); h = t ? tripHtml(t) : '<div class="card ok">Trip done ✓</div><button class="btn" type="button" data-act="back">← Trips</button>'; }
+  else if (S.tab === 'trips' && canInbound()) h = tripsHtml();
   else if (S.tab === 'vendors' && SNP.canVendors && SNP.canVendors()) h = SNP.vendorsView();
   else h = S.tab === 'assign' && canAssign() ? assignHtml() : S.tab === 'inbound' && canInbound() ? inboundHtml() : S.tab === 'done' ? doneHtml() : mineHtml();
   $('#main').innerHTML = h;
@@ -473,6 +479,7 @@ document.addEventListener('click', async e => {
   const t = e.target.closest('[data-tab]'); if (t) { S.tab = t.dataset.tab; if (SNP.vendorsReset) SNP.vendorsReset(); go(null); return; }
   const o = e.target.closest('[data-open]'); if (o && !e.target.closest('select')) { go({ k: 'p', id: o.dataset.open }); return; }
   const sh = e.target.closest('[data-ship]'); if (sh) { go({ k: 's', id: sh.dataset.ship }); return; }
+  const tp = e.target.closest('[data-trip]'); if (tp) { watchTrip(tp.dataset.trip); go({ k: 't', id: tp.dataset.trip }); return; }
   const a = e.target.closest('[data-act]'); if (!a) return; const act = a.dataset.act, p = cur();
   if (act === 'back') { go(null); return; }
   if (act === 'new') { go({ k: 'new' }); return; }
@@ -483,6 +490,9 @@ document.addEventListener('click', async e => {
   if (act === 'same') { const r = $$('#bt tr'), f = r[0] && [...r[0].querySelectorAll('input')].map(i => i.value); r.forEach((tr, i) => { if (i) [...tr.querySelectorAll('input')].forEach((inp, j) => { inp.value = f[j]; }); }); boxTotals(); return; }
   if (act === 'lr' && p) { await makeLR(p, a); return; }
   if (act === 'print') { const x = p || null; if (x) printLabels(x); return; }
+  if (act === 'tdispatch' || act === 'tarrive' || act === 'tarrive-short') { const t = (S.trips || []).find(x => S.open && x._id === S.open.id); if (!t) return; a.disabled = true; await tripMove(t, act !== 'tdispatch', act === 'tarrive-short'); a.disabled = false; return; }
+  if (act === 'call' || act === 'nav') { const v = a.dataset.v || '', u = act === 'call' ? 'tel:' + v.replace(/[^\d+]/g, '') : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(v);
+    if (window.SNPickup && SNPickup.openExternal) SNPickup.openExternal(u); else location.href = u; return; }
   if (act === 'kbd') { const i = $('#scan'); if (i && manOK()) { i.blur(); i.removeAttribute('readonly'); i.dataset.typing = '1'; i.setAttribute('inputmode', 'text'); i.placeholder = 'Type the label, then press Enter'; setTimeout(() => i.focus(), 30); } return; }
   if (act === 'cam') { if (camOK()) camScan(v => onScan(v)); else toast('Camera scan is off. Ask your manager.', true); return; }
   if (act === 'tick') { if (!manOK()) { toast('Marking by hand is off. Ask your manager.', true); return; }
@@ -657,6 +667,7 @@ async function onScan(raw) {
     if (tot !== (p.boxes || []).length || idx < 1 || idx > tot) { beep(false); er.textContent = 'Box number does not match this LR.'; return; }
     if ((p.scanned || {})[idx]) { beep(false); er.textContent = 'Box ' + idx + '/' + tot + ' is already scanned.'; return; }
     beep(true); er.textContent = ''; await save(p, { ['scanned.' + idx]: Date.now() }); return; }
+  if (S.open && S.open.k === 't') { const t = (S.trips || []).find(x => x._id === S.open.id); if (t) await tripScan(t, lr, idx, tot, er); return; }
   if (S.open && S.open.k === 's') { const s = S.ships.find(x => x._id === S.open.id); if (!s) return;
     if (lr !== s.awb) { beep(false); er.textContent = 'This label is for LR ' + lr + ', not ' + s.awb + '.'; return; }
     if ((s.inScan || {})[idx]) { beep(false); er.textContent = 'Box ' + idx + '/' + tot + ' already received.'; return; }
@@ -681,6 +692,59 @@ async function camScan(cb) {
 
 /* ---- website tracking (no login): the app updates the public status itself at every step, so it is live even when
    nobody has the portal open. Only cities, pieces, status and times – never names, phones, addresses or value. */
+/* ---- hub trips: scan every box onto a planned trip, dispatch, then scan them off when it arrives ----
+   First mile trip: shipper → origin hub (dispatch = Pickup in transit, arrival = received At origin hub)
+   Mid mile trip:  origin hub → destination hub (dispatch = In transit, arrival = At destination hub) */
+const tKind = t => t.kind || (t.pickupNo ? 'Direct (FTL)' : 'Mid mile');
+S.tship = {}; let tWatch = [];
+function watchTrip(id) {
+  tWatch.forEach(f => f()); tWatch = []; const t = (S.trips || []).find(x => x._id === id); if (!t) return;
+  (t.awbIds || []).forEach(sid => tWatch.push(fs.collection('shipments').doc(sid).onSnapshot(d => { if (d.exists) S.tship[sid] = Object.assign({ _id: d.id }, d.data()); later(); }, () => {})));
+}
+function tripsHtml() {
+  const L = S.trips || [];
+  return '<div class="ph"><div><h1>Trips</h1><p>Scan every box onto a planned trip, dispatch it, and scan the boxes off when it arrives.</p></div></div>' +
+    (L.length ? L.map(t => '<button type="button" class="pk" data-trip="' + esc(t._id) + '"><div class="t"><b>' + esc(t.no) + ' · ' + esc(tKind(t)) + '</b><span class="st" style="--c:' + (t.stage === 'Dispatched' ? '#f26a1b' : '#2563eb') + '">' + esc(t.stage) + '</span></div><div class="m">' + esc((t.from || '—') + ' → ' + (t.to || '—')) + '</div><div class="m">' + esc((t.awbIds || []).length + ' LRs · ' + (t.vehicle || 'no vehicle') + (t.driver ? ' · ' + t.driver : '')) + '</div></button>').join('')
+      : '<div class="card mute">No planned or running trips. Make a trip in the portal (First mile › Pickup trips or Mid mile › Linehaul trips).</div>');
+}
+function tripBoxes(t) {
+  const out = []; (t.awbIds || []).forEach(id => { const s = S.tship[id]; if (s) out.push(s); });
+  const N = out.reduce((a, s) => a + Math.max(1, num(s.pieces)), 0), key = t.stage === 'Dispatched' ? 'arrScan' : 'loadScan', sc = t[key] || {};
+  const n = out.reduce((a, s) => a + Object.keys(sc[s.awb] || {}).length, 0); return { ships: out, N, n, sc, key };
+}
+function tripHtml(t) {
+  const b = tripBoxes(t), arr = t.stage === 'Dispatched', all = b.N > 0 && b.n >= b.N, missing = (t.awbIds || []).length - b.ships.length;
+  return '<button class="btn sm" type="button" data-act="back">← Trips</button><div class="ph" style="margin-top:12px"><div><h1>' + esc(t.no) + '</h1><p>' + esc(tKind(t) + ' · ' + (t.from || '—') + ' → ' + (t.to || '—')) + '</p></div><span class="st" style="--c:' + (arr ? '#f26a1b' : '#2563eb') + '">' + esc(t.stage) + '</span></div>' +
+    '<div class="card"><div class="kv">' + [['Vehicle', t.vehicle], ['Driver', t.driver], ['Seal', t.seal], ['LRs', (t.awbIds || []).length]].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div></div>' +
+    '<div class="card"><h2>' + (arr ? 'Arrival – scan boxes off the vehicle' : 'Loading – scan boxes onto the vehicle') + '</h2><div class="big">' + b.n + ' / ' + b.N + ' <span class="mute small">boxes</span></div>' + scanBox() + '<p class="err" id="se"></p>' +
+    b.ships.map(s => { const g = Object.keys(b.sc[s.awb] || {}).length, N = Math.max(1, num(s.pieces)); return '<div class="pk" style="cursor:default"><div class="t"><b>LR ' + esc(s.awb) + '</b><span class="st" style="--c:' + (g >= N ? '#16a34a' : '#6b7280') + '">' + g + '/' + N + '</span></div><div class="m">' + esc((s.consignee || '') + ' · ' + (s.destCity || '')) + '</div></div>'; }).join('') +
+    (missing > 0 ? '<p class="mute small">Loading ' + missing + ' more LR(s)…</p>' : '') +
+    '<button class="btn p full" type="button" data-act="' + (arr ? 'tarrive' : 'tdispatch') + '" style="margin-top:12px"' + (all ? '' : ' disabled') + '>' + (all ? (arr ? 'Trip arrived – receive all' : 'Dispatch trip') : 'Scan all ' + b.N + ' boxes first') + '</button>' +
+    (arr && b.n && !all ? '<button class="btn d full" type="button" data-act="tarrive-short" style="margin-top:8px">Arrived with ' + (b.N - b.n) + ' box(es) short</button>' : '') + '</div>';
+}
+async function tripScan(t, lr, idx, tot, er) {
+  const b = tripBoxes(t), s = b.ships.find(x => x.awb === lr);
+  if (!s) { beep(false); er.textContent = 'LR ' + lr + ' is not on trip ' + t.no + '.'; return; }
+  if (tot !== Math.max(1, num(s.pieces)) || idx < 1 || idx > tot) { beep(false); er.textContent = 'Box number does not match LR ' + lr + '.'; return; }
+  if ((b.sc[lr] || {})[idx]) { beep(false); er.textContent = 'Box ' + idx + '/' + tot + ' already scanned.'; return; }
+  beep(true); er.textContent = ''; try { await fs.collection('trips').doc(t._id).update({ [b.key + '.' + lr + '.' + idx]: Date.now(), updatedAt: Date.now() }); } catch (x) { toast('Could not save (' + (x.code || 'error') + ').', true); }
+}
+async function tripMove(t, arrive, short) {
+  const b = tripBoxes(t), k = tKind(t), now = Date.now();
+  let why = ''; if (short) { why = await ask((b.N - b.n) + ' box(es) were not scanned off. Reason (e.g. left at origin, damaged):', { input: 'Reason', ok: 'Receive short', danger: 1 }); if (!why) return; }
+  const to = arrive ? (k === 'First mile' ? 'At origin hub' : 'At destination hub') : (k === 'First mile' ? 'Pickup in transit' : 'In transit');
+  try {
+    for (const s of b.ships) {
+      const note = (arrive ? 'Arrived at ' + (t.to || 'hub') : 'Dispatched') + ' on trip ' + t.no + (t.vehicle ? ' · ' + t.vehicle : '') + ' – scanned by ' + S.name;
+      const ev = (s.events || []).concat([{ s: to, t: now, n: note }]).slice(-60);
+      const patch = Object.assign({ stage: to, events: ev, updatedAt: now, tripNo: t.no }, arrive && k === 'First mile' ? { inbound: 'Received', receivedAt: now, receivedBy: S.name, origin: s.origin || t.to || '' } : {}, arrive && k === 'Mid mile' ? { destHub: t.to || s.destHub || '' } : {}, !arrive && k === 'First mile' ? { pickedAt: s.pickedAt || now, inbound: 'Pending' } : {});
+      await fs.collection('shipments').doc(s._id).update(patch); writeTrack(Object.assign({}, s, patch));
+    }
+    const tev = (t.events || []).concat([{ s: arrive ? 'Arrived' : 'Dispatched', t: now, n: (short ? 'Short: ' + why + ' · ' : '') + 'SN Pickup · ' + S.name }]).slice(-60);
+    await fs.collection('trips').doc(t._id).update(Object.assign({ stage: arrive ? 'Arrived' : 'Dispatched', events: tev, updatedAt: now }, arrive ? { arrivedAt: now } : { departedAt: now }, short ? { shortWhy: why.slice(0, 200) } : {}));
+    toast('Trip ' + t.no + (arrive ? ' arrived – ' + b.ships.length + ' LRs ' + to : ' dispatched – ' + b.ships.length + ' LRs ' + to) + '.'); S.open = null; S.force = true; render();
+  } catch (x) { toast('Could not update (' + (x.code || 'error') + ').', true); }
+}
 async function writeTrack(sh) {
   const key = v => String(v || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
   const body = { awb: sh.awb, stage: sh.stage, from: sh.originCity || '', to: sh.destCity || '', pieces: num(sh.pieces), promised: sh.promised || '', deliveredAt: 0, events: (sh.events || []).slice(-30).map(e => ({ s: String(e.s || ''), t: num(e.t) })), updatedAt: Date.now() };

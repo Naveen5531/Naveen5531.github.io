@@ -99,7 +99,7 @@ function render() {
       '<p class="err" id="re"></p><button class="btn p full">Send pickup request</button></form>';
   } else if (V.tab === 'list') {
     h = '<div class="ph"><div><h1>My pickups</h1><p>' + V.pk.length + ' in all · updates live</p></div></div>' + (V.pk.length ? V.pk.map(p => '<div class="pk"><div class="t"><b>' + esc(p.no || 'Pickup') + '</b><span class="st" style="--c:' + (p.hht === 'Completed' ? '#0c9b76' : '#b54708') + '">' + esc(PST(p)) + '</span></div><div class="m">' + esc(fd(p.date) + (p.slot ? ' · ' + p.slot : '') + ' · ' + (p.pieces || '?') + ' boxes → ' + (p.toCity || p.toPin || '')) + '</div>' +
-      (p.lr ? '<div class="m">LR <b>' + esc(p.lr) + '</b> · picked ' + esc(fdt(p.pickedAt)) + ' · <a href="../#track=' + esc(p.lr) + '" target="_blank" rel="noopener">Track</a></div>' : p.execName ? '<div class="m">Executive: ' + esc(p.execName) + '</div>' : '') + '</div>').join('') : '<div class="card mute">No pickups yet.</div>');
+      (p.lr ? '<div class="m">LR <b>' + esc(p.lr) + '</b> · picked ' + esc(fdt(p.pickedAt)) + ' · <a href="../#track=' + esc(p.lr) + '" target="_blank" rel="noopener">Track</a></div>' : p.execName ? '<div class="m">Executive: ' + esc(p.execName) + '</div>' : '') + (!V.admin && p.stage === 'Requested' && !p.exec ? '<div class="row" style="margin-top:8px"><button class="btn sm d" type="button" data-cx="' + esc(p._id) + '">Cancel request</button></div>' : '') + '</div>').join('') : '<div class="card mute">No pickups yet.</div>');
   } else {
     const ds = v.docs || {};
     h = '<div class="ph"><div><h1>Account</h1><p>' + esc(v.name) + '</p></div></div><div class="card"><div class="kv">' + [['Vendor code', v.code], ['GSTIN', v.gstin], ['PAN', v.pan], ['Contact', v.contact + ' · ' + v.phone], ['Address', v.address + ', ' + v.city + ' ' + v.pin], ['Bank', v.bank ? (v.bank.bankName || '') + ' · XXXX' + String(v.bank.acct || '').slice(-4) : ''], ['Status', v.status]].map(r => '<span>' + r[0] + '</span><b>' + esc(r[1] || '') + '</b>').join('') + '</div><p class="small mute">To change these details, contact SN Logistics.</p></div>' +
@@ -115,7 +115,21 @@ document.addEventListener('click', e => {
   const pv = e.target.closest('[data-pv]'); if (pv) { V.tab = 'home'; watchVendor(pv.dataset.pv); return; }
   const a = e.target.closest('[data-a]'); if (a && a.dataset.a === 'pv-back') { V.un.splice(1).forEach(f => f()); V.v = null; V.pk = []; render(); return; }
   const u = e.target.closest('[data-up]'); if (u) upload(u.dataset.up);
+  const cx = e.target.closest('[data-cx]'); if (cx) cancelReq(cx.dataset.cx);
 });
+/* in-app box (no browser popups) */
+function askBox(text, okText) { return new Promise(res => { const w = document.createElement('div');
+  w.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:18px';
+  w.innerHTML = '<div style="background:var(--card,#fff);color:var(--ink,#111);border-radius:20px;padding:20px;max-width:420px;width:100%"><p style="margin:0 0 12px;line-height:1.5">' + esc(text) + '</p><textarea rows="3" maxlength="200" placeholder="Reason" style="width:100%;box-sizing:border-box;font:inherit;padding:10px;border-radius:12px;border:1px solid #d0d5dd"></textarea><div class="row" style="margin-top:12px;justify-content:flex-end;gap:8px"><button class="btn" type="button" data-k="0">Keep</button><button class="btn d" type="button" data-k="1">' + esc(okText) + '</button></div></div>';
+  document.body.appendChild(w); const ta = w.querySelector('textarea');
+  w.addEventListener('click', ev => { const b = ev.target.closest('[data-k]'); if (!b && ev.target !== w) return; if (b && b.dataset.k === '1' && !ta.value.trim()) { ta.focus(); return; } w.remove(); res(b && b.dataset.k === '1' ? ta.value.trim() : ''); }); }); }
+async function cancelReq(id) {
+  const p = V.pk.find(x => x._id === id); if (!p || p.stage !== 'Requested' || p.exec) return;
+  const why = await askBox('Cancel pickup request ' + (p.no || '') + '?', 'Cancel request'); if (!why) return;
+  const now = Date.now();
+  try { await fs.collection('pickups').doc(id).update({ stage: 'Cancelled', hht: 'Cancelled', cancelWhy: why.slice(0, 200), updatedAt: now, events: (p.events || []).concat([{ s: 'Cancelled', t: now, n: 'Cancelled by vendor: ' + why.slice(0, 120) }]).slice(-60) }); toast('Pickup request cancelled.'); }
+  catch (x) { toast('Could not cancel (' + (x.code || 'error') + ').', true); }
+}
 document.addEventListener('submit', async e => {
   e.preventDefault(); const f = e.target, v = V.v; if (!v) return;
   if (f.id === 'rf') { const d = Object.fromEntries(new FormData(f)), er = $('#re');

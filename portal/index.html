@@ -478,11 +478,11 @@ const sum = (a, f) => a.reduce((s, x) => s + num(f ? f(x) : x), 0);
 function ask(msg, o) { o = o || {}; return new Promise(res => {
   let m = document.getElementById('askDlg'); if (!m) { m = document.createElement('div'); m.id = 'askDlg'; document.body.appendChild(m);
     const st = document.createElement('style'); st.textContent = '#askDlg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:grid;place-items:center;z-index:200;padding:16px}#askDlg[hidden]{display:none}#askDlg .askbox{background:#fff;color:#111827;border-radius:20px;padding:22px;max-width:420px;width:100%;box-shadow:0 30px 80px -20px rgba(0,0,0,.5)}#askDlg p{margin:10px 0 16px;font-weight:600;line-height:1.5}#askDlg .acts{display:flex;gap:8px;justify-content:flex-end}'; document.head.appendChild(st); }
-  m.innerHTML = '<div class="askbox" role="dialog" aria-modal="true"><p>' + esc(msg) + '</p><div class="acts"><button class="btn" type="button" id="askNo">Cancel</button><button class="btn ' + (o.danger ? 'danger' : 'primary') + '" type="button" id="askOk">' + esc(o.ok || 'OK') + '</button></div></div>';
-  m.hidden = false; setTimeout(() => $('#askOk').focus(), 30);
-  const done = v => { m.hidden = true; m.innerHTML = ''; document.removeEventListener('keydown', key, true); res(v); };
+  m.innerHTML = '<div class="askbox" role="dialog" aria-modal="true"><p>' + esc(msg) + '</p>' + (o.input ? '<textarea id="askIn" rows="3" maxlength="200" placeholder="' + esc(o.input) + '" style="width:100%;box-sizing:border-box;margin:0 0 14px"></textarea>' : '') + '<div class="acts"><button class="btn" type="button" id="askNo">' + esc(o.cancel || 'Cancel') + '</button><button class="btn ' + (o.danger ? 'danger' : 'primary') + '" type="button" id="askOk">' + esc(o.ok || 'OK') + '</button></div></div>';
+  m.hidden = false; setTimeout(() => ($('#askIn') || $('#askOk')).focus(), 30);
+  const done = v => { if (o.input) v = v ? ($('#askIn').value || '').trim() : ''; m.hidden = true; m.innerHTML = ''; document.removeEventListener('keydown', key, true); res(v); };
   const key = e => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } };
-  document.addEventListener('keydown', key, true); $('#askNo').onclick = () => done(false); $('#askOk').onclick = () => done(true); m.onclick = e => { if (e.target === m) done(false); }; }); }
+  document.addEventListener('keydown', key, true); $('#askNo').onclick = () => done(false); $('#askOk').onclick = () => { if (o.input && !$('#askIn').value.trim()) { $('#askIn').focus(); return; } done(true); }; m.onclick = e => { if (e.target === m) done(false); }; }); }
 let toastTimer;
 function toast(msg) { let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = msg; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.remove(), 3200); }
 
@@ -934,6 +934,12 @@ const PAY_TYPES = {
   'Expense paid': { dir: 'Out', dr: 'Office & admin', cr: 'Bank' },
   'Staff advance': { dir: 'Out', dr: 'Advances to staff', cr: 'Cash in hand' }
 };
+/* Trips for every operation: first mile (pickup run to the origin hub), mid mile (linehaul hub → hub),
+   last mile (delivery run from the destination hub) and direct full-truck trips made from a pickup. */
+const PICKUP_FLOWS = ['Via hub (part load)', 'Direct (full truck)'];
+const isDirect = r => r.flow === 'Direct (full truck)';
+const TRIP_KINDS = ['First mile', 'Mid mile', 'Last mile', 'Direct (FTL)'];
+const tripKind = r => r.kind || (r.pickupNo ? 'Direct (FTL)' : 'Mid mile');
 const PAY_MODES = ['UPI', 'NEFT', 'RTGS', 'IMPS', 'Cash', 'Cheque', 'Card'];
 
 const SCHEMA = {
@@ -941,7 +947,7 @@ const SCHEMA = {
     fields: [F('awb', 'AWB no', 'code'), F('ref', 'Client ref / delivery no'), F('customer', 'Customer', 'text', { req: 1, list: 'customers' }),
       F('origin', 'Origin warehouse', 'ref', { src: 'hubs' }), F('originPin', 'Origin pincode', 'text', { pin: 'origin' }), F('originCity', 'Origin city', 'text', { list: 'cities' }), F('originState', 'Origin state', 'select', { opts: GEO_STATES.map(x => x[0]).sort() }),
       F('consignee', 'Consignee name', 'text', { req: 1 }), F('phone', 'Consignee phone'), F('address', 'Delivery address', 'textarea'),
-      F('pincode', 'Destination pincode', 'text', { pin: 'dest' }), F('destCity', 'Destination city', 'text', { req: 1, list: 'cities' }), F('destState', 'Destination state', 'select', { opts: GEO_STATES.map(x => x[0]).sort() }),
+      F('pincode', 'Destination pincode', 'text', { pin: 'dest' }), F('destCity', 'Destination city', 'text', { req: 1, list: 'cities' }), F('destState', 'Destination state', 'select', { opts: GEO_STATES.map(x => x[0]).sort() }), F('destHub', 'Destination warehouse (delivery hub)', 'ref', { src: 'hubs' }),
       F('pieces', 'Boxes', 'number'), F('weight', 'Actual weight (kg)', 'number'), F('l', 'Box length (cm)', 'number'), F('w', 'Box width (cm)', 'number'), F('h', 'Box height (cm)', 'number'),
       F('mode', 'Payment', 'select', { opts: ['Prepaid', 'COD', 'To-pay'] }), F('cod', 'COD amount', 'money'), F('value', 'Declared value', 'money'),
       F('zoneOverride', 'Zone (auto if blank)', 'select', { opts: ZONES }), F('manualFreight', 'Freight override (₹, blank = rate engine)', 'money'),
@@ -949,18 +955,18 @@ const SCHEMA = {
       F('vehicle', 'Vehicle', 'text', { list: 'vehicles' }), F('pod', 'Received by (POD)'), F('notes', 'Notes', 'textarea')],
     cols: ['awb', 'ref', 'customer', 'destCity', 'pieces', 'chg', 'total', 'zone', 'promised', 'stage'] },
   pickups: { label: 'Pickups', noun: 'pickup', code: 'no', prefix: 'PU', stages: ['Requested', 'Vehicle assigned', 'Picked up', 'In transit', 'Delivered', 'Closed'], extraStages: ['Cancelled'], doneStages: ['Delivered', 'Closed', 'Cancelled'], noBulk: true,
-    fields: [F('no', 'Pickup no', 'code'), F('customer', 'Client', 'ref', { src: 'customers', req: 1 }), F('date', 'Pickup date', 'date', { req: 1 }), F('slot', 'Time slot', 'select', { opts: ['06–09', '09–12', '12–15', '15–18', '18–21', '21–24'] }), F('ref', 'Client ref / delivery no'),
+    fields: [F('no', 'Pickup no', 'code'), F('flow', 'How it moves', 'select', { opts: PICKUP_FLOWS }), F('customer', 'Client', 'ref', { src: 'customers', req: 1 }), F('date', 'Pickup date', 'date', { req: 1 }), F('slot', 'Time slot', 'select', { opts: ['06–09', '09–12', '12–15', '15–18', '18–21', '21–24'] }), F('ref', 'Client ref / delivery no'),
       F('from', 'From warehouse (optional)', 'ref', { src: 'hubs' }), F('fromPin', 'From pincode', 'text', { pin: 'from' }), F('fromCity', 'From city', 'text', { list: 'cities' }), F('fromState', 'From state', 'select', { opts: GEO_STATES.map(x => x[0]).sort() }), F('fromAddress', 'Pickup address / contact', 'textarea'),
       F('to', 'To warehouse (optional)', 'ref', { src: 'hubs' }), F('toPin', 'To pincode', 'text', { pin: 'to' }), F('toCity', 'To city', 'text', { list: 'cities' }), F('toState', 'To state', 'select', { opts: GEO_STATES.map(x => x[0]).sort() }), F('toAddress', 'Delivery address / contact', 'textarea'),
       F('pieces', 'No. of boxes', 'number', { req: 1 }), F('l', 'Box length L (cm)', 'number'), F('b', 'Box breadth B (cm)', 'number'), F('h', 'Box height H (cm)', 'number'), F('weight', 'Total weight (kg)', 'number'), F('material', 'Material'),
       F('vtype', 'Vehicle type needed', 'ref', { src: 'vtypes' }), F('vehicle', 'Assign vehicle', 'ref', { src: 'vehicles' }), F('driver', 'Driver', 'text', { list: 'staff' }), F('driverPhone', 'Driver phone'),
       F('km', 'Distance km (auto)', 'number'), F('vendor', 'Transporter (who gets paid)', 'ref', { src: 'customers' }), F('vendorRate', 'Transporter payout ₹ (auto)', 'money'), F('clientRate', 'Client freight ₹ (auto)', 'money'), F('notes', 'Notes', 'textarea')],
     cols: ['no', 'lr', 'date', 'customer', 'route', 'pieces', 'hht', 'vehicle', 'clientRate', 'chain', 'stage'] },
-  trips: { label: 'Linehaul trips', noun: 'trip', code: 'no', prefix: 'TR', stages: ['Planned', 'Dispatched', 'Arrived', 'Closed'], doneStages: ['Arrived', 'Closed'],
-    fields: [F('no', 'Trip / manifest no', 'code'), F('from', 'From warehouse', 'ref', { src: 'hubs', req: 1 }), F('to', 'To warehouse', 'ref', { src: 'hubs', req: 1 }),
+  trips: { label: 'Trips', noun: 'trip', code: 'no', prefix: 'TR', stages: ['Planned', 'Dispatched', 'Arrived', 'Closed'], doneStages: ['Arrived', 'Closed'],
+    fields: [F('no', 'Trip / manifest no', 'code'), F('kind', 'Operation', 'select', { req: 1, opts: TRIP_KINDS }), F('from', 'From warehouse / area', 'ref', { src: 'hubs' }), F('to', 'To warehouse / area', 'ref', { src: 'hubs' }),
       F('vehicle', 'Vehicle', 'ref', { src: 'vehicles', req: 1 }), F('driver', 'Driver', 'text', { list: 'staff' }), F('vendor', 'Transporter (if hired)', 'text', { list: 'vendors' }),
       F('seal', 'Seal no'), F('planned', 'Planned departure', 'date'), F('km', 'Distance (km)', 'number'), F('cost', 'Trip cost', 'money'), F('notes', 'Notes', 'textarea')],
-    cols: ['no', 'from', 'to', 'vehicle', 'driver', 'count', 'cost', 'planned', 'stage'] },
+    cols: ['no', 'kind', 'from', 'to', 'vehicle', 'driver', 'count', 'cost', 'planned', 'stage'] },
   drs: { label: 'Runsheets (DRS)', noun: 'runsheet', code: 'no', prefix: 'DRS', stages: ['Open', 'Out for delivery', 'Closed'], doneStages: ['Closed'], noBulk: true,
     fields: [F('no', 'DRS no', 'code'), F('hub', 'Delivery warehouse', 'ref', { src: 'hubs' }), F('rider', 'Rider', 'text', { req: 1, list: 'staff' }), F('date', 'Date', 'date', { req: 1 }),
       F('vehicle', 'Vehicle', 'ref', { src: 'vehicles' }), F('area', 'Beat / area'), F('notes', 'Notes', 'textarea')],
@@ -1132,12 +1138,12 @@ function listView(k, opts) {
   const chips = opts.noChips ? [] : chipList(k);
   const countFor = s => all.filter(r => matchChip(k, r, s)).length;
   let h = '<div class="toolbar"><input type="search" class="search" id="q-' + k + '" placeholder="Search ' + esc(sc.label.toLowerCase()) + '" value="' + esc(S.q[k]) + '" aria-label="Search ' + esc(sc.label) + '">' +
-    (writable(k) && !sc.noForm && !opts.noNew ? '<button class="btn primary" type="button" data-new="' + k + '">+ New ' + esc(sc.noun) + '</button><button class="btn" type="button" data-import="' + k + '">Import CSV</button>' : '') +
+    (writable(k) && !sc.noForm && !opts.noNew ? '<button class="btn primary" type="button" data-new="' + k + '"' + (opts.preset ? ' data-preset="' + esc(JSON.stringify(opts.preset)) + '"' : '') + '>+ New ' + esc(opts.noun || sc.noun) + '</button><button class="btn" type="button" data-import="' + k + '">Import CSV</button>' : '') +
     '<button class="btn" type="button" data-export="' + k + '">Export CSV</button>' + (!sc.noForm ? '<button class="btn" type="button" data-template="' + k + '" title="Blank upload sheet with the right headings">Template</button>' : '') + (opts.tools || '') + '</div>';
   if (chips.length) h += '<div class="chips" role="group" aria-label="Filter by status">' + chips.map(s => '<button type="button" class="chip" data-chip="' + k + '|' + esc(s) + '" aria-pressed="' + (S.filt[k] === s) + '">' + esc(s.startsWith('mile:') ? s.slice(5) : s) + '<span class="n">' + countFor(s) + '</span></button>').join('') + '</div>';
   if (!S.loaded[k] && S.dbState === 'ok') return h + '<div class="empty">Loading…</div>';
   const rows = filtered(k, opts.extraFilter);
-  if (!all.length) return h + '<div class="empty">' + esc(opts.empty || ('No ' + sc.label.toLowerCase() + ' yet.')) + (writable(k) && !sc.noForm && !opts.noNew ? ' <button class="btn small primary" type="button" data-new="' + k + '">+ New ' + esc(sc.noun) + '</button>' : '') + '</div>';
+  if (!all.length) return h + '<div class="empty">' + esc(opts.empty || ('No ' + sc.label.toLowerCase() + ' yet.')) + (writable(k) && !sc.noForm && !opts.noNew ? ' <button class="btn small primary" type="button" data-new="' + k + '"' + (opts.preset ? ' data-preset="' + esc(JSON.stringify(opts.preset)) + '"' : '') + '>+ New ' + esc(opts.noun || sc.noun) + '</button>' : '') + '</div>';
   if (!rows.length) return h + '<div class="empty">Nothing matches this search or filter.</div>';
   const sel = S.sel[k];
   [...sel].forEach(id => { if (!rows.some(r => r._id === id)) sel.delete(id); });
@@ -1163,9 +1169,9 @@ function closeDrawer() { D = null; $('#layer').innerHTML = ''; }
 function openDrawer(state) { const was = !!D; D = state; drawDrawer(); if (!was && !NAVPOP) { try { history.pushState({ p: 1, mod: S.mod, tab: S.tab[S.mod] || null, dr: 1 }, ''); NAVD++; } catch (e) {} } navBtn(); }
 function refreshDrawer() { if (D && D.mode === 'view' && rec(D.k, D.id)) drawDrawer(true); }
 const SECTIONS = {
-  pickups: [['Client', ['no', 'customer', 'date', 'slot', 'ref']], ['From', ['from', 'fromPin', 'fromCity', 'fromState', 'fromAddress']], ['To', ['to', 'toPin', 'toCity', 'toState', 'toAddress']], ['Cargo & L×B×H', ['pieces', 'l', 'b', 'h', 'weight', 'material']], ['Vehicle & driver', ['vtype', 'vehicle', 'driver', 'driverPhone']], ['Cost & GST', ['km', 'vendor', 'vendorRate', 'clientRate']], ['Notes', ['notes']]],
-  shipments: [['Booking', ['awb', 'ref', 'customer', 'priority', 'promised']], ['Route', ['origin', 'originPin', 'originCity', 'originState', 'consignee', 'phone', 'address', 'pincode', 'destCity', 'destState']], ['Cargo', ['pieces', 'weight', 'l', 'w', 'h', 'value']], ['Payment & price', ['mode', 'cod', 'zoneOverride', 'manualFreight']], ['Delivery', ['vehicle', 'pod', 'notes']]],
-  trips: [['Route', ['no', 'from', 'to', 'planned', 'km']], ['Vehicle', ['vehicle', 'driver', 'vendor', 'seal']], ['Cost', ['cost', 'notes']]],
+  pickups: [['Client', ['no', 'flow', 'customer', 'date', 'slot', 'ref']], ['From', ['from', 'fromPin', 'fromCity', 'fromState', 'fromAddress']], ['To', ['to', 'toPin', 'toCity', 'toState', 'toAddress']], ['Cargo & L×B×H', ['pieces', 'l', 'b', 'h', 'weight', 'material']], ['Vehicle & driver', ['vtype', 'vehicle', 'driver', 'driverPhone']], ['Cost & GST', ['km', 'vendor', 'vendorRate', 'clientRate']], ['Notes', ['notes']]],
+  shipments: [['Booking', ['awb', 'ref', 'customer', 'priority', 'promised']], ['Route', ['origin', 'originPin', 'originCity', 'originState', 'consignee', 'phone', 'address', 'pincode', 'destCity', 'destState', 'destHub']], ['Cargo', ['pieces', 'weight', 'l', 'w', 'h', 'value']], ['Payment & price', ['mode', 'cod', 'zoneOverride', 'manualFreight']], ['Delivery', ['vehicle', 'pod', 'notes']]],
+  trips: [['Route', ['no', 'kind', 'from', 'to', 'planned', 'km']], ['Vehicle', ['vehicle', 'driver', 'vendor', 'seal']], ['Cost', ['cost', 'notes']]],
   drs: [['Runsheet', ['no', 'hub', 'date', 'area']], ['Rider & vehicle', ['rider', 'vehicle', 'notes']]],
   vehicles: [['Vehicle', ['number', 'type', 'capacity', 'ownership', 'vendor', 'driver', 'hub']], ['Papers', ['insurance', 'fitness', 'puc', 'permit']], ['Service', ['serviceKm', 'notes']]],
   customers: [['Party', ['name', 'code', 'kind', 'contact', 'phone', 'email']], ['Tax & address', ['gstin', 'pincode', 'city', 'state', 'address']], ['Credit', ['creditDays', 'creditLimit']]],
@@ -1538,7 +1544,18 @@ HOOK.actions.shipments = r => {
   const NEXT_OP = { Booked: 'Moves to Picked up when the executive scans every box in SN Pickup.', 'Picked up': 'Moves to Pickup in transit when the pickup is completed in SN Pickup.',
     'Pickup in transit': 'Moves to At origin hub when hub staff receive it in SN Pickup › Inbound.', 'At origin hub': 'Moves to In transit when it is dispatched on a Linehaul trip.',
     'In transit': 'Moves to At destination hub when its trip arrives.', 'At destination hub': 'Moves to Out for delivery when it is put on a runsheet (DRS) and the run starts.' };
-  if (NEXT_OP[s]) h += '<p class="help" style="margin:0">' + esc(NEXT_OP[s]) + '</p>';
+  if (NEXT_OP[s]) h += '<p class="help" style="margin:0;flex-basis:100%">' + esc(NEXT_OP[s]) + '</p>';
+  const W = writable('shipments'), trip = r.tripNo && S.data.trips.find(t => t.no === r.tripNo), drs = r.drsNo && S.data.drs.find(d => d.no === r.drsNo);
+  if (W && s === 'Booked') h += (r.pickupNo ? '' : '<button class="btn primary small" type="button" data-act="ship-pickup">Create pickup request</button>') + '<button class="btn small" type="button" data-act="ship-trip" data-kind="First mile">Add to pickup trip</button><button class="btn small" type="button" data-act="ship-receive" data-how="drop">Customer dropped at hub</button>';
+  if (W && ['Picked up', 'Pickup in transit'].includes(s)) h += '<button class="btn primary small" type="button" data-act="ship-receive">Receive at hub</button>';
+  if (W && s === 'At origin hub') h += '<button class="btn primary small" type="button" data-act="ship-trip" data-kind="Mid mile">Load on linehaul trip</button><button class="btn small" type="button" data-act="ship-local">Same-city delivery (no linehaul)</button>';
+  if (W && (s === 'At destination hub' || (s === 'NDR' && !drs))) h += '<button class="btn primary small" type="button" data-act="ship-trip" data-kind="Last mile">Put on delivery trip</button><button class="btn small" type="button" data-act="ship-drs">Put on runsheet (DRS)</button>';
+  if (trip) h += '<button class="btn small" type="button" data-open="trips|' + trip._id + '">Trip ' + esc(trip.no) + ' · ' + esc(stageOf('trips', trip)) + '</button>';
+  if (drs) h += '<button class="btn small" type="button" data-open="drs|' + drs._id + '">Runsheet ' + esc(drs.no) + ' · ' + esc(stageOf('drs', drs)) + '</button>';
+  if (s === 'Delivered' && !r.invoiceNo && lvl('billing') >= 2) h += '<button class="btn primary small" type="button" data-act="ship-invoice">Raise client invoice</button>';
+  if (r.invoiceNo) { const inv = S.data.invoices.find(x => x.no === r.invoiceNo); if (inv) h += '<button class="btn small" type="button" data-open="invoices|' + inv._id + '">Invoice ' + esc(inv.no) + ' · ' + esc(stageOf('invoices', inv)) + '</button>'; }
+  if (s === 'RTO') { const ret = S.data.returns.find(x => x.awb === r.awb); if (ret) h += '<button class="btn small" type="button" data-open="returns|' + ret._id + '">Return ' + esc(ret.rma) + ' · ' + esc(stageOf('returns', ret)) + '</button>'; }
+  if (W && !SCHEMA.shipments.doneStages.includes(s)) h += '<button class="btn small danger" type="button" data-act="ship-lost">Report lost / damaged</button>';
   if (s === 'Out for delivery') h += '<button class="btn primary small" type="button" data-act="deliver">Delivered</button><button class="btn small" type="button" data-act="ndr">Delivery failed</button>';
   if (s === 'NDR') h += '<button class="btn primary small" type="button" data-act="reattempt">Re-attempt</button><button class="btn small danger" type="button" data-act="rto">Return to origin</button>';
   if (!SCHEMA.shipments.doneStages.includes(s) && s !== 'NDR') h += '<button class="btn small danger" type="button" data-act="rto">Start RTO</button>';
@@ -1557,6 +1574,8 @@ HOOK.onStage.shipments = async (r, to, from, extra) => {
       await postJournal(today(), 'COD collected on ' + r.awb, [{ a: 'COD cash with riders', dr: num(r.cod) }, { a: 'COD payable to clients', cr: num(r.cod) }], 'COD', r.awb);
     }
   }
+  if (to === 'Delivered' && r.pickupNo) setTimeout(async () => { const p = S.data.pickups.find(x => x.no === r.pickupNo); if (!p || isDirect(p) || ['Delivered', 'Closed', 'Cancelled'].includes(stageOf('pickups', p))) return;
+    const L = pickupShips(p); if (L.length && L.every(x => x._id === r._id || stageOf('shipments', x) === 'Delivered')) await setStage('pickups', p._id, 'Delivered', 'All shipments delivered', {}, true); }, 600);
   if (to === 'RTO' && from !== 'RTO') {
     await save('returns', null, { rma: nextCode('RMA', 'returns', 'rma'), type: 'RTO', awb: r.awb || '', customer: r.customer || '', item: 'Shipment ' + (r.awb || '') + ' (' + (r.pieces || 1) + ' boxes)', qty: num(r.pieces) || 1, value: num(r.value) || num(r.cod) || '', reason: extra.ndrReason || r.ndrReason || 'Returned to origin', qc: 'Pending', stage: 'Requested', events: [{ s: 'Requested', t: Date.now(), n: 'Auto-created from RTO of ' + (r.awb || '') }] }, 'RTO return for ' + r.awb);
     toast('Return created for RTO of ' + r.awb);
@@ -1627,15 +1646,20 @@ function chainOf(r) {
   const invPaid = invs.length && invs.every(i => stageOf('invoices', i) === 'Paid');
   const steps = [
     { n: 'Pickup', ok: true, s: stageOf('pickups', r), k: 'pickups', id: r._id },
-    { n: 'Vehicle', ok: !!r.vehicle, s: r.vehicle || 'Not assigned', k: r.vehicle ? 'vehicles' : null, id: (S.data.vehicles.find(v => v.number === r.vehicle) || {})._id },
-    { n: 'Shipment', ok: ships.length > 0, s: ships.length ? ships.map(x => x.awb).join(', ') : 'Not created', k: ships.length ? 'shipments' : null, id: ships[0] && ships[0]._id },
-    { n: 'Trip', ok: !!trip, s: trip ? trip.no + ' · ' + stageOf('trips', trip) : 'Not dispatched', k: trip ? 'trips' : null, id: trip && trip._id },
+    { n: r.exec && !r.vehicle ? 'Executive' : 'Vehicle', ok: !!(r.vehicle || r.exec), s: r.vehicle || (r.execName ? 'SN Pickup · ' + r.execName : 'Not assigned'), k: r.vehicle ? 'vehicles' : null, id: (S.data.vehicles.find(v => v.number === r.vehicle) || {})._id },
+    { n: 'Shipment', ok: ships.length > 0, s: ships.length ? ships.map(x => x.awb).join(', ') : 'Not created', k: ships.length ? 'shipments' : null, id: ships[0] && ships[0]._id }].concat(isDirect(r) ? [
+    { n: 'Trip', ok: !!trip, s: trip ? trip.no + ' · ' + stageOf('trips', trip) : 'Not dispatched', k: trip ? 'trips' : null, id: trip && trip._id }] : (() => {
+      const ids = ships.map(x => x._id), at = x => SHIP_STAGES.indexOf(stageOf('shipments', x)), lh = S.data.trips.find(t => tripKind(t) === 'Mid mile' && (t.awbIds || []).some(i => ids.includes(i))), dr = S.data.drs.find(d => (d.awbIds || []).some(i => ids.includes(i)));
+      const got = ships.length && ships.every(x => x.inbound === 'Received' || at(x) >= 3 || stageOf('shipments', x) === 'NDR');
+      return [{ n: 'Hub receive', ok: !!got, s: got ? 'Received' + (ships[0].receivedBy ? ' · ' + ships[0].receivedBy : '') : ships.length ? 'Pickup in transit' : '—', k: null },
+        { n: 'Linehaul trip', ok: !!(lh && ['Arrived', 'Closed'].includes(stageOf('trips', lh))) || (ships.length > 0 && ships.every(x => at(x) >= 5)), s: lh ? lh.no + ' · ' + stageOf('trips', lh) : 'Not loaded', k: lh ? 'trips' : null, id: lh && lh._id },
+        { n: 'Delivery run', ok: !!(dr && stageOf('drs', dr) === 'Closed') || !!delivered, s: dr ? dr.no + ' · ' + stageOf('drs', dr) : 'No runsheet', k: dr ? 'drs' : null, id: dr && dr._id }]; })()).concat([
     { n: 'Delivered', ok: !!delivered, s: delivered ? 'POD ' + (ships[0].pod || '—') : 'Pending', k: null },
     { n: 'Client invoice', ok: invs.length > 0, s: invs.length ? invs.map(i => i.no + ' · ' + stageOf('invoices', i)).join(', ') : 'Not raised', k: invs.length ? 'invoices' : null, id: invs[0] && invs[0]._id },
     { n: 'Client payment', ok: !!invPaid, s: invs.length ? money(sum(invs, i => i.paid)) + ' of ' + money(sum(invs, i => i.total)) : '—', k: null },
     { n: 'Transporter bill', ok: !!vb, s: vb ? vb.no + ' · ' + stageOf('vendorbills', vb) : (r.vendor ? 'Not created' : 'Own vehicle – none'), k: vb ? 'vendorbills' : null, id: vb && vb._id },
     { n: 'Payout', ok: !!(payout && stageOf('payments', payout) === 'Paid') || (!r.vendor && !!delivered), s: payout ? money(payout.amount) + ' · ' + stageOf('payments', payout) : (r.vendor ? 'Not paid' : '—'), k: payout ? 'payments' : null, id: payout && payout._id }
-  ];
+  ]);
   const done = steps.filter(x => x.ok).length;
   return { steps, done, total: steps.length, ships, trip, invs, vb, payout, delivered };
 }
@@ -1716,8 +1740,10 @@ HOOK.actions.pickups = r => {
   let h = '<div class="actions">';
   if (st === 'Requested') h += r.vehicle ? '<button class="btn primary small" type="button" data-stage-to="Vehicle assigned">Confirm vehicle ' + esc(r.vehicle) + '</button>' : '<button class="btn primary small" type="button" data-act="edit">Assign vehicle</button>';
   if (st === 'Vehicle assigned') h += '<button class="btn primary small" type="button" data-stage-to="Picked up">Picked up · create shipment</button>';
-  if (st === 'Picked up') h += '<button class="btn primary small" type="button" data-stage-to="In transit">Dispatch · create trip</button>';
-  if (st === 'In transit') h += '<button class="btn primary small" type="button" data-act="pu-deliver">Delivered</button>';
+  if (isDirect(r)) {
+    if (st === 'Picked up') h += '<button class="btn primary small" type="button" data-stage-to="In transit">Dispatch · create trip</button>';
+    if (st === 'In transit') h += '<button class="btn primary small" type="button" data-act="pu-deliver">Delivered</button>';
+  } else if (['Picked up', 'In transit'].includes(st)) h += '<p class="help" style="margin:0;flex-basis:100%">Via hub: the shipment is received at the hub, goes on a linehaul trip, then a delivery runsheet. This pickup closes by itself when all its shipments are delivered.</p>';
   if (['Delivered', 'Closed'].includes(st) || c.delivered) {
     if (!c.invs.length && c.ships.length && lvl('billing') >= 2) h += '<button class="btn primary small" type="button" data-act="pu-invoice">Raise client invoice</button>';
     if (r.vendor && num(r.vendorRate) && !c.vb && lvl('payments') >= 2) h += '<button class="btn small" type="button" data-act="pu-vbill">Create transporter bill ' + money(r.vendorRate) + '</button>';
@@ -1769,16 +1795,17 @@ HOOK.onStage.pickups = async (r, to, from, extra) => {
     if (!ships.length) {
       const fh = hubOf(r.from), th = hubOf(r.to);
       const body = { awb: nextCode('MV', 'shipments', 'awb'), ref: r.ref || '', customer: r.customer, origin: r.from || '', originPin: r.fromPin || fh.pincode || '', originCity: r.fromCity || fh.city || '', originState: r.fromState || fh.state || '', consignee: r.to || r.toCity || '', address: r.toAddress || th.address || '', pincode: r.toPin || th.pincode || '', destCity: r.toCity || th.city || r.to, destState: r.toState || th.state || '',
-        pieces: num(r.pieces), weight: num(r.weight), l: num(r.l) || '', w: num(r.b) || '', h: num(r.h) || '', mode: 'Prepaid', gstRate: r.gstRate != null ? num(r.gstRate) : '', rcm: !!r.rcm, manualFreight: num(r.clientRate) || '', vehicle: r.vehicle || '', pickupNo: r.no, stage: 'Picked up', events: [{ s: 'Picked up', t: Date.now(), n: 'Created from pickup ' + r.no }] };
+        pieces: num(r.pieces), weight: num(r.weight), l: num(r.l) || '', w: num(r.b) || '', h: num(r.h) || '', mode: 'Prepaid', gstRate: r.gstRate != null ? num(r.gstRate) : '', rcm: !!r.rcm, manualFreight: num(r.clientRate) || '', vehicle: r.vehicle || '', pickupNo: r.no, destHub: r.to || '', stage: isDirect(r) ? 'Picked up' : 'Pickup in transit', inbound: isDirect(r) ? '' : 'Pending', pickedAt: Date.now(), events: [{ s: 'Picked up', t: Date.now(), n: 'Created from pickup ' + r.no }].concat(isDirect(r) ? [] : [{ s: 'Pickup in transit', t: Date.now() + 1, n: 'On the way to ' + (r.from || 'the hub') }]) };
       HOOK.beforeSave.shipments(body, null, true);
       const id = await save('shipments', null, body, 'Shipment ' + body.awb + ' from pickup ' + r.no);
       if (!id) return false;
       await waitRec('shipments', id);
       toast('Shipment ' + body.awb + ' created');
     } else {
-      for (const s of ships.filter(x => stageOf('shipments', x) === 'Booked')) await setStage('shipments', s._id, 'Picked up', 'Pickup ' + r.no, {}, true);
+      for (const s of ships.filter(x => stageOf('shipments', x) === 'Booked')) await setStage('shipments', s._id, isDirect(r) ? 'Picked up' : 'Pickup in transit', 'Pickup ' + r.no, isDirect(r) ? {} : { inbound: 'Pending', pickedAt: Date.now() }, true);
     }
   }
+  if (to === 'In transit' && !isDirect(r)) { toast('Via hub pickups move on through hub receive and trips. Set "How it moves" to Direct (full truck) for a direct trip.', true); return false; }
   if (to === 'In transit') {
     const ships = pickupShips(r);
     if (!ships.length) { toast('Mark picked up first.'); return false; }
@@ -1817,8 +1844,12 @@ async function pickupInvoice(r) {
 HOOK.detail.shipments_chain = s => { const p = s.pickupNo && S.data.pickups.find(x => x.no === s.pickupNo); return p ? chainHtml(p) : ''; };
 
 // ---- linehaul trips (mid mile) ----
-HOOK.cell.trips = { count: r => String((r.awbIds || []).length) };
-HOOK.beforeSave.trips = b => { if (b.from && b.to && lc(b.from) === lc(b.to)) return 'From and To warehouse must be different.'; if (!num(b.cost) && b.km) { const v = S.data.vehicles.find(x => lc(x.number) === lc(b.vehicle)); const t = v && vtypeOf(v.type); if (t && num(t.ratePerKm)) b.cost = Math.max(num(t.fixedTrip), r2(num(t.ratePerKm) * num(b.km))); } return ''; };
+HOOK.cell.trips = { count: r => String((r.awbIds || []).length), kind: r => tripKind(r) };
+HOOK.beforeSave.trips = b => { if (!b.kind) b.kind = 'Mid mile';
+  if (b.kind === 'Mid mile' && (!b.from || !b.to)) return 'A linehaul trip needs a From and a To warehouse.';
+  if (b.kind === 'First mile' && !b.to) return 'Choose the hub this pickup run brings the boxes to (To warehouse).';
+  if (b.kind === 'Last mile' && !b.from) return 'Choose the hub the delivery run starts from (From warehouse).';
+  if (b.from && b.to && lc(b.from) === lc(b.to)) return 'From and To warehouse must be different.'; if (!num(b.cost) && b.km) { const v = S.data.vehicles.find(x => lc(x.number) === lc(b.vehicle)); const t = v && vtypeOf(v.type); if (t && num(t.ratePerKm)) b.cost = Math.max(num(t.fixedTrip), r2(num(t.ratePerKm) * num(b.km))); } return ''; };
 HOOK.detail.trips = r => {
   const pu = r.pickupNo && S.data.pickups.find(x => x.no === r.pickupNo);
   const ids = r.awbIds || [];
@@ -1835,16 +1866,58 @@ HOOK.detail.trips = r => {
     (num(r.cost) && wt ? '<div><span class="mini">Cost per kg</span><div><b>' + money2(num(r.cost) / wt) + '</b></div></div>' : '') + (r.departedAt ? '<div><span class="mini">Departed</span><div>' + esc(fmtTime(r.departedAt)) + '</div></div>' : '') + (r.arrivedAt ? '<div><span class="mini">Arrived</span><div>' + esc(fmtTime(r.arrivedAt)) + ' (' + ((r.arrivedAt - r.departedAt) / 36e5).toFixed(1) + ' h)</div></div>' : '') + '</div>';
   if (cap && wt > cap) h += '<p class="banner">Over vehicle capacity by ' + inr.format(wt - cap) + ' kg.</p>';
   if (cbmCap && cbmUsed > cbmCap) h += '<p class="banner">Over vehicle volume by ' + r2(cbmUsed - cbmCap) + ' CBM.</p>';
+  { const dd = r.drsNo && S.data.drs.find(x => x.no === r.drsNo); h += '<p class="help">' + esc(tripKind(r)) + ' · ' + esc(TRIP_HELP[tripKind(r)] || '') + '</p>' + (dd ? '<div class="actions"><button class="btn small" type="button" data-open="drs|' + dd._id + '">Open runsheet ' + esc(dd.no) + ' (' + esc(stageOf('drs', dd)) + ')</button></div>' : ''); }
   h += '<h4 class="section-title">Manifest (' + on.length + ')</h4>' + (on.length ? on.map(s => '<div class="pickrow"><span class="code">' + esc(s.awb) + '</span><span class="grow">' + esc((s.consignee || '') + ' · ' + (s.destCity || '') + ' · ' + shipPrice(s).chg + ' kg') + '</span>' + pill(stageOf('shipments', s)) + (writable() && st === 'Planned' ? '<button class="btn small" type="button" data-trip-remove="' + s._id + '">Remove</button>' : '') + '</div>').join('') : '<p class="mini">No shipments loaded.</p>');
   if (writable() && st === 'Planned') {
-    const cands = S.data.shipments.filter(s => ['Picked up', 'At origin hub'].includes(stageOf('shipments', s)) && !ids.includes(s._id) && !S.data.trips.some(t => t._id !== r._id && stageOf('trips', t) === 'Planned' && (t.awbIds || []).includes(s._id)));
+    const cands = tripCands(r).filter(s => !ids.includes(s._id) && !S.data.trips.some(t => t._id !== r._id && !['Arrived', 'Closed'].includes(stageOf('trips', t)) && (t.awbIds || []).includes(s._id)));
     h += '<h4 class="section-title">Ready to load (' + cands.length + ')</h4>' + (cands.length ? '<div>' + cands.slice(0, 300).map(s => '<label class="pickrow"><input type="checkbox" class="cand" value="' + s._id + '"><span class="code">' + esc(s.awb) + '</span><span class="grow">' + esc((s.destCity || s.consignee || '') + ' · ' + shipPrice(s).chg + ' kg') + '</span>' + pill(stageOf('shipments', s)) + '</label>').join('') + '</div><div class="actions"><button class="btn small" type="button" data-act="cand-all">Tick all</button><button class="btn small primary" type="button" data-act="trip-load">Load ticked</button></div>' : '<p class="mini">Shipments appear here when they are Picked up or At origin hub.</p>');
   }
   if (writable() && lvl('payments') >= 2 && num(r.cost) && r.vendor && !r.billNo) h += '<button class="btn small" type="button" data-act="trip-bill">Create vendor bill for ' + money(r.cost) + '</button>';
   return (pu ? chainHtml(pu) : '') + h;
 };
+/** Which shipments a trip may carry, by its operation */
+function tripCands(r) {
+  const k = tripKind(r), st = s => stageOf('shipments', s), nearHub = (s, hub) => !hub || !s.origin || lc(s.origin) === lc(hub);
+  if (k === 'First mile') return S.data.shipments.filter(s => ['Booked', 'Picked up', 'Pickup in transit'].includes(st(s)));
+  if (k === 'Last mile') return S.data.shipments.filter(s => st(s) === 'At destination hub' || (st(s) === 'NDR' && (!s.nextAttempt || s.nextAttempt <= today())));
+  if (k === 'Mid mile') return S.data.shipments.filter(s => st(s) === 'At origin hub' && nearHub(s, r.from));
+  return [];
+}
+const TRIP_HELP = { 'First mile': 'Pickup run: collect boxes from shippers and bring them to the hub. Dispatch → Pickup in transit; Arrived → received at the hub (At origin hub).',
+  'Mid mile': 'Linehaul: hub to hub. Only shipments received at the origin hub can be loaded. Dispatch → In transit; Arrived → At destination hub.',
+  'Last mile': 'Delivery run from the destination hub. Dispatch makes a runsheet (DRS) and puts the shipments out for delivery; close the runsheet with each result.',
+  'Direct (FTL)': 'Full truck straight from the pickup to the consignee, made from the pickup.' };
 HOOK.onStage.trips = async (r, to, from, extra) => {
-  const ids = r.awbIds || [];
+  const ids = r.awbIds || [], kind = tripKind(r);
+  if (kind === 'First mile' && to === 'Dispatched') {
+    if (!ids.length) { toast('Load shipments before dispatch.'); return false; }
+    extra.departedAt = Date.now();
+    for (const id of ids) { const s = rec('shipments', id); if (s && ['Booked', 'Picked up'].includes(stageOf('shipments', s))) await setStage('shipments', id, 'Pickup in transit', 'Collected on pickup trip ' + r.no + ' · ' + (r.vehicle || ''), { tripNo: r.no, pickedAt: Date.now(), inbound: 'Pending' }, true); }
+    const v = S.data.vehicles.find(x => lc(x.number) === lc(r.vehicle)); if (v) await save('vehicles', v._id, { stage: 'On trip' });
+    toast(ids.length + ' shipments on the way to ' + (r.to || 'the hub')); return true;
+  }
+  if (kind === 'First mile' && to === 'Arrived') {
+    extra.arrivedAt = Date.now();
+    for (const id of ids) { const s = rec('shipments', id); if (s && stageOf('shipments', s) === 'Pickup in transit') await setStage('shipments', id, 'At origin hub', 'Received at ' + (r.to || 'hub') + ' from pickup trip ' + r.no, { origin: s.origin || r.to || '', inbound: 'Received', receivedAt: Date.now(), receivedBy: (S.me && S.me.name) || '' }, true); }
+    const v = S.data.vehicles.find(x => lc(x.number) === lc(r.vehicle)); if (v) await save('vehicles', v._id, { stage: 'Available' });
+    toast('Received at ' + (r.to || 'the hub')); return true;
+  }
+  if (kind === 'Last mile' && to === 'Dispatched') {
+    if (!ids.length) { toast('Load shipments before dispatch.'); return false; }
+    extra.departedAt = Date.now();
+    let d = r.drsNo && S.data.drs.find(x => x.no === r.drsNo);
+    if (!d) { const no = nextCode('DRS', 'drs', 'no'); const id = await save('drs', null, { no, hub: r.from || '', rider: r.driver || r.vehicle || 'Driver', date: today(), vehicle: r.vehicle || '', area: r.to || '', awbIds: ids.slice(), tripNo: r.no, stage: 'Open', events: [{ s: 'Open', t: Date.now(), n: 'From delivery trip ' + r.no }] }, 'Runsheet ' + no + ' from trip ' + r.no); if (!id) return false; d = await waitRec('drs', id); extra.drsNo = no; }
+    if (d && stageOf('drs', d) === 'Open') await setStage('drs', d._id, 'Out for delivery', 'Delivery trip ' + r.no, {}, true);
+    const v = S.data.vehicles.find(x => lc(x.number) === lc(r.vehicle)); if (v) await save('vehicles', v._id, { stage: 'On trip' });
+    return true;
+  }
+  if (kind === 'Last mile' && to === 'Arrived') {
+    const d = r.drsNo && S.data.drs.find(x => x.no === r.drsNo);
+    if (d && stageOf('drs', d) !== 'Closed') { toast('Close runsheet ' + d.no + ' first – mark each shipment delivered or failed.', true); return false; }
+    extra.arrivedAt = Date.now();
+    const v = S.data.vehicles.find(x => lc(x.number) === lc(r.vehicle)); if (v) await save('vehicles', v._id, { stage: 'Available' });
+    return true;
+  }
   if (to === 'Dispatched') {
     if (!ids.length) { toast('Load shipments before dispatch.'); return false; }
     extra.departedAt = Date.now();
@@ -1854,7 +1927,7 @@ HOOK.onStage.trips = async (r, to, from, extra) => {
   }
   if (to === 'Arrived') {
     extra.arrivedAt = Date.now();
-    for (const id of ids) { const s = rec('shipments', id); if (s && stageOf('shipments', s) === 'In transit') await setStage('shipments', id, 'At destination hub', 'Arrived at ' + (r.to || 'hub') + ' on trip ' + r.no, {}, true); }
+    for (const id of ids) { const s = rec('shipments', id); if (s && stageOf('shipments', s) === 'In transit') await setStage('shipments', id, 'At destination hub', 'Arrived at ' + (r.to || 'hub') + ' on trip ' + r.no, { destHub: r.to || s.destHub || '' }, true); }
     const v = S.data.vehicles.find(x => lc(x.number) === lc(r.vehicle)); if (v) await save('vehicles', v._id, { stage: 'Available' });
     toast('Trip arrived · shipments at ' + (r.to || 'destination hub'));
   }
@@ -3467,14 +3540,17 @@ const NAV = [
   { id: 'first', label: 'First mile', icon: 'pin', dept: 'ops', sub: () => 'Pickup → vehicle → shipment → trip → delivery → invoice → payout', tabs: [
     { id: 'pickups', label: 'Pickups', view: L('pickups'), n: () => S.data.pickups.filter(p => !SCHEMA.pickups.doneStages.includes(stageOf('pickups', p))) },
     { id: 'today', label: "Today's pickups", view: L('pickups', { extraFilter: p => p.date === today(), noNew: false }) },
-    { id: 'transit', label: 'Pickup in transit', view: () => '<p class="help">LRs picked up on SN Pickup and on the way to the hub. Hub staff receive them by scanning every box in SN Pickup › Inbound (or set "At origin hub" here) – only then do they move on to mid mile.</p>' + listView('shipments', { extraFilter: s => stageOf('shipments', s) === 'Pickup in transit', noChips: true, noNew: true, cols: ['awb', 'customer', 'destCity', 'pieces', 'promised', 'stage'], empty: 'Nothing in pickup transit right now.' }), n: () => S.data.shipments.filter(s => stageOf('shipments', s) === 'Pickup in transit') },
+    { id: 'transit', label: 'Pickup in transit', view: () => '<p class="help">LRs picked up on SN Pickup and on the way to the hub. Hub staff receive them by scanning every box in SN Pickup › Inbound, by arriving a pickup trip, or with Receive at hub on the shipment – only then can they go on a linehaul trip.</p>' + listView('shipments', { extraFilter: s => stageOf('shipments', s) === 'Pickup in transit', noChips: true, noNew: true, cols: ['awb', 'customer', 'destCity', 'pieces', 'promised', 'stage'], empty: 'Nothing in pickup transit right now.' }), n: () => S.data.shipments.filter(s => stageOf('shipments', s) === 'Pickup in transit') },
     { id: 'pvendors', label: 'Vendors', view: () => pvendorsView(), n: () => (S.data.pvendors || []).filter(v => v.status === 'Submitted') },
+    { id: 'fmtrips', label: 'Pickup trips', view: L('trips', { extraFilter: t => tripKind(t) === 'First mile', preset: { kind: 'First mile' }, noun: 'pickup trip', empty: 'No pickup trips yet. A pickup trip takes a vehicle to collect boxes and bring them to the hub.' }), n: () => S.data.trips.filter(t => tripKind(t) === 'First mile' && ['Planned', 'Dispatched'].includes(stageOf('trips', t))) },
     { id: 'payout', label: 'Pending payout', view: L('pickups', { extraFilter: p => { const c = chainOf(p); return c.delivered && p.vendor && !(c.payout && stageOf('payments', c.payout) === 'Paid'); }, noNew: true, empty: 'No delivered pickups waiting for transporter payout.' }) }] },
   { id: 'mid', label: 'Mid mile', icon: 'route', dept: 'ops', sub: () => 'Linehaul trips, manifests and hubs', tabs: [
-    { id: 'trips', label: 'Linehaul trips', view: L('trips'), n: () => S.data.trips.filter(t => ['Planned', 'Dispatched'].includes(stageOf('trips', t))) },
+    { id: 'trips', label: 'Linehaul trips', view: L('trips', { extraFilter: t => ['Mid mile', 'Direct (FTL)'].includes(tripKind(t)), preset: { kind: 'Mid mile' }, noun: 'linehaul trip' }), n: () => S.data.trips.filter(t => ['Mid mile', 'Direct (FTL)'].includes(tripKind(t)) && ['Planned', 'Dispatched'].includes(stageOf('trips', t))) },
+    { id: 'alltrips', label: 'All trips', view: L('trips') },
     { id: 'hubs', label: 'Warehouses', view: L('hubs'), n: () => S.data.hubs }, { id: 'routes', label: 'Route rates (pan India)', view: routeRates }] },
   { id: 'last', label: 'Last mile', icon: 'door', dept: 'ops', sub: () => 'Delivery runsheets, proof of delivery, COD settlement', tabs: [
     { id: 'drs', label: 'Runsheets (DRS)', view: L('drs'), n: () => S.data.drs.filter(d => stageOf('drs', d) !== 'Closed') },
+    { id: 'lmtrips', label: 'Delivery trips', view: L('trips', { extraFilter: t => tripKind(t) === 'Last mile', preset: { kind: 'Last mile' }, noun: 'delivery trip', empty: 'No delivery trips yet. A delivery trip sends a vehicle out from the hub with a runsheet.' }), n: () => S.data.trips.filter(t => tripKind(t) === 'Last mile' && ['Planned', 'Dispatched'].includes(stageOf('trips', t))) },
     { id: 'ofd', label: 'Out for delivery', view: L('shipments', { extraFilter: s => stageOf('shipments', s) === 'Out for delivery', noChips: true, noNew: true, cols: ['awb', 'consignee', 'phone', 'destCity', 'mode', 'cod', 'stage'], empty: 'Nothing out for delivery right now.' }) },
     { id: 'pod', label: 'Delivered today', view: L('shipments', { extraFilter: s => stageOf('shipments', s) === 'Delivered' && dayOf(s.deliveredAt) === today(), noChips: true, noNew: true, cols: ['awb', 'consignee', 'destCity', 'pod', 'mode', 'cod', 'stage'], empty: 'No deliveries recorded today yet.' }) }] },
   { id: 'reverse', label: 'Reverse logistics', icon: 'ret', dept: 'ops', sub: () => 'Customer returns, RTO, QC grading and refunds', tabs: [
@@ -3699,7 +3775,7 @@ document.addEventListener('click', async e => {
   if (ds.go) { if (ds.chipset) S.filt.shipments = ds.chipset; S.collapsed = false; go(ds.go, ds.gotab); document.body.classList.remove('navopen'); return; }
   if (ds.tab) { go(S.mod, ds.tab); return; }
   if (ds.open) { const [k, id] = ds.open.split('|'); openDrawer({ mode: 'view', k, id }); return; }
-  if (ds.new) { openDrawer({ mode: 'new', k: ds.new, draft: ds.new === 'shipments' && S.calcDraft ? S.calcDraft : newDraft(ds.new) || null }); S.calcDraft = null; setTimeout(() => { const f = $('#recForm input:not([placeholder="Auto"]), #recForm select'); if (f) f.focus(); }, 30); return; }
+  if (ds.new) { let pre = null; try { pre = ds.preset ? JSON.parse(ds.preset) : null; } catch (x) {} openDrawer({ mode: 'new', k: ds.new, draft: ds.new === 'shipments' && S.calcDraft ? S.calcDraft : Object.assign({}, newDraft(ds.new) || {}, pre || {}) }); S.calcDraft = null; setTimeout(() => { const f = $('#recForm input:not([placeholder="Auto"]), #recForm select'); if (f) f.focus(); }, 30); return; }
   if (ds.import) { IMPORT = null; openDrawer({ mode: 'import', k: ds.import }); return; }
   if (ds.export) { exportCSV(ds.export); return; }
   if (ds.chip) { const i = ds.chip.indexOf('|'); const k = ds.chip.slice(0, i); S.filt[k] = ds.chip.slice(i + 1); S.sel[k].clear(); render(); return; }
@@ -3732,9 +3808,31 @@ document.addEventListener('click', async e => {
     case 'ndr-save': D.sub = null; await failAttempt(D.id, $('#ndrReason').value, $('#ndrDate').value); return;
     case 'reattempt': await setStage('shipments', D.id, 'At destination hub', 'Re-attempt' + (r.nextAttempt ? ' on ' + fmtDate(r.nextAttempt) : '')); return;
     case 'rto': await setStage('shipments', D.id, 'RTO', 'Return to origin'); return;
+    case 'ship-receive': { const N = num(r.pieces) || 1, drop = ds.how === 'drop';
+      const ok = await ask((drop ? 'Customer dropped ' : 'Receive ') + r.awb + ' at ' + (r.origin || 'the hub') + '. Count the boxes: did all ' + N + ' arrive?', { ok: 'All ' + N + ' received', cancel: 'Not now' });
+      if (!ok) return;
+      await setStage('shipments', D.id, 'At origin hub', (drop ? 'Dropped at hub by customer' : 'Received at hub') + ' · ' + N + '/' + N + ' boxes · ' + ((S.me && S.me.name) || ''), { inbound: 'Received', receivedAt: Date.now(), receivedBy: (S.me && S.me.name) || '', pickedAt: r.pickedAt || Date.now() }); if (r.pickupId) save('pickups', r.pickupId, { inbound: 'Received', hubAt: Date.now() }); return; }
+    case 'ship-local': if (!(await ask('Deliver ' + r.awb + ' from this hub without a linehaul trip?', { ok: 'Yes, same city' }))) return; await setStage('shipments', D.id, 'At destination hub', 'Same-city delivery from ' + (r.origin || 'origin hub')); return;
+    case 'ship-lost': { const why = await ask('What happened to ' + r.awb + '?', { input: 'e.g. 2 boxes damaged at hub, lost in transit', ok: 'Report', danger: 1 }); if (!why) return; await setStage('shipments', D.id, 'Lost / damaged', why); return; }
+    case 'ship-invoice': t.disabled = true; await invoiceShipments(r.customer, [r], 'Shipment ' + r.awb); return;
+    case 'ship-trip': { const kind = ds.kind, hub = kind === 'First mile' ? r.origin : kind === 'Last mile' ? (r.destHub || r.origin) : r.origin;
+      let tr = S.data.trips.find(x => tripKind(x) === kind && stageOf('trips', x) === 'Planned' && (!hub || lc(kind === 'First mile' ? x.to : x.from) === lc(hub)));
+      if (tr && !(await ask('Add ' + r.awb + ' to planned ' + kind.toLowerCase() + ' trip ' + tr.no + (tr.vehicle ? ' (' + tr.vehicle + ')' : '') + '?', { ok: 'Add to ' + tr.no, cancel: 'New trip' }))) tr = null;
+      if (tr) { await save('trips', tr._id, { awbIds: uniq((tr.awbIds || []).concat([r._id])) }, 'Added ' + r.awb + ' to ' + tr.no); toast(r.awb + ' added to ' + tr.no); openDrawer({ mode: 'view', k: 'trips', id: tr._id }); return; }
+      const no = nextCode('TR', 'trips', 'no'), body = { no, kind, from: kind === 'First mile' ? (r.originCity || '') : hub || '', to: kind === 'First mile' ? hub || '' : kind === 'Last mile' ? (r.destCity || '') : '', planned: today(), awbIds: [r._id], stage: 'Planned', events: [{ s: 'Planned', t: Date.now(), n: 'Made from shipment ' + r.awb }] };
+      const id = await save('trips', null, body, kind + ' trip ' + no + ' for ' + r.awb); if (!id) return; await waitRec('trips', id);
+      toast('Trip ' + no + ' made – choose the vehicle and driver'); openDrawer({ mode: 'edit', k: 'trips', id }); return; }
+    case 'ship-drs': { let d = S.data.drs.find(x => stageOf('drs', x) === 'Open' && x.date === today() && (!r.destHub || !x.hub || lc(x.hub) === lc(r.destHub)));
+      if (d && !(await ask('Add ' + r.awb + ' to today\'s open runsheet ' + d.no + ' (' + (d.rider || '') + ')?', { ok: 'Add to ' + d.no, cancel: 'New runsheet' }))) d = null;
+      if (d) { await save('drs', d._id, { awbIds: uniq((d.awbIds || []).concat([r._id])) }, 'Added ' + r.awb + ' to ' + d.no); openDrawer({ mode: 'view', k: 'drs', id: d._id }); return; }
+      const no = nextCode('DRS', 'drs', 'no'), id = await save('drs', null, { no, hub: r.destHub || '', rider: '', date: today(), area: r.destCity || '', awbIds: [r._id], stage: 'Open', events: [{ s: 'Open', t: Date.now(), n: 'Made from shipment ' + r.awb }] }, 'Runsheet ' + no + ' for ' + r.awb);
+      if (!id) return; await waitRec('drs', id); toast('Runsheet ' + no + ' made – choose the rider'); openDrawer({ mode: 'edit', k: 'drs', id }); return; }
+    case 'ship-pickup': { const no = await nextPickupNo(), body = { no, customer: r.customer || '', date: today(), ref: r.ref || '', fromPin: r.originPin || '', fromCity: r.originCity || '', fromState: r.originState || '', to: r.origin || '', pieces: num(r.pieces) || 1, weight: num(r.weight) || '', l: num(r.l) || '', b: num(r.w) || '', h: num(r.h) || '', flow: 'Via hub (part load)', stage: 'Requested', events: [{ s: 'Requested', t: Date.now(), n: 'For shipment ' + r.awb }] };
+      const id = await save('pickups', null, body, 'Pickup ' + no + ' for ' + r.awb); if (!id) return; await save('shipments', r._id, { pickupNo: no }); await waitRec('pickups', id);
+      toast('Pickup ' + no + ' made – assign an executive or vehicle'); openDrawer({ mode: 'view', k: 'pickups', id }); return; }
     case 'cand-all': $$('#layer .cand').forEach(x => { x.checked = true; }); return;
     case 'link-pickup': { const ids = ticked(); for (const id of ids) await save('shipments', id, { pickupNo: r.no }); if (ids.length && stageOf('pickups', r) === 'Requested' && r.rider) await setStage('pickups', r._id, 'Assigned', ids.length + ' shipments linked', {}, true); toast(ids.length + ' shipments linked'); return; }
-    case 'trip-load': { const ids = ticked(); if (!ids.length) return; for (const id of ids) { const s = rec('shipments', id); if (s && stageOf('shipments', s) === 'Picked up') await setStage('shipments', id, 'At origin hub', 'Received at ' + (r.from || 'origin hub'), {}, true); } await save('trips', r._id, { awbIds: uniq((r.awbIds || []).concat(ids)) }, 'Loaded ' + ids.length + ' on trip ' + r.no); toast(ids.length + ' loaded on ' + r.no); return; }
+    case 'trip-load': { const ok = new Set(tripCands(r).map(s => s._id)), ids = ticked().filter(id => ok.has(id)); if (!ids.length) return; await save('trips', r._id, { awbIds: uniq((r.awbIds || []).concat(ids)) }, 'Loaded ' + ids.length + ' on trip ' + r.no); toast(ids.length + ' loaded on ' + r.no); return; }
     case 'trip-bill': { const id = await save('vendorbills', null, { no: nextCode('VB', 'vendorbills', 'no'), vendor: r.vendor, billNo: 'Trip ' + r.no, billDate: today(), account: 'Vendor freight', amount: num(r.cost), gstPct: '0', tds: '1', due: addDays(today(), num((partyOf(r.vendor) || {}).creditDays) || 30), trip: r.no, stage: 'Received', events: [{ s: 'Received', t: Date.now(), n: 'From trip ' + r.no }] }, 'Vendor bill for trip ' + r.no); if (id) { await save('trips', r._id, { billNo: 'Trip ' + r.no }); toast('Vendor bill created'); } return; }
     case 'drs-load': { const ids = ticked(); if (!ids.length) return; await save('drs', r._id, { awbIds: uniq((r.awbIds || []).concat(ids)) }, 'Added ' + ids.length + ' to ' + r.no); toast(ids.length + ' added to ' + r.no); return; }
     case 'drs-close': t.disabled = true; await closeDRS(r); return;
