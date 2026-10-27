@@ -113,14 +113,14 @@
     SETUP = null;
   }
 
-  const ME = { user: null, member: null, profile: null, owner: null };
+  const ME = { user: null, member: null, profile: null, owner: null }; let DENY = '';
   const signedIn = new Promise(resolve => {
     let started = false;
     auth.onAuthStateChanged(async user => {
       if (!user) {
-        if (started) { location.reload(); return; }
+        if (started && !DENY) { location.reload(); return; }
         let setupDone = true; try { setupDone = (await fs.doc('public/setup').get()).exists; } catch (e) {}
-        setupDone ? loginScreen() : setupScreen();
+        setupDone ? loginScreen(DENY || undefined) : setupScreen(); DENY = '';
         return;
       }
       if (started || GPEND) return;
@@ -133,6 +133,13 @@
         ME.user = user;
         const [m, p, o] = await Promise.all([fs.doc('members/' + user.uid).get(), fs.doc('users/' + user.uid).get(), fs.doc('settings/owner').get().catch(() => null)]);
         ME.member = m.exists ? m.data() : null; ME.profile = p.exists ? p.data() : {}; ME.owner = o && o.exists ? o.data().uid : null;
+        /* App access (portal › Settings › App access): only the roles ticked for this app may open it; Super admin always can */
+        if (ME.owner !== user.uid) {
+          const app = /\/hr\//.test(location.pathname) ? ['hr', 'SN People'] : /\/mail\//.test(location.pathname) ? ['mail', 'SN Mail'] : ['portal', 'the portal'];
+          let allow = true; try { const a = await fs.doc('settings/apps').get(), L = a.exists ? a.data()[app[0]] : null;
+            if (Array.isArray(L) && L.length) { const r = ME.member ? [ME.member.role].concat(ME.member.roles || []) : []; allow = r.includes('superadmin') || r.some(x => L.includes(x)); } } catch (e) {}
+          if (!allow) { DENY = 'Your login does not have access to ' + app[1] + '. Ask your admin.'; await auth.signOut(); return; }
+        }
         started = true; gate.hidden = true; resolve(user);
       } catch (e) { loginScreen('Signed in, but the data could not load: ' + (e.code || e.message)); }
     }

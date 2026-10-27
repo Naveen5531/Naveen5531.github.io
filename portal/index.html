@@ -447,7 +447,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261027c"></script><script src="offer.js?v=3"></script><script>
+<script src="fb.js?v=20261027d"></script><script src="offer.js?v=3"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -2569,6 +2569,26 @@ S.avatars = {};
 const nameOf = id => (S.me && id === S.me.id ? (S.me.name || 'You') + ' (you)' : S.names[id] || '…');
 const avatarOf = id => S.avatars[id] || (S.me && id === S.me.id ? S.me.avatarUrl : '');
 
+/* ================= App access: which roles may open which app =================
+   Saved in settings/apps as { portal: [roles], hr: [...], mail: [...], pickup: [...], punch: [...] }. An app with no
+   list is open to every role. Super admin always has access to every app. Every app checks this at sign-in. */
+const APPS = [['portal', 'Portal (control tower)'], ['hr', 'SN People (HR)'], ['mail', 'SN Mail'], ['pickup', 'SN Pickup'], ['punch', 'Punch']];
+function appAccessPanel() {
+  const cur = S.data.settings.find(d => d._id === 'apps') || {}, R = allRoles().filter(r => r._id !== 'none' && r._id !== 'superadmin'), depts = uniq(R.map(r => r.dept || 'Other'));
+  const on = (a, id) => Array.isArray(cur[a]) ? cur[a].includes(id) : true;
+  return '<section class="panel"><h2>App access</h2><p class="help">Tick which roles can open each app. A login without a ticked role is turned away at sign-in with "no access to this app". Super admin can always open every app. Untouched apps stay open to every role.</p>' +
+    '<div class="tablewrap" style="max-height:60vh;overflow:auto"><table><thead><tr><th style="position:sticky;top:0;background:var(--surface-solid,#fff)">Role</th>' + APPS.map(([k, l]) => '<th style="position:sticky;top:0;background:var(--surface-solid,#fff);text-align:center">' + esc(l) + '<div class="mini">' + (Array.isArray(cur[k]) ? cur[k].length + ' roles' : 'everyone') + '</div><button type="button" class="btn small" data-appall="' + k + '" style="margin-top:4px">All / none</button></th>').join('') + '</tr></thead><tbody>' +
+    depts.map(d => '<tr><td colspan="' + (APPS.length + 1) + '" style="font-weight:800;padding-top:12px">' + esc(d) + '</td></tr>' + R.filter(r => (r.dept || 'Other') === d).map(r => '<tr><td>' + esc(r.name) + '</td>' + APPS.map(([k]) => '<td style="text-align:center"><input type="checkbox" data-app="' + k + '" value="' + esc(r._id) + '"' + (on(k, r._id) ? ' checked' : '') + ' aria-label="' + esc(r.name) + ' – ' + k + '"></td>').join('') + '</tr>').join('')).join('') +
+    '</tbody></table></div><div class="actions"><button type="button" class="btn primary small" data-act="apps-save">Save app access</button><span class="help" id="apps-msg"></span></div></section>';
+}
+document.addEventListener('click', async ev => {
+  const all = ev.target.closest('[data-appall]'); if (all) { const k = all.dataset.appall, bx = [...document.querySelectorAll('input[data-app="' + k + '"]')], to = !bx.every(b => b.checked); bx.forEach(b => { b.checked = to; }); return; }
+  const sv = ev.target.closest('[data-act="apps-save"]'); if (!sv) return;
+  const body = {}; APPS.forEach(([k]) => { body[k] = [...document.querySelectorAll('input[data-app="' + k + '"]:checked')].map(b => b.value).concat(['superadmin']); });
+  if (!body.portal.some(r => ['admin_head'].includes(r)) && !await ask('Only Super admin will be able to open the portal. Continue?', { ok: 'Save' })) return;
+  sv.disabled = true; const ok = await setDoc('settings', 'apps', body); sv.disabled = false;
+  const m = document.getElementById('apps-msg'); if (m) m.textContent = ok ? 'Saved – applies at the next sign-in in each app.' : 'Could not save.'; if (ok) { audit('settings', 'App access changed'); toast('App access saved'); }
+});
 /** Account settings: password, Google sign-in, Gmail approvals (admins), old data (owner), app downloads. */
 function myOfferPanel() {
   if (!S.me || !S.db) return '';
@@ -2596,6 +2616,7 @@ function accountView() {
   if (window.MOVANA_FB && window.MOVANA_FB.googleEmail) { const ge = window.MOVANA_FB.googleEmail();
     h += '<section class="panel"><h2>Sign in with Google</h2>' + (ge ? '<p class="help">Linked to <b>' + esc(ge) + '</b>. On the login screen tap <b>Sign in with Google</b> and choose this account; you get the same role as now.</p><p><button class="btn small" type="button" data-gl="unlink">Unlink Google</button></p>' : '<p class="help">Link your Gmail to this login, then sign in with one tap using <b>Sign in with Google</b>. Your role stays the same.</p><p><button class="btn small primary" type="button" data-gl="link">Link my Google account</button></p>') + '<p class="mini" id="gl-msg"></p></section>'; }
   if (window.MOVANA_FB && S.isOwner) h += '<section class="panel"><h2>Bring across old data</h2><p class="help">Choose the <b>movana-data.json</b> file to copy shipments, customers, vehicle types, invoices and settings from the old portal. Safe to run again: the same records are overwritten, not duplicated.</p><input type="file" id="imp-file" accept=".json,application/json"><p class="foot" id="imp-msg" role="status"></p></section>';
+  if (S.isOwner || hasRoleAny(['superadmin', 'admin_head'])) h += appAccessPanel();
   h += '<section class="panel"><h2>Mobile apps</h2><p class="help">' + (whoAmI().role === 'employee' ? 'Your login is for the <b>Punch</b> attendance app: check in and out, apply leave and comp off, and see your payslip. Sign in to Punch with this same username and password.' : 'Use the portal on your phone, and the Punch app for attendance. Both use this same username and password.') + '</p><p><a class="btn small primary" href="../Punch.apk" download>Download Punch (attendance)</a> <a class="btn small" href="../SNPickup.apk" download>Download SN Pickup (HHT / pickups)</a> <a class="btn small" href="../pickup/" target="_blank" rel="noopener">Open SN Pickup on the web</a></p></section>';
   return h || '<div class="empty">Nothing to set here.</div>';
 }

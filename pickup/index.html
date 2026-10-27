@@ -167,13 +167,16 @@ addEventListener('online', net); addEventListener('offline', net);
 
 const onUser = async u => {
   S.unsub.forEach(f => f()); S.unsub = [];
-  if (!u) { showLogin(); return; }
+  if (!u) { showLogin(S.deny || ''); S.deny = ''; return; }
   try {
     const [m, o, p] = await Promise.all([fs.doc('members/' + u.uid).get(), fs.doc('settings/owner').get().catch(() => null), fs.doc('users/' + u.uid).get().catch(() => null)]);
     const md = m.exists ? m.data() : null;
     S.owner = !!(o && o.exists && o.data().uid === u.uid);
     /* Employee (Punch) logins may use SN Pickup as pickup executives: they see only pickups assigned to them */
     if (!S.owner && (!md || md.status === 'Suspended' || md.role === 'none')) { await auth.signOut(); showLogin('This login has no access to SN Pickup. Ask your manager.'); return; }
+    if (!S.owner) { let allow = true; try { const ap = await fs.doc('settings/apps').get(), L = ap.exists ? ap.data().pickup : null;   // portal › Settings › App access
+      if (Array.isArray(L) && L.length) { const r = [md.role].concat(md.roles || []); allow = r.includes('superadmin') || r.some(x => L.includes(x)); } } catch (e) {}
+      if (!allow) { const msg = 'Your login does not have access to SN Pickup. Ask your admin.'; S.deny = msg; await auth.signOut(); showLogin(msg); return; } }
     S.me = u.uid; S.roles = md ? [md.role].concat(md.roles || []) : []; S.name = (p && p.exists && p.data().name) || String(u.email || '').split('@')[0];
   } catch (x) { showLogin('Could not check your access (' + (x.code || 'error') + ').'); return; }
   $('#login').hidden = true; $('#app').hidden = false; $('#who').textContent = S.name; net();
