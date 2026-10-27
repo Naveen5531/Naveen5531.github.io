@@ -114,6 +114,11 @@ const full = t => new Date(num(t)).toLocaleString('en-IN', { weekday: 'short', d
 await window.claude.use('user');
 const fs = firebase.firestore(), U = firebase.auth().currentUser, ME = U.uid;
 const S = { msgs: {}, users: [], emps: [], folder: 'inbox', th: null, q: '', cmp: null };
+/* Only the super admin can mail outside addresses (sent through their own Gmail until the company has a mail domain). Everyone else: internal SN Mail only. */
+{ const [m, o] = await Promise.all([fs.doc('members/' + ME).get().catch(() => null), fs.doc('settings/owner').get().catch(() => null)]); const md = m && m.exists ? m.data() : {};
+  S.superAdmin = !!(o && o.exists && o.data().uid === ME) || [md.role].concat(md.roles || []).includes('superadmin'); S.extFrom = ((U.providerData || []).find(p => p && p.providerId === 'google.com') || {}).email || ''; }
+const twinOnly = (a, b) => a.length + b.length > 0;
+const isExt = k => k.startsWith('ext:'), EMAIL_RE = /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i;
 { const u = await fs.doc('users/' + ME).get().catch(() => null); S.myName = (u && u.exists && u.data().name) || String(U.email || '').split('@')[0]; }
 $('#whoAv').textContent = ini(S.myName); $('#whoName').textContent = S.myName;
 
@@ -136,7 +141,7 @@ const people = () => { const by = {}; S.users.filter(u => u.name).forEach(u => {
   return Object.values(by).map(b => Object.assign(b, { sub: [b.mail || 'no SN Mail ID yet', b.eid, b.desg].filter(Boolean).join(' · ') })).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1); };
 /** Recipients of a message, one per mailbox: "me" for my own address, otherwise Name <address>. */
 const whoList = (m, f, full_) => { const keys = m[f + 'Mail'] && m[f + 'Mail'].length ? m[f + 'Mail'] : [...new Set((m[f] || []).map(keyOf))], me = keyOf(ME);
-  return keys.map(k => lc(k) === lc(me) ? 'me' : boxName(k) + (full_ && !k.startsWith('uid:') ? ' <' + k + '>' : '')).join(', '); };
+  return keys.map(k => lc(k) === lc(me) ? 'me' : !k.startsWith('uid:') && !S.users.some(u => lc(u.mail) === lc(k)) ? k + ' (outside)' : boxName(k) + (full_ && !k.startsWith('uid:') ? ' <' + k + '>' : '')).join(', '); };
 const boxName = key => { const p = people().find(x => x.key === key); return p ? p.name : nameOf(key.replace(/^uid:/, '')); };
 const st = m => (m.st || {})[ME] || {};
 const all = () => Object.values(S.msgs);
@@ -159,7 +164,7 @@ async function setSt(ids, patch) { for (const id of ids) { const m = S.msgs[id];
 function navHtml() {
   const u = all().filter(unread).length;
   return '<button class="compose-b" type="button" data-a="compose">' + svg('pen') + 'Compose</button>' + FOLD.map(([id, l, ic]) => '<a href="#/' + id + '"' + (S.folder === id && !S.th ? ' aria-current="page"' : '') + '>' + svg(ic) + '<span>' + l + '</span>' + (id === 'inbox' && u ? '<span class="n">' + u + '</span>' : '') + '</a>').join('') +
-    (mailOf(ME) ? '<div class="mute small" style="padding:0 12px 10px;word-break:break-all">Your address<br><b style="color:var(--ink)">' + esc(mailOf(ME)) + '</b></div>' : '') + '<div class="g">Apps</div><a class="ext" href="../hr/">' + svg('people') + '<span>SN People (HR)</span></a><a class="ext" href="../portal/">' + svg('tower') + '<span>Control tower (portal)</span></a>';
+    (mailOf(ME) ? '<div class="mute small" style="padding:0 12px 10px;word-break:break-all">Your address<br><b style="color:var(--ink)">' + esc(mailOf(ME)) + '</b></div>' : '') + (S.superAdmin ? '<div class="mute small" style="padding:0 12px 10px">Super admin: you can also type an outside email address – it opens in your Gmail' + (S.extFrom ? ' (' + esc(S.extFrom) + ')' : '') + '.</div><a class="ext" href="https://mail.google.com/' + (S.extFrom ? '?authuser=' + encodeURIComponent(S.extFrom) : '') + '" target="_blank" rel="noopener">' + svg('all') + '<span>Outside mail (Gmail)</span></a>' : '') + '<div class="g">Apps</div><a class="ext" href="../hr/">' + svg('people') + '<span>SN People (HR)</span></a><a class="ext" href="../portal/">' + svg('tower') + '<span>Control tower (portal)</span></a>';
 }
 function listHtml() {
   const f = FOLD.find(x => x[0] === S.folder) || FOLD[0], T = threads(f[3]);
@@ -189,25 +194,30 @@ addEventListener('hashchange', () => { document.body.classList.remove('navopen')
 const draftKey = 'mail.draft.' + ME;
 function openCmp(o) { S.cmp = Object.assign({ to: [], cc: [], subject: '', body: '', thread: null, showCc: false }, o || {}); if (!o) { try { const d = JSON.parse(localStorage.getItem(draftKey) || 'null'); if (d) Object.assign(S.cmp, d); } catch (e) {} } renderCmp(); setTimeout(() => { const f = S.cmp && (S.cmp.to.length ? $('#c-body') : $('#c-to-in')); if (f) f.focus(); }, 30); }
 function keepDraft() { if (!S.cmp || S.cmp.thread) return; try { localStorage.setItem(draftKey, JSON.stringify({ to: S.cmp.to, cc: S.cmp.cc, subject: S.cmp.subject, body: S.cmp.body })); } catch (e) {} }
-function chips(k) { return S.cmp[k].map(u => '<span class="chip" title="' + esc(u) + '">' + esc(boxName(u)) + (u.startsWith('uid:') ? '' : ' <span class="mute small">' + esc(u) + '</span>') + '<button type="button" data-rm="' + k + '|' + esc(u) + '" aria-label="Remove">×</button></span>').join(''); }
+function chips(k) { return S.cmp[k].map(u => '<span class="chip" title="' + esc(u) + '"' + (isExt(u) ? ' style="background:#fff4e5"' : '') + '>' + (isExt(u) ? esc(u.slice(4)) + ' <span class="mute small">outside</span>' : esc(boxName(u)) + (u.startsWith('uid:') ? '' : ' <span class="mute small">' + esc(u) + '</span>')) + '<button type="button" data-rm="' + k + '|' + esc(u) + '" aria-label="Remove">×</button></span>').join(''); }
 function renderCmp() { const host = $('#cmpHost'); if (!S.cmp) { host.innerHTML = ''; return; } const c = S.cmp;
   if (host.firstChild) { // keep typing in place: refresh only chips
     $('#c-to-chips').innerHTML = chips('to'); if ($('#c-cc-chips')) $('#c-cc-chips').innerHTML = chips('cc'); return; }
   host.innerHTML = '<section class="cmp" role="dialog" aria-label="New message"><div class="ch"><span>' + (c.thread ? 'Reply' : 'New message') + '</span><button type="button" data-a="c-close" aria-label="Close">×</button></div>' +
-    '<div class="cf"><span>To</span><span id="c-to-chips">' + chips('to') + '</span><input id="c-to-in" placeholder="Name, employee ID or SN Mail ID" autocomplete="off"><button class="btn s" type="button" data-a="c-cc">Cc</button><div class="sug" id="sug-to" hidden></div></div>' +
-    '<div class="cf" id="c-cc-row"' + (c.showCc || c.cc.length ? '' : ' hidden') + '><span>Cc</span><span id="c-cc-chips">' + chips('cc') + '</span><input id="c-cc-in" placeholder="Name, employee ID or SN Mail ID" autocomplete="off"><div class="sug" id="sug-cc" hidden></div></div>' +
+    '<div class="cf"><span>To</span><span id="c-to-chips">' + chips('to') + '</span><input id="c-to-in" placeholder="' + (S.superAdmin ? 'Name, SN Mail ID or outside email' : 'Name, employee ID or SN Mail ID') + '" autocomplete="off"><button class="btn s" type="button" data-a="c-cc">Cc</button><div class="sug" id="sug-to" hidden></div></div>' +
+    '<div class="cf" id="c-cc-row"' + (c.showCc || c.cc.length ? '' : ' hidden') + '><span>Cc</span><span id="c-cc-chips">' + chips('cc') + '</span><input id="c-cc-in" placeholder="' + (S.superAdmin ? 'Name, SN Mail ID or outside email' : 'Name, employee ID or SN Mail ID') + '" autocomplete="off"><div class="sug" id="sug-cc" hidden></div></div>' +
     '<div class="cf"><span>Subject</span><input id="c-sub" value="' + esc(c.subject) + '"></div><textarea id="c-body" aria-label="Message">' + esc(c.body) + '</textarea>' +
-    '<div class="cb"><button class="btn p" type="button" data-a="c-send">' + svg('sent') + ' Send</button><span class="mute small" style="margin-left:auto">Only people you send to can read it.</span><button class="btn d s" type="button" data-a="c-discard">Discard</button></div></section>'; }
+    '<div class="cb"><button class="btn p" type="button" data-a="c-send">' + svg('sent') + ' Send</button><span class="mute small" style="margin-left:auto">' + (S.superAdmin ? 'Outside addresses open in your Gmail to send.' : 'Internal SN Mail – only people you send to can read it.') + '</span><button class="btn d s" type="button" data-a="c-discard">Discard</button></div></section>'; }
 function suggest(k) { const inp = $('#c-' + k + '-in'), box = $('#sug-' + k), q = lc(inp.value.trim()); if (!q) { box.hidden = true; return; }
   const L = people().filter(p => p.key !== keyOf(ME) && !S.cmp.to.includes(p.key) && !S.cmp.cc.includes(p.key) && lc(p.name + ' ' + p.sub + ' ' + p.mail).includes(q)).slice(0, 8);
   box.innerHTML = L.length ? L.map((p, i) => '<button type="button" class="' + (i ? '' : 'on') + '" data-pick="' + k + '|' + esc(p.key) + '"><span class="av">' + esc(ini(p.name)) + '</span><span><b>' + esc(p.name) + '</b><br><span class="mute small">' + esc(p.sub) + '</span></span></button>').join('') : '<div class="empty" style="padding:10px">No one matches.</div>'; box.hidden = false; }
 async function send() { const c = S.cmp; c.subject = $('#c-sub').value.trim(); c.body = $('#c-body').value;
   if (!c.to.length) { toast('Add at least one person in To.'); return; } if (!c.subject && !c.body.trim()) { toast('Write a subject or a message.'); return; }
-  const my = MY(), U = k => uidsOf(k).filter(u => !my.has(u)), to = [...new Set(c.to.flatMap(U))], cc = [...new Set(c.cc.flatMap(U))].filter(u => !to.includes(u));
+  const extTo = c.to.filter(isExt).map(k => k.slice(4)), extCc = c.cc.filter(isExt).map(k => k.slice(4)), inTo = c.to.filter(k => !isExt(k)), inCc = c.cc.filter(k => !isExt(k));
+  const my = MY(), U = k => uidsOf(k).filter(u => !my.has(u)), to = [...new Set(inTo.flatMap(U))], cc = [...new Set(inCc.flatMap(U))].filter(u => !to.includes(u));
   // my other login (same SN Mail ID) also keeps a copy, so sent mail shows on either login
-  const twin = [...my].filter(u => u !== ME), rcpt = [...new Set(to.concat(cc, twin))], toNames = {}; rcpt.forEach(u => toNames[u] = nameOf(u));
-  if (!to.length) { toast('Those addresses have no login yet.'); return; } const now = Date.now(), ref = fs.collection('mail').doc();
-  const m = { from: ME, fromName: S.myName, fromMail: mailOf(ME), to, cc, toMail: c.to.filter(k => !k.startsWith('uid:')), ccMail: c.cc.filter(k => !k.startsWith('uid:')), rcpt, toNames, subject: c.subject || '(no subject)', body: c.body, at: now, thread: c.thread || ref.id, st: { [ME]: { r: 1 } } };
+  const twin = [...my].filter(u => u !== ME), rcpt = [...new Set(to.concat(cc, twin, (extTo.length || extCc.length) && !to.length ? [ME] : []))], toNames = {}; rcpt.forEach(u => toNames[u] = nameOf(u));
+  if (extTo.length || extCc.length) { if (!S.superAdmin) { toast('Only the super admin can mail outside addresses.'); return; }
+    // open a ready-to-send message in the super admin's Gmail
+    const g = 'https://mail.google.com/mail/?view=cm&fs=1' + (S.extFrom ? '&authuser=' + encodeURIComponent(S.extFrom) : '') + '&to=' + encodeURIComponent(extTo.join(',')) + (extCc.length ? '&cc=' + encodeURIComponent(extCc.join(',')) : '') + '&su=' + encodeURIComponent(c.subject || '') + '&body=' + encodeURIComponent(c.body + '\n\n—\n' + S.myName + '\nSN Logistics – Speed & Trust');
+    window.open(g, '_blank', 'noopener'); }
+  if (!to.length && !twinOnly(extTo, extCc)) { toast('Those addresses have no login yet.'); return; } const now = Date.now(), ref = fs.collection('mail').doc();
+  const m = { from: ME, fromName: S.myName, fromMail: mailOf(ME), to, cc, extTo, extCc, toMail: inTo.filter(k => !k.startsWith('uid:')).concat(extTo), ccMail: inCc.filter(k => !k.startsWith('uid:')).concat(extCc), rcpt, toNames, subject: c.subject || '(no subject)', body: c.body, at: now, thread: c.thread || ref.id, st: { [ME]: { r: 1 } } };
   $('[data-a="c-send"]').disabled = true; try { await ref.set(m); } catch (e) { toast('Not sent (' + (e.code || 'error') + ').'); $('[data-a="c-send"]').disabled = false; return; }
   if (!c.thread) try { localStorage.removeItem(draftKey); } catch (e) {} S.cmp = null; renderCmp(); toast('Sent'); }
 function replyTo(all_, fwd) { const T = threads(() => true).find(t => t.id === S.th); if (!T) return; const last = T.L[T.L.length - 1], re = s => /^(re|fwd?):/i.test(s) ? s : (fwd ? 'Fwd: ' : 'Re: ') + s;
@@ -245,6 +255,9 @@ document.addEventListener('keydown', ev => { const t = ev.target;
   if (t.id === 'c-to-in' || t.id === 'c-cc-in') { const k = t.id === 'c-to-in' ? 'to' : 'cc', box = $('#sug-' + k), bs = [...box.querySelectorAll('[data-pick]')], i = bs.findIndex(b => b.classList.contains('on'));
     if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && bs.length) { ev.preventDefault(); bs.forEach(b => b.classList.remove('on')); bs[(i + (ev.key === 'ArrowDown' ? 1 : -1) + bs.length) % bs.length].classList.add('on'); return; }
     if ((ev.key === 'Enter' || ev.key === ',') && !box.hidden && bs.length) { ev.preventDefault(); (bs[i] || bs[0]).click(); return; }
+    if ((ev.key === 'Enter' || ev.key === ',') && t.value.includes('@') && !people().some(x => lc(x.mail) === lc(t.value.trim()))) { ev.preventDefault(); const v = t.value.trim();
+      if (!S.superAdmin) { toast('SN Mail is internal – only SN Mail IDs. Outside email is for the super admin.'); return; } if (!EMAIL_RE.test(v)) { toast('That is not a valid email address.'); return; }
+      const kx = 'ext:' + lc(v); if (!S.cmp[k].includes(kx)) S.cmp[k].push(kx); t.value = ''; box.hidden = true; renderCmp(); keepDraft(); return; }
     if ((ev.key === 'Enter' || ev.key === ',') && t.value.includes('@')) { ev.preventDefault(); const p = people().find(x => lc(x.mail) === lc(t.value.trim())); if (p && p.key !== keyOf(ME)) { if (!S.cmp[k].includes(p.key)) S.cmp[k].push(p.key); t.value = ''; box.hidden = true; renderCmp(); keepDraft(); } else toast('No one has the address ' + t.value.trim() + '.'); return; }
     if (ev.key === 'Backspace' && !t.value && S.cmp[k].length) { S.cmp[k].pop(); renderCmp(); return; } }
   if (ev.key === 'Escape') { $('#menu').hidden = true; document.body.classList.remove('navopen'); }
