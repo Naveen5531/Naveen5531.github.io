@@ -180,7 +180,8 @@ const onUser = async u => {
     S.me = u.uid; S.roles = md ? [md.role].concat(md.roles || []) : []; S.name = (p && p.exists && p.data().name) || String(u.email || '').split('@')[0];
   } catch (x) { showLogin('Could not check your access (' + (x.code || 'error') + ').'); return; }
   $('#login').hidden = true; $('#app').hidden = false; $('#who').textContent = S.name; net();
-  S.tab = location.hash === '#vendors' && SNP.canVendors && SNP.canVendors() ? 'vendors' : location.hash === '#inbound' && canInbound() ? 'inbound' : 'mine'; listen(); render();
+  { const vm = /^#vendor=(.+)/.exec(location.hash); if (vm && SNP.canVendors && SNP.canVendors()) { SNP.openVendor(decodeURIComponent(vm[1])); location.hash = '#vendors'; } }
+  S.tab = /^#vendors?/.test(location.hash) && SNP.canVendors && SNP.canVendors() ? 'vendors' : location.hash === '#inbound' && canInbound() ? 'inbound' : 'mine'; listen(); render();
 };
 auth.onAuthStateChanged(u => { if (!S.gpend) onUser(u); });
 
@@ -608,5 +609,5 @@ async function receive(btn, short) {
 }
 })();
 </script>
-<script src="vendors.js?v=7"></script>
+<script src="vendors.js?v=8"></script>
 </body></html>

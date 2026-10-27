@@ -105,6 +105,7 @@ P.syncVendorList = () => { if (!P.canVendors()) return;
 P.vendorsView = () => { if (VS.open === 'new') return '<button class="btn sm" type="button" data-v="back">← Vendors</button><div style="margin-top:12px">' + formHtml(null) + '</div>';
   const v = VS.open && S.vendors.find(x => x._id === VS.open); return v ? detailHtml(v) : listHtml(); };
 P.vendorsReset = () => { VS.open = null; };
+P.openVendor = id => { VS.open = id; };
 
 /* ---------- live checks while typing ---------- */
 let chkT;
