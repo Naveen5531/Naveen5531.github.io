@@ -545,15 +545,22 @@ function code128(text, hPx) {
   const cur = A.versionCode ? A.versionCode() : (A.openExternal ? 3 : 2), curN = A.version ? A.version() : '';
   let latest = null, busy = false;
   const bar = () => { let b = $('#ub'); if (!latest || latest.versionCode <= cur) { if (b) b.remove(); return; }
-    if (!b) { b = document.createElement('div'); b.id = 'ub'; b.style.cssText = 'position:fixed;left:10px;right:10px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:70;background:#101828;color:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 12px 30px -10px rgba(0,0,0,.5);font-size:14px'; document.body.appendChild(b); }
-    b.innerHTML = '<div style="display:flex;gap:10px;align-items:center"><img src="../brand/sn-icon-64.png" alt="" style="width:36px;height:36px;border-radius:9px;background:#fff;padding:2px"><div style="flex:1;min-width:0"><b>Update available – SN Pickup ' + esc(latest.versionName) + '</b><div id="ubt" style="opacity:.8;font-size:12.5px">' + esc((latest.list || []).join(' · ') || (latest.size ? (latest.size / 1048576).toFixed(1) + ' MB' : '')) + '</div></div><button type="button" id="ubg" class="btn sm" style="background:#25cf9f;color:#04120d">Update</button></div><div id="ubp" hidden style="height:5px;border-radius:5px;background:rgba(255,255,255,.2);margin-top:10px;overflow:hidden"><i id="ubi" style="display:block;height:100%;width:0;background:#25cf9f;transition:width .3s"></i></div>';
+    if (b) return;
+    b = document.createElement('div'); b.id = 'ub'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-modal', 'true');
+    b.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#101828;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-size:14px;text-align:center'; document.body.appendChild(b);
+    const u = latest.url || 'https://naveen5531.github.io/SNPickup.apk';
+    b.innerHTML = '<div style="width:100%;max-width:380px"><img src="../brand/sn-icon-64.png" alt="" style="width:72px;height:72px;border-radius:18px;background:#fff;padding:4px"><h2 style="margin:16px 0 4px;font-size:21px">Update SN Pickup</h2><div style="opacity:.75">Version ' + esc(curN || '') + ' → ' + esc(latest.versionName) + (latest.size ? ' · ' + (latest.size / 1048576).toFixed(1) + ' MB' : '') + '</div>' +
+      ((latest.list || []).length ? '<ul style="text-align:left;margin:16px 0 0;padding-left:20px;line-height:1.5;opacity:.9">' + latest.list.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') +
+      '<div id="ubp" hidden style="height:6px;border-radius:6px;background:rgba(255,255,255,.2);margin-top:20px;overflow:hidden"><i id="ubi" style="display:block;height:100%;width:0;background:#25cf9f;transition:width .3s"></i></div><div id="ubt" style="opacity:.8;font-size:13px;margin-top:14px;min-height:18px">Please update to keep using SN Pickup. Your pickups stay as they are.</div>' +
+      '<button type="button" id="ubg" class="btn" style="width:100%;margin-top:16px;background:#25cf9f;color:#04120d;font-weight:800;padding:14px;border-radius:999px;border:0;font-size:16px">Update</button><a id="ubd" hidden href="#" style="display:block;margin-top:12px;color:#9fe8cf;font-weight:700;font-size:13px">Or download the new app in the browser</a></div>';
+    $('#ubd').onclick = ev => { ev.preventDefault(); if (A.openExternal) A.openExternal(u); else location.href = 'https://www.google.com/url?q=' + encodeURIComponent(u); };
     $('#ubg').onclick = go; };
   function go() { const u = latest.url || 'https://naveen5531.github.io/SNPickup.apk';
     if (A.updateApp) { busy = true; upd('dl', 'Starting the download…'); A.updateApp(u); } else if (A.openExternal) A.openExternal(u); else location.href = 'https://www.google.com/url?q=' + encodeURIComponent(u); }
   function upd(st, tx) { if (st === 'fail' || st === 'ok' || st === 'perm') busy = false; const t = $('#ubt'), g = $('#ubg'), pg = $('#ubp'), m = /(\d+)%/.exec(tx);
     if (t) t.textContent = tx; if (pg) pg.hidden = st !== 'dl'; if (m && $('#ubi')) $('#ubi').style.width = m[1] + '%';
     if (g) { g.disabled = busy; g.textContent = st === 'fail' ? 'Try again' : st === 'perm' ? 'Continue' : busy ? '…' : 'Update'; }
-    if (st === 'fail') toast(tx, true); }
+    if (st === 'fail') { toast(tx, true); const d = $('#ubd'); if (d) d.hidden = false; } }
   window.__updState = upd;
   async function check() { if (busy) return; try { const r = await fetch('../snpickup-version.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) latest = await r.json(); } catch (e) {} bar(); }
   setTimeout(check, 2500); document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
