@@ -601,10 +601,31 @@ async function boot() {
     q.onSnapshot(snap => {
       S.data[k] = snap.docs.map(d => Object.assign({ _id: d.id }, d.data()));
       S.loaded[k] = true; scheduleRender();
+      if (k === 'shipments') { try { syncTrack(); } catch (e) {} }
     }, err => { S.loaded[k] = true; if (err && err.code === 'revoked') S.dbState = 'none'; scheduleRender(); });
   });
 }
 setInterval(() => { try { const ae = document.activeElement; if (S.mod === 'punch' && curTab().id === 'live' && !(ae && /INPUT|SELECT|TEXTAREA/.test(ae.tagName)) && !document.hidden) render(); } catch (e) {} }, 30000);
+/* Public tracking: a read-only copy of each shipment's status in "track/<AWB>" (and "track/R-<client ref>") so customers can
+   track on the website without a login. Only route cities, pieces, stage, promised date and stage times are copied –
+   never the customer, consignee, phone, address, value or notes. Written by staff who can edit, only when something changed. */
+let trkBusy = false;
+async function syncTrack() {
+  if (trkBusy || !S.db || S.readonly) return; trkBusy = true;
+  try {
+    let sig = {}; try { sig = JSON.parse(localStorage.getItem('trk.sig') || '{}'); } catch (e) {}
+    const key = v => String(v || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    for (const r of (S.data.shipments || [])) {
+      const awb = key(r.awb); if (!awb) continue;
+      const body = { awb: String(r.awb), stage: stageOf('shipments', r), from: r.originCity || '', to: r.destCity || '', pieces: num(r.pieces) || 0, promised: r.promised || '',
+        deliveredAt: r.deliveredAt || 0, events: (r.events || []).slice(-30).map(e => ({ s: String(e.s || ''), t: num(e.t) })), updatedAt: num(r.updatedAt) || Date.now() };
+      const ids = [awb].concat(key(r.ref).length >= 4 ? ['R-' + key(r.ref)] : []), h = JSON.stringify(body);
+      for (const id of ids) { if (sig[id] === h) continue;
+        try { await S.db.collection('track').doc(id).set(body); sig[id] = h; } catch (e) { trkBusy = false; return; } }
+    }
+    try { localStorage.setItem('trk.sig', JSON.stringify(sig)); } catch (e) {}
+  } finally { trkBusy = false; }
+}
 let rq = false;
 function scheduleRender() { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); refreshDrawer(); try { syncPunchStaff(); } catch (e) {} }); }
 

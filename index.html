@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="SN Logistics – Punch attendance app with live team view for HR, plus full truckload, part load and last-mile freight across India."><meta name="theme-color" content="#f2f3f7"><link rel="icon" href="brand/sn-icon-64.png"><link rel="apple-touch-icon" href="brand/sn-apple-180.png"><title>SN Logistics · Punch</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="SN Logistics – road transport and logistics across India: pickups, full and part truckloads, last-mile delivery and returns. Get a quote or track your consignment."><meta name="theme-color" content="#f2f3f7"><link rel="icon" href="brand/sn-icon-64.png"><link rel="apple-touch-icon" href="brand/sn-apple-180.png"><title>SN Logistics · Transport &amp; Logistics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
@@ -216,6 +216,16 @@ section.block { border-bottom: 0; }
 .feat div { border-left-color: var(--gold); }
 .form input, .form select, .form textarea { border-radius: 14px; }
 footer { color: var(--ink-2); }
+.trk { max-width: 720px; }
+.trk-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.trk-row input { flex: 1 1 220px; min-width: 0; padding: 13px 16px; border-radius: 14px; border: 1px solid var(--line, #e5e7eb); font: inherit; font-size: 16px; text-transform: uppercase; background: var(--soft, #f3f4f8); color: inherit; }
+.trk-res { margin-top: 18px; }
+.trk-hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.trk-hd b { font-size: 1.15rem; } .trk-hd small { display: block; color: var(--ink-2, #475467); margin-top: 2px; }
+.trk-st { padding: 5px 12px; border-radius: 999px; font-weight: 800; font-size: .85rem; background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); white-space: nowrap; }
+.trk-bar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 16px 0 6px; } .trk-bar i { height: 6px; border-radius: 6px; background: var(--line, #e5e7eb); } .trk-bar i.on { background: var(--c); }
+.trk-tl { list-style: none; margin: 14px 0 0 !important; padding: 0 !important; } .trk-tl li { display: flex; gap: 12px; padding: 8px 0; border-top: 1px dashed var(--line, #e5e7eb); } .trk-tl li span { color: var(--ink-2, #475467); font-size: .9rem; min-width: 150px; }
+.trk-msg { margin-top: 14px; color: var(--ink-2, #475467); } .trk-msg.bad { color: #d92d20; font-weight: 600; }
 .ind-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; background: var(--card, #fff); border: 1px solid var(--line, #e5e7eb); margin-bottom: 16px; max-width: 520px; }
 .ind-tabs button { border: 0; background: none; padding: 10px 8px; border-radius: 12px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; color: inherit; line-height: 1.25; }
 .ind-tabs button[aria-selected="true"] { background: var(--in, #0c9b76); color: #fff; }
@@ -225,70 +235,15 @@ footer { color: var(--ink-2); }
 
 </head><body><header class="top">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="SN Logistics home"><img src="brand/sn-icon-64.png" alt="SN Logistics" width="38" height="38" style="width:38px;height:38px;border-radius:10px;display:block;flex:none;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)"><span><b>SN Logistics</b><small>Punch · Freight</small></span></a>
-    <nav aria-label="Sections"><a href="#how">How Punch works</a><a href="#live">Team live</a><a href="#app">Download</a><a href="#freight">Freight</a><a href="#about">About</a><a href="#induction">Induction</a><a href="#contact">Contact</a><a href="hr/">HR portal</a></nav>
-    <a class="btn login" id="loginBtn" href="https://naveen5531.github.io/portal/" target="_blank" rel="noopener">Staff login</a>
+    <a class="brand" href="#top" aria-label="SN Logistics home"><img src="brand/sn-icon-64.png" alt="SN Logistics" width="38" height="38" style="width:38px;height:38px;border-radius:10px;display:block;flex:none;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)"><span><b>SN Logistics</b><small>Logistics</small></span></a>
+    <nav aria-label="Sections"><a href="#services">Services</a><a href="#track">Track</a><a href="#fleet">Fleet</a><a href="#coverage">Coverage</a><a href="#about">About</a><a href="#contact">Contact</a></nav>
+    <a class="btn login" href="#track">Track</a>
   </div>
 </header>
 
 <main id="top">
-  <section class="hero">
-    <div class="wrap ph">
-      <div>
-        <p class="eyebrow" style="color:#0c9b76">Punch · attendance app for SN Logistics teams</p>
-        <h1 style="margin-top:16px">Check in at the gate, <em>HR sees it live.</em></h1>
-        <p class="lead">Staff check in and out on their phone at the workplace. Leave, comp off and attendance changes go to HR from the app. The staff portal shows who is in right now, requests to approve, the month's attendance and salary earned so far, updating by itself.</p>
-        <div class="cta"><a class="btn gold" href="Punch.apk" download>Download Punch</a><a class="btn" href="https://naveen5531.github.io/hr/#/live" target="_blank" rel="noopener">Open Live board</a></div>
-        <div class="livestrip" id="liveStrip" aria-live="polite"><div class="lh"><span class="ldot"></span><span>Team live</span></div><div id="liveBody">HR staff signed in to the portal on this browser see their team's live count here.</div></div>
-      </div>
-      <div class="phone" aria-label="Punch app check-in screen">
-        <div class="ph-top"><img src="brand/sn-icon-64.png" alt="SN Logistics" width="30" height="30" style="width:30px;height:30px;border-radius:9px;display:block;flex:none;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)"><div><b>Punch</b><small>SN Logistics</small></div></div>
-        <div class="ph-card"><span class="m">Today · DC Isnapur</span><span class="t" id="phClock">09:00</span><span class="m">Within 150 m of the workplace</span></div>
-        <div class="ph-btn">Check in<small>tap at the workplace</small></div>
-        <div class="ph-row"><span><b>22</b>Present</span><span><b>1</b>Leave</span><span><b>2</b>Comp off</span></div>
-      </div>
-    </div>
-  </section>
 
-  <section class="block" id="how">
-    <div class="wrap">
-      <div class="sec-head"><p class="eyebrow">How Punch works</p><h2>From the phone to the payslip, one record</h2><p class="lead">Each step lands in the same database the staff portal reads, so HR never re-types attendance.</p></div>
-      <div class="steps4">
-        <div class="card"><b class="n">01</b><h3>Check in at work</h3><p class="lead">The app checks the phone is within the workplace radius, then records in and out times with location.</p></div>
-        <div class="card"><b class="n">02</b><h3>Ask from the app</h3><p class="lead">Leave, comp off and attendance corrections go to HR with a reason. Comp off is used up as soon as it is applied.</p></div>
-        <div class="card"><b class="n">03</b><h3>HR decides live</h3><p class="lead">Requests appear in the portal the moment they are sent. Approve and the employee's app updates straight away.</p></div>
-        <div class="card"><b class="n">04</b><h3>Payslip every month</h3><p class="lead">Pay days and salary are worked out from attendance. Employees see their net pay; HR sees the full working.</p></div>
-      </div>
-    </div>
-  </section>
 
-  <section class="block" id="live">
-    <div class="wrap">
-      <div class="sec-head"><p class="eyebrow">Team live · staff portal</p><h2>Your team, right now</h2><p class="lead">Team live is the first screen of the staff portal. It updates on its own as people punch in and out, with no refresh.</p></div>
-      <div class="livegrid">
-        <div class="feat">
-          <div><b>Who's in and out today</b><span>In since, hours so far and a map pin for everyone checked in; who has not come in; who is off or on leave.</span></div>
-          <div><b>Requests waiting</b><span>Leave, comp off and attendance changes show up instantly, with Approve and Reject on the same screen.</span></div>
-          <div><b>The month so far</b><span>Present, half days, absent, leave, comp off, week offs and hours for every employee.</span></div>
-          <div><b>Salary earned so far</b><span>Pay days and earnings to date, worked out the same way as the payslip. Only roles allowed to see salary get this.</span></div>
-        </div>
-        <div>
-          <div class="demo" aria-label="Example of the Team live board">
-            <div class="dc"><b>Arun · Driver</b><span>In since 8:52 am · 3h 10m</span></div>
-            <div class="dc"><b>Chitra · Clerk</b><span>In since 9:05 am · 2h 57m</span></div>
-            <div class="dc o"><b>Ravi · Loader</b><span>Out at 11:40 am</span></div>
-            <div class="dc n"><b>Bala · Loader</b><span>Not checked in</span></div>
-          </div>
-          <div class="tablewrap roles" style="margin-top:16px"><table><thead><tr><th>Role</th><th>What they get</th></tr></thead><tbody>
-            <tr><td><b>HR head</b></td><td>Everything, including changing salary</td></tr>
-            <tr><td><b>HR manager</b></td><td>Live board, approvals, salary view (no changes)</td></tr>
-            <tr><td><b>HR executive</b></td><td>Live board and attendance</td></tr>
-            <tr><td><b>Employee</b></td><td>Only their own attendance and payslip, in the app</td></tr>
-          </tbody></table></div>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <section class="freight-band" id="freight">
     <div class="wrap">
@@ -296,7 +251,7 @@ footer { color: var(--ink-2); }
         <p class="eyebrow" style="color:#0c9b76">SN Logistics freight · Full truck · Part load · Last mile · Returns</p>
         <h2 style="margin-top:16px">Pincode to pincode, <em>every handover on record.</em></h2>
         <p class="lead">We pick up from your warehouse, run the linehaul, deliver to the door and bring returns back. Each consignment carries one LR from pickup to proof of delivery, so your invoice matches what actually moved.</p>
-        <div class="cta"><a class="btn gold" href="#contact">Book a pickup</a><a class="btn" href="#services">Our services</a></div>
+        <div class="cta"><a class="btn gold" href="#contact">Get a quote</a><a class="btn" href="#track">Track shipment</a></div>
         <div class="lanes" aria-label="Example lanes"><span><b>HYD 500001 → WGL 506002</b> · 17 ft · same day</span><span><b>BLR 560001 → CHE 600001</b> · 32 ft MXL · overnight</span><span><b>DEL 110001 → GHY 781001</b> · 22 ft · NE surcharge applies</span></div>
       </div>
       <form class="lr" id="est" aria-label="Freight estimate" onsubmit="return false">
@@ -359,81 +314,36 @@ footer { color: var(--ink-2); }
     </div>
   </section>
 
-  <section class="block" id="app">
-    <div class="wrap">
-      <div class="sec-head"><p class="eyebrow">Download</p><h2>Punch for staff, the control tower for the office</h2><p class="lead">Punch is the attendance app for everyone. The Movana app and the staff portal are for HR and operations; they sign in with the same username and password, or with Google once an admin approves their Gmail.</p></div>
-      <div class="app">
-        <div class="card">
-          <span class="os">Android · staff attendance</span>
-          <h3>Punch – attendance app</h3>
-          <div class="row"><a class="btn gold" id="dlPunch" href="Punch.apk" download>Download Punch</a></div>
-          <ol><li>Tap <b>Download Punch</b> and open <b>Punch.apk</b>. If Android asks, allow installs this one time.</li><li>Sign in with the same username and password as the staff portal.</li><li>Allow location <b>All the time</b> so check-in and check-out happen at your workplace. Leave, comp off and payslips are in the app.</li></ol>
-        </div>
-        <div class="card">
-          <span class="os">Android</span>
-          <h3>Download the app</h3>
-          <div class="row"><button class="btn gold" type="button" id="dlAndroid">Download for Android</button><span class="status" id="dlStatus"></span></div>
-          <ol><li>The file arrives as <b>Movana-Logistics-Android.zip</b>. Open it in Files and tap <b>Movana.apk</b>.</li><li>If Android asks, allow installs from Files (or your browser) for this one time.</li><li>Open <b>Movana</b> and tap <b>Open control tower</b>. Sign in with your username and password.</li></ol>
-        </div>
-        <div class="card">
-          <span class="os">iPhone &amp; iPad</span>
-          <h3>Add to Home Screen</h3>
-          <ol><li>Open the staff portal in <b>Safari</b> with the button below.</li><li>Tap the <b>Share</b> icon, then <b>Add to Home Screen</b>.</li><li>Name it Movana and tap <b>Add</b>. It opens like an app.</li></ol>
-          <div class="row"><a class="btn" id="iosBtn" href="https://naveen5531.github.io/portal/" target="_blank" rel="noopener">Open staff portal</a></div>
-        </div>
-        <div class="card">
-          <span class="os">Scan on your phone</span>
-          <div class="qr" id="qr" aria-label="QR code for the staff portal"></div>
-          <p class="status">Opens the staff portal. On Android, Chrome's menu also offers <b>Add to Home screen</b>.</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <section class="block" id="about">
     <div class="wrap">
-      <div class="sec-head"><p class="eyebrow">About us</p><h2>SN Logistics – speed &amp; trust on every lane</h2><p class="lead">SN Logistics moves freight by road across India: pickups, full and part truckloads, hub operations, last-mile delivery and returns. Our teams run on Punch for attendance and on the SN Control Tower for trips, billing and payouts, so every handover is on record.</p></div>
+      <div class="sec-head"><p class="eyebrow">About us</p><h2>SN Logistics – speed &amp; trust on every lane</h2><p class="lead">SN Logistics is a road transport and logistics company moving freight across India: pickups, full and part truckloads, hub operations, last-mile delivery and returns, for manufacturers, distributors, retailers and e-commerce sellers.</p></div>
       <div class="services">
-        <article class="svc"><span class="code">WHAT WE DO</span><h3>Road freight, end to end</h3><p>First mile, linehaul, hubs, last mile and reverse logistics, booked one leg at a time or as a full chain.</p></article>
-        <article class="svc"><span class="code">HOW WE WORK</span><h3>One record per consignment</h3><p>LR, manifests, proof of delivery and the GST invoice all come from the same record, so customers, drivers and accounts see the same numbers.</p></article>
-        <article class="svc"><span class="code">OUR PEOPLE</span><h3>Teams on the ground</h3><p>Drivers, hub staff and the operations desk check in with Punch at the workplace; HR sees attendance and requests live.</p></article>
+        <article class="svc"><span class="code">WHAT WE DO</span><h3>Road freight, end to end</h3><p>First mile, linehaul, hubs, last mile and reverse logistics – book one leg or the whole chain.</p></article>
+        <article class="svc"><span class="code">HOW WE WORK</span><h3>One LR per consignment</h3><p>Every handover is scanned against the same consignment note, from pickup to proof of delivery and the GST invoice.</p></article>
+        <article class="svc"><span class="code">VISIBILITY</span><h3>Track any time</h3><p>Customers follow each consignment online with the AWB or LR number – no login needed.</p></article>
       </div>
     </div>
   </section>
 
-  <section class="block" id="induction">
+
+  <section class="block" id="track">
     <div class="wrap">
-      <div class="sec-head"><p class="eyebrow">Induction</p><h2>Joining SN Logistics</h2><p class="lead">Everything a new team member or vehicle partner needs for the first day. Questions? Ask the admin desk below – it reaches us directly.</p></div>
-      <div class="ind-tabs" role="tablist" aria-label="Induction">
-        <button type="button" role="tab" aria-selected="true" data-ind="staff">New staff</button>
-        <button type="button" role="tab" aria-selected="false" data-ind="partner">Vehicle partners &amp; vendors</button>
-      </div>
-      <div class="ind" data-ip="staff">
-        <div class="services">
-          <article class="svc"><span class="code">BEFORE DAY 1</span><h3>Documents to bring</h3><ul><li>Aadhaar and PAN card (self-attested copies)</li><li>Two passport-size photographs</li><li>Education certificates and mark sheets</li><li>Relieving / experience letters and last 3 payslips, if any</li><li>Cancelled cheque or bank passbook page, UAN if you have one</li></ul></article>
-          <article class="svc"><span class="code">DAY 1</span><h3>Your first day</h3><ul><li>Report to the HR desk at the start of your shift</li><li>Sign the offer letter and joining forms</li><li>Get your Punch login – install the app and check in at the workplace</li><li>Safety walk-through of the hub, loading bays and vehicle area</li><li>Meet your reporting manager and team</li></ul></article>
-          <article class="svc"><span class="code">EVERY DAY</span><h3>How we work</h3><ul><li>Check in and out on Punch within the workplace radius</li><li>Apply leave and attendance changes in Punch; HR approves them there</li><li>Salary slips are in Punch every month</li><li>Safety shoes and ID card on the floor at all times</li><li>Follow the code of conduct in your offer letter</li></ul></article>
-        </div>
-        <div class="row" style="margin-top:14px"><a class="btn gold" href="Punch.apk" download>Download Punch</a><button class="btn" type="button" data-ask="Staff induction">Ask a question</button></div>
-      </div>
-      <div class="ind" data-ip="partner" hidden>
-        <div class="services">
-          <article class="svc"><span class="code">ELIGIBILITY</span><h3>Who can attach</h3><ul><li>Truck owners and fleet operators – Tata Ace to 40 ft trailers</li><li>Vehicles with valid papers and a trained driver</li><li>Transporters and vendors for hubs and loading</li></ul></article>
-          <article class="svc"><span class="code">DOCUMENTS</span><h3>Vehicle &amp; owner papers</h3><ul><li>RC, insurance, fitness, permit and PUC – all current</li><li>Driver's licence of every driver</li><li>Owner PAN, Aadhaar and GST (if registered)</li><li>Cancelled cheque for payouts</li></ul></article>
-          <article class="svc"><span class="code">ONBOARDING</span><h3>How it works</h3><ul><li>Send an enquiry with your vehicle type and base city</li><li>Papers verified and vehicle inspected</li><li>Rate agreed per trip or per month (dedicated)</li><li>Trips, daily vehicle reports and payouts tracked on the control tower</li></ul></article>
-        </div>
-        <div class="row" style="margin-top:14px"><button class="btn gold" type="button" data-ask="Vehicle partner / vendor">Attach my vehicle</button></div>
-      </div>
+      <div class="sec-head"><p class="eyebrow">Track</p><h2>Where is my consignment?</h2><p class="lead">Enter the AWB / LR number from your booking (for example MV0001234), or your delivery reference. No login needed.</p></div>
+      <form class="card trk" id="trkF" novalidate>
+        <div class="trk-row"><input id="trkN" placeholder="AWB / LR or reference number" autocomplete="off" autocapitalize="characters" aria-label="AWB, LR or reference number" maxlength="40"><button class="btn gold" type="submit" id="trkB">Track</button></div>
+        <div id="trkOut" aria-live="polite"></div>
+      </form>
     </div>
   </section>
 
   <section class="block" id="contact">
     <div class="wrap">
-      <div class="sec-head"><p class="eyebrow">Contact · admin desk</p><h2>Ask us anything</h2><p class="lead">Quotes, pickups, jobs, induction or attaching a vehicle – your message goes straight to the SN Logistics admin desk (query mailbox) and we call or mail you back.</p></div>
+      <div class="sec-head"><p class="eyebrow">Enquiry</p><h2>Book a pickup or ask for a quote</h2><p class="lead">Tell us the lane and the load. Your enquiry goes straight to our operations desk, and we call or mail you back with a rate and pickup slot.</p></div>
       <div class="contact">
         <form class="card" id="enq" novalidate>
           <div class="form">
-            <label class="wide">I am asking about<select id="q-kind"><option>Freight quote / pickup</option><option>Staff induction</option><option>Job / career</option><option>Vehicle partner / vendor</option><option>Other</option></select></label>
+            <label class="wide">I am asking about<select id="q-kind"><option>Freight quote / pickup</option><option>Shipment tracking help</option><option>Dedicated vehicle / contract</option><option>Attach my vehicle</option><option>Other</option></select></label>
             <label>Your name<input id="q-name" required autocomplete="name"></label>
             <label>Company<input id="q-co" autocomplete="organization"></label>
             <label>Phone<input id="q-phone" type="tel" required autocomplete="tel" inputmode="tel"></label>
@@ -445,7 +355,7 @@ footer { color: var(--ink-2); }
             <label class="wide">Message<textarea id="q-notes" placeholder="Your question, or the load: e.g. 120 cartons, 1.8 tonnes, 6 CBM, palletised"></textarea></label>
           </div>
           <p class="status" id="enqMsg" role="status"></p>
-          <div class="row"><button class="btn gold" type="submit" id="enqSend">Send to admin desk</button><button class="btn" type="button" id="enqCopy">Copy enquiry</button></div>
+          <div class="row"><button class="btn gold" type="submit" id="enqSend">Send enquiry</button><button class="btn" type="button" id="enqCopy">Copy enquiry</button></div>
         </form>
         <aside class="card">
           <h3>Operations desk</h3>
@@ -462,10 +372,8 @@ footer { color: var(--ink-2); }
 <datalist id="cities"></datalist>
 <div class="toast" id="toast" hidden></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (function () {
-  const PORTAL = 'https://naveen5531.github.io/portal/';
   const GEO_STATES = [
   ['Jammu and Kashmir', '01', 'Srinagar', 'S'], ['Himachal Pradesh', '02', 'Shimla', 'H'], ['Punjab', '03', 'Chandigarh', 'N'], ['Chandigarh', '04', 'Chandigarh', 'N'],
   ['Uttarakhand', '05', 'Dehradun', 'H'], ['Haryana', '06', 'Gurugram', 'N'], ['Delhi', '07', 'New Delhi', 'N'], ['Rajasthan', '08', 'Jaipur', 'N'], ['Uttar Pradesh', '09', 'Lucknow', 'N'],
@@ -571,8 +479,7 @@ footer { color: var(--ink-2); }
   ['#e-from', '#e-to', '#e-veh', '#e-trips'].forEach(s => $(s).addEventListener('input', estimate));
   estimate();
 
-  // ---- QR for the portal
-  try { new QRCode($('#qr'), { text: PORTAL, width: 168, height: 168, colorDark: '#121314', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }); } catch (e) { $('#qr').innerHTML = '<p class="status">QR code could not load. Use the Open staff portal button.</p>'; }
+
 
   // ---- contact details: edit these four lines, then upload again
   const SITE = { phone: '', whatsapp: '', email: '', address: '', hours: 'Mon–Sat, 9am–8pm' };
@@ -585,24 +492,35 @@ footer { color: var(--ink-2); }
   }
   paintInfo();
   $('#infoEdit').innerHTML = '';
-  // Android download: plain link to the APK hosted next to this page
-  const dl = $('#dlAndroid'); dl.disabled = false; $('#dlStatus').textContent = 'Version 1.1 · 1.2 MB';
-  dl.addEventListener('click', () => { location.href = 'Movana.apk'; });
-  const steps = dl.closest('.card').querySelector('ol');
-  steps.innerHTML = '<li>Tap <b>Download for Android</b>. Chrome saves <b>Movana.apk</b>.</li><li>Open it from the download bar or Files. If Android asks, allow installs from Chrome for this one time.</li><li>Open <b>Movana</b> and tap <b>Open control tower</b>. Sign in with the username and password your administrator gave you.</li>';
   // enquiries go to WhatsApp or email
   const enquiry = () => ({ name: $('#q-name').value.trim(), company: $('#q-co').value.trim(), phone: $('#q-phone').value.trim(), email: $('#q-email').value.trim(), from: $('#q-from').value.trim(), to: $('#q-to').value.trim(), vehicle: $('#q-veh').value, date: $('#q-date').value, notes: $('#q-notes').value.trim() });
   const asText = q => 'Enquiry – SN Logistics (' + $('#q-kind').value + ')\nName: ' + q.name + (q.company ? ' (' + q.company + ')' : '') + '\nPhone: ' + q.phone + (q.email ? '\nEmail: ' + q.email : '') + '\nLane: ' + (q.from || '?') + ' → ' + (q.to || '?') + '\nVehicle: ' + (q.vehicle || 'suggest') + (q.date ? '\nPickup date: ' + q.date : '') + (q.notes ? '\nLoad: ' + q.notes : '');
   $('#enqCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(asText(enquiry())); toast('Enquiry copied'); } catch (e) { $('#enqMsg').textContent = asText(enquiry()); } });
-  // Induction tabs and "Ask a question" buttons
-  document.querySelectorAll('[data-ind]').forEach(t => t.addEventListener('click', () => {
-    document.querySelectorAll('[data-ind]').forEach(x => x.setAttribute('aria-selected', x === t ? 'true' : 'false'));
-    document.querySelectorAll('[data-ip]').forEach(p => { p.hidden = p.dataset.ip !== t.dataset.ind; });
-  }));
-  document.querySelectorAll('[data-ask]').forEach(bt => bt.addEventListener('click', () => {
-    const k = $('#q-kind'); [...k.options].forEach(o => { if (o.text === bt.dataset.ask) k.value = o.text; });
-    $('#contact').scrollIntoView({ behavior: 'smooth' }); setTimeout(() => $('#q-name').focus(), 500);
-  }));
+  // ---- tracking without login: public read-only copy of each shipment's status (Firestore "track", by AWB / reference)
+  const STG = ['Booked', 'Picked up', 'At origin hub', 'In transit', 'At destination hub', 'Out for delivery', 'Delivered'];
+  const CLR = s => s === 'Delivered' ? '#0c9b76' : ['NDR', 'RTO', 'Lost / damaged'].includes(s) ? '#d92d20' : '#f26a1b';
+  const fdt = t => t ? new Date(+t).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+  const fdd = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const fv = f => !f ? '' : f.stringValue != null ? f.stringValue : f.integerValue != null ? +f.integerValue : f.doubleValue != null ? f.doubleValue : f.arrayValue ? (f.arrayValue.values || []).map(fv) : f.mapValue ? Object.fromEntries(Object.entries(f.mapValue.fields || {}).map(([k, v]) => [k, fv(v)])) : '';
+  const tkey = v => String(v || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  async function track(n) {
+    const out = $('#trkOut'), k = tkey(n);
+    if (k.length < 4) { out.innerHTML = '<p class="trk-msg bad">Enter the AWB / LR or reference number.</p>'; return; }
+    out.innerHTML = '<p class="trk-msg">Looking up ' + esc(k) + '…</p>';
+    try {
+      let d = null;
+      for (const id of [k, 'R-' + k]) { const r = await fetch('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/track/' + encodeURIComponent(id) + '?key=' + FB.key); if (r.ok) { d = Object.fromEntries(Object.entries((await r.json()).fields || {}).map(([a, b]) => [a, fv(b)])); break; } }
+      if (!d) { out.innerHTML = '<p class="trk-msg bad">No consignment found for ' + esc(k) + '. Check the number on your booking, or send us an enquiry below.</p>'; return; }
+      const st = d.stage || 'Booked', c = CLR(st), ix = STG.indexOf(st), ev = (Array.isArray(d.events) ? d.events : []).slice().reverse();
+      out.innerHTML = '<div class="trk-res" style="--c:' + c + '"><div class="trk-hd"><div><b>' + esc(d.awb || k) + '</b><small>' + esc((d.from || '—') + ' → ' + (d.to || '—')) + (d.pieces ? ' · ' + esc(d.pieces) + ' pcs' : '') + '</small></div><span class="trk-st">' + esc(st) + '</span></div>' +
+        '<div class="trk-bar" aria-hidden="true">' + STG.map((x, i) => '<i class="' + (ix >= i ? 'on' : '') + '"></i>').join('') + '</div>' +
+        '<small style="color:var(--ink-2,#475467)">' + (st === 'Delivered' ? 'Delivered' + (d.deliveredAt ? ' on ' + fdt(d.deliveredAt) : '') : d.promised ? 'Expected by ' + fdd(d.promised) : '') + '</small>' +
+        (ev.length ? '<ol class="trk-tl">' + ev.map(e => '<li><span>' + esc(fdt(e.t)) + '</span><b>' + esc(e.s || '') + '</b></li>').join('') + '</ol>' : '') +
+        '<p class="trk-msg">Last updated ' + esc(fdt(d.updatedAt)) + '</p></div>';
+    } catch (e) { out.innerHTML = '<p class="trk-msg bad">Could not reach tracking right now. Please try again.</p>'; }
+  }
+  $('#trkF').addEventListener('submit', e => { e.preventDefault(); const n = $('#trkN').value; track(n); try { history.replaceState(null, '', '#track=' + encodeURIComponent(tkey(n))); } catch (x) {} });
+  { const m = location.hash.match(/^#track=(.+)/); if (m) { $('#trkN').value = decodeURIComponent(m[1]); setTimeout(() => { $('#track').scrollIntoView(); track($('#trkN').value); }, 300); } }
   // Enquiries go to the admin desk's query mailbox in SN Mail (Firestore "queries"; anyone may send, only admins read).
   const FB = { project: 'movana-72ea4', key: 'AIzaSyCPBeYX4XuRnj0x6vIbWr58ARCAR8Y9KHk' };
   const sv = v => ({ stringValue: String(v || '').slice(0, 1500) });
@@ -628,46 +546,5 @@ footer { color: var(--ink-2); }
 
 })();
 </script>
-<script>
-/* Phone clock + Team live strip. The strip loads Firebase only after the page has loaded and shows numbers only to
-   HR staff already signed in to the staff portal on this browser; everyone else sees the plain note. */
-(function () {
-  const clk = document.getElementById('phClock');
-  const tick = () => { if (clk) clk.textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }); };
-  tick(); setInterval(tick, 15000);
-  const body = document.getElementById('liveBody'), dot = document.querySelector('#liveStrip .ldot');
-  const HR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_exec'], SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
-  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const load = src => new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
-  const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  async function start() {
-    try {
-      await load('portal/firebase-config.js?v=1'); const cfg = window.MOVANA_FIREBASE_CONFIG; if (!cfg || !cfg.apiKey) return;
-      await load(SDK + 'firebase-app-compat.js'); await load(SDK + 'firebase-auth-compat.js'); await load(SDK + 'firebase-firestore-compat.js');
-      const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(cfg), fs = app.firestore(); let un = [];
-      app.auth().onAuthStateChanged(async u => {
-        un.forEach(f => f()); un = []; dot.classList.remove('on');
-        if (!u) { body.innerHTML = 'HR staff signed in to the <a href="hr/#/live">staff portal</a> on this browser see their team\'s live count here.'; return; }
-        let role = '';
-        try { const [m, o] = await Promise.all([fs.doc('members/' + u.uid).get(), fs.doc('settings/owner').get().catch(() => null)]);
-          role = o && o.exists && o.data().uid === u.uid ? 'superadmin' : (m.exists && m.data().status !== 'Suspended' ? m.data().role : ''); } catch (e) {}
-        if (!HR.includes(role)) { body.innerHTML = 'You are signed in. Team live is for HR roles; your own attendance is in the Punch app.'; return; }
-        const now = new Date(), ym = ymd(now).slice(0, 7), td = ymd(now), D = { emp: [], att: [], req: [] };
-        const draw = () => {
-          const att = id => D.att.find(a => a.id === id + '_' + ym);
-          const inNow = D.emp.filter(e => { const a = att(e.id); return a && a.open && ymd(new Date(a.open.t)) === td; });
-          const done = D.emp.filter(e => { const a = att(e.id); return !(a && a.open) && a && (a.logs || []).some(l => ymd(new Date(l.in)) === td); });
-          const notIn = D.emp.length - inNow.length - done.length;
-          dot.classList.add('on');
-          body.innerHTML = '<div class="nums"><span><b>' + inNow.length + '</b> in now</span><span><b>' + done.length + '</b> done for today</span><span><b>' + Math.max(0, notIn) + '</b> not in / off</span><span><b>' + D.req.length + '</b> request' + (D.req.length === 1 ? '' : 's') + ' waiting</span></div>' +
-            (inNow.length ? '<div>In: ' + inNow.slice(0, 6).map(e => esc(e.name)).join(', ') + (inNow.length > 6 ? ' +' + (inNow.length - 6) : '') + '</div>' : '') + '<div><a href="hr/#/live">Open Live board</a></div>';
-        };
-        const sub = (q, k) => un.push(q.onSnapshot(sn => { D[k] = sn.docs.map(d => Object.assign({ id: d.id }, d.data())); draw(); }, () => {}));
-        sub(fs.collection('punch_emp'), 'emp'); sub(fs.collection('punch_att').where('ym', '==', ym), 'att'); sub(fs.collection('punch_req').where('s', '==', 'Pending'), 'req');
-      });
-    } catch (e) { /* no connection: keep the plain note */ }
-  }
-  if (document.readyState === 'complete') setTimeout(start, 300); else addEventListener('load', () => setTimeout(start, 300));
-})();
-</script>
+
 </body></html>

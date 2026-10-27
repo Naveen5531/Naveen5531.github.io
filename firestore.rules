@@ -144,6 +144,14 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // ----- Public tracking (website "Track", no login) -----
+    // Anyone may look up ONE consignment by its exact AWB / reference (get); nobody can list them. Staff who can edit keep them current.
+    match /track/{id} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if canWrite() && !isEmpOnly();
+    }
+
     // "Is the portal set up yet?" – readable before login so the first screen knows what to show.
     match /public/{d} {
       allow read: if true;
