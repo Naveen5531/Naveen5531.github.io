@@ -91,6 +91,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <div class="menu" id="menu" role="menu" hidden></div><div class="notif" id="notif" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="People"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <script src="../portal/fb.js?v=20261027d"></script>
+<script src="../seen.js?v=1"></script>
 <script src="../portal/offer.js?v=4"></script>
 <script src="../portal/payslip.js?v=2"></script>
 <script>
@@ -157,8 +158,13 @@ S.uid = U.uid; S.self = U.uid;
   S.roles = owner ? ['superadmin'] : (md && md.status !== 'Suspended' ? [md.role].concat(md.roles || []).filter(Boolean) : ['none']);
   S.me = { name: (u && u.exists && u.data().name) || String(U.email || '').split('@')[0], email: U.email }; }
 try { S.mode = localStorage.getItem('hr.mode') === 'admin' && canAdminView() ? 'admin' : 'emp'; } catch (e) {}
+/* "read" state is shared with every SN app and device (seen.js): opening a page clears its count everywhere */
 let SEEN = {}; try { SEEN = JSON.parse(localStorage.getItem('hr.seen.' + S.uid) || '{}') || {}; } catch (e) {}
-const markSeen = id => { SEEN[id] = Date.now(); try { localStorage.setItem('hr.seen.' + S.uid, JSON.stringify(SEEN)); } catch (e) {} };
+const seenAt = id => Math.max(+SEEN[id] || 0, window.SNSeen ? SNSeen.at('hr_' + id) : 0);
+let lastSeen = '';
+const markSeen = id => { const v = V.find(x => x.id === id); if (id === lastSeen && !(v && badge(v))) return; lastSeen = id;
+  SEEN[id] = Date.now(); try { localStorage.setItem('hr.seen.' + S.uid, JSON.stringify(SEEN)); } catch (e) {} if (window.SNSeen) SNSeen.mark('hr_' + id); };
+if (window.SNSeen) SNSeen.on(() => { try { if (!route) return; const vis = V.filter(v => v.id && v.ok()); $('#nav').innerHTML = navHtml(); const bn = vis.reduce((t, v) => t + badge(v), 0); $('#bellN').hidden = !bn; $('#bellN').textContent = bn; } catch (e) {} });
 $('#whoAv').textContent = ini(S.me.name); $('#whoName').textContent = S.me.name;
 
 /* ================= live data ================= */
@@ -312,7 +318,7 @@ let FOLD = {}; try { FOLD = JSON.parse(localStorage.getItem('hr.fold') || '{}') 
 const EMP_G = ['Home', 'Me', 'Company'], sideOf = v => v.g === 'Apps' ? 'both' : EMP_G.includes(v.g) ? 'emp' : 'admin';
 const onSide = v => sideOf(v) === 'both' || sideOf(v) === S.mode;
 /** Badge: things that arrived after this page was last opened (opening the page clears it). n() returns [{at}] or a number. */
-const badge = v => { if (!v.n) return 0; const r = v.n(); return Array.isArray(r) ? r.filter(x => num(x.at) > num(SEEN[v.id])).length : num(r); };
+const badge = v => { if (!v.n) return 0; const r = v.n(); return Array.isArray(r) ? r.filter(x => num(x.at) > seenAt(v.id)).length : num(r); };
 const folded = (g, vis) => FOLD[g] != null ? FOLD[g] : !vis.some(v => v.g === g && v.id === route) && g !== 'Home';
 function navHtml() {
   const vis = V.filter(v => v.ok() && !v.hide && onSide(v)); let g0 = '';

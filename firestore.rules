@@ -238,6 +238,10 @@ service cloud.firestore {
     }
 
     // Names and usernames for logins.
+    // Each person's "read" marks (which screens they have opened), shared by every SN app and device
+    match /seen/{uid} {
+      allow read, write: if signedIn() && uid == request.auth.uid;
+    }
     match /users/{uid} {
       allow read: if signedIn();
       allow create, update: if isAdmin() || hrApprove()
@@ -265,9 +269,9 @@ service cloud.firestore {
     // Everything else: shipments, pickups, trips, invoices, payments, staff, leave, payroll, tickets …
     // Punch employees are kept out of all of this; Punch data has its own rules above.
     match /{coll}/{id} {
-      allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*') && !(coll in ['mail', 'queries', 'pvendors', 'pvdocs']);
+      allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*') && !(coll in ['mail', 'queries', 'pvendors', 'pvdocs', 'seen']);
       allow write: if canWrite() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*')
-        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'queries', 'pvendors', 'pvdocs', 'counters']);
+        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'queries', 'pvendors', 'pvdocs', 'counters', 'seen']);
     }
   }
 }

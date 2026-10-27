@@ -88,6 +88,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-l
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="../seen.js?v=1"></script>
 <script>
 (function () {
 'use strict';
@@ -253,10 +254,14 @@ async function pinInfo(pin) {
 /* ================= screens ================= */
 const STEP = p => p.hht === 'Completed' ? 5 : p.scanned && Object.keys(p.scanned).length ? 4 : p.lr ? 4 : (p.boxes || []).length ? 3 : p.invoice ? 2 : p.hht === 'Accepted' ? 1 : 0;
 const mine = () => S.pickups.filter(p => p.exec === S.me);
+const SEEN_K = { mine: 'pickups_mine', assign: 'pickups', inbound: 'ships_inbound', vendors: 'pvendors' };
+if (window.SNSeen) SNSeen.on(() => { try { const nv = $('#bar'); if (nv && S.me) nv.innerHTML = navHtml(); } catch (e) {} });
 function navHtml() {
-  const open = mine().filter(p => ['Assigned', 'Accepted', 'Labelled'].includes(p.hht)).length;
-  const T = [['mine', 'My pickups', 'list', open]].concat(canAssign() ? [['assign', 'Assign', 'assign', S.pickups.filter(p => !p.exec && !['Completed', 'Cancelled'].includes(p.hht || '') && !['Picked up', 'Delivered', 'Closed', 'Cancelled'].includes(p.stage || '')).length]] : [])
-    .concat(canInbound() ? [['inbound', 'Inbound', 'inbound', S.ships.length]] : []).concat(window.SNP.canVendors && SNP.canVendors() ? [['vendors', 'Vendors', 'vendor', S.vendors.filter(v => v.status === 'Submitted' && v.createdBy !== S.me).length]] : []).concat([['done', 'Done', 'done', 0]]);
+  const open = mine().filter(p => ['Assigned', 'Accepted', 'Labelled'].includes(p.hht));
+  const T = [['mine', 'My pickups', 'list', open]].concat(canAssign() ? [['assign', 'Assign', 'assign', S.pickups.filter(p => !p.exec && !['Completed', 'Cancelled'].includes(p.hht || '') && !['Picked up', 'Delivered', 'Closed', 'Cancelled'].includes(p.stage || ''))]] : [])
+    .concat(canInbound() ? [['inbound', 'Inbound', 'inbound', S.ships]] : []).concat(window.SNP.canVendors && SNP.canVendors() ? [['vendors', 'Vendors', 'vendor', S.vendors.filter(v => v.status === 'Submitted' && v.createdBy !== S.me)]] : []).concat([['done', 'Done', 'done', []]]);
+  /* counts = new since that tab was last opened; reading clears it in the portal and every other device too (seen.js) */
+  T.forEach(r => { const k = SEEN_K[r[0]], L = r[3]; if (window.SNSeen && k && S.tab === r[0] && !S.open && SNSeen.count(L, k)) SNSeen.mark(k); r[3] = window.SNSeen && k ? SNSeen.count(L, k) : L.length; });
   return T.map(([id, l, ic, n]) => '<button type="button" data-tab="' + id + '"' + (S.tab === id && !S.open ? ' aria-current="page"' : '') + '>' + svg(ic) + l + (n ? '<span class="n">' + n + '</span>' : '') + '</button>').join('');
 }
 function pkCard(p, extra) {

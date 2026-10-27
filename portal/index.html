@@ -449,7 +449,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261027d"></script><script src="offer.js?v=3"></script><script>
+<script src="fb.js?v=20261027d"></script><script src="../seen.js?v=1"></script><script src="offer.js?v=3"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -3454,58 +3454,58 @@ document.addEventListener('change', async e => {
 const NAV = [
   { id: 'punch', label: 'Team live', icon: 'clock', dept: 'hr', top: true, hidden: true, href: '../hr/#/live', sub: () => 'Live attendance from the Punch app · ' + fmtDate(today()),
     get tabs() { return [{ id: 'live', label: 'Live', view: punchLive }, { id: 'reg', label: 'Attendance register', view: punchRegister }]
-      .concat(pCan(P_SALV) ? [{ id: 'sal', label: 'Salary', view: punchSalary }, { id: 'offer', label: 'Package & offer letter', view: punchOffers, n: () => (S.data.punch_offer || []).filter(o => o.status === 'Released').length }] : []).concat([{ id: 'emp', label: 'Employees', view: punchEmployees }]); } },
+      .concat(pCan(P_SALV) ? [{ id: 'sal', label: 'Salary', view: punchSalary }, { id: 'offer', label: 'Package & offer letter', view: punchOffers, n: () => (S.data.punch_offer || []).filter(o => o.status === 'Released') }] : []).concat([{ id: 'emp', label: 'Employees', view: punchEmployees }]); } },
   { id: 'dashboard', label: 'Dashboard', icon: 'dash', dept: 'overview', sub: () => 'Everything at a glance · ' + fmtDate(today()), tabs: [{ id: 'main', label: 'Overview', view: dashboard }] },
   { id: 'shipments', label: 'Shipments', icon: 'truck', dept: 'ops', sub: () => 'Book, track and price every consignment', tabs: [
-    { id: 'board', label: 'Board', view: boardView }, { id: 'list', label: 'All shipments', view: L('shipments'), n: () => S.data.shipments.length },
-    { id: 'ndr', label: 'NDR desk', view: ndrDesk, n: () => S.data.shipments.filter(s => stageOf('shipments', s) === 'NDR').length },
+    { id: 'board', label: 'Board', view: boardView }, { id: 'list', label: 'All shipments', view: L('shipments'), n: () => S.data.shipments },
+    { id: 'ndr', label: 'NDR desk', view: ndrDesk, n: () => S.data.shipments.filter(s => stageOf('shipments', s) === 'NDR') },
     { id: 'calc', label: 'Rate calculator', view: rateCalc }, { id: 'rates', label: 'Rate cards', view: L('rates') }] },
   { id: 'first', label: 'First mile', icon: 'pin', dept: 'ops', sub: () => 'Pickup → vehicle → shipment → trip → delivery → invoice → payout', tabs: [
-    { id: 'pickups', label: 'Pickups', view: L('pickups'), n: () => S.data.pickups.filter(p => !SCHEMA.pickups.doneStages.includes(stageOf('pickups', p))).length },
+    { id: 'pickups', label: 'Pickups', view: L('pickups'), n: () => S.data.pickups.filter(p => !SCHEMA.pickups.doneStages.includes(stageOf('pickups', p))) },
     { id: 'today', label: "Today's pickups", view: L('pickups', { extraFilter: p => p.date === today(), noNew: false }) },
-    { id: 'transit', label: 'Pickup in transit', view: () => '<p class="help">LRs picked up on SN Pickup and on the way to the hub. Hub staff receive them by scanning every box in SN Pickup › Inbound (or set "At origin hub" here) – only then do they move on to mid mile.</p>' + listView('shipments', { extraFilter: s => stageOf('shipments', s) === 'Pickup in transit', noChips: true, noNew: true, cols: ['awb', 'customer', 'destCity', 'pieces', 'promised', 'stage'], empty: 'Nothing in pickup transit right now.' }), n: () => S.data.shipments.filter(s => stageOf('shipments', s) === 'Pickup in transit').length },
-    { id: 'pvendors', label: 'Vendors', view: () => pvendorsView(), n: () => (S.data.pvendors || []).filter(v => v.status === 'Submitted').length },
+    { id: 'transit', label: 'Pickup in transit', view: () => '<p class="help">LRs picked up on SN Pickup and on the way to the hub. Hub staff receive them by scanning every box in SN Pickup › Inbound (or set "At origin hub" here) – only then do they move on to mid mile.</p>' + listView('shipments', { extraFilter: s => stageOf('shipments', s) === 'Pickup in transit', noChips: true, noNew: true, cols: ['awb', 'customer', 'destCity', 'pieces', 'promised', 'stage'], empty: 'Nothing in pickup transit right now.' }), n: () => S.data.shipments.filter(s => stageOf('shipments', s) === 'Pickup in transit') },
+    { id: 'pvendors', label: 'Vendors', view: () => pvendorsView(), n: () => (S.data.pvendors || []).filter(v => v.status === 'Submitted') },
     { id: 'payout', label: 'Pending payout', view: L('pickups', { extraFilter: p => { const c = chainOf(p); return c.delivered && p.vendor && !(c.payout && stageOf('payments', c.payout) === 'Paid'); }, noNew: true, empty: 'No delivered pickups waiting for transporter payout.' }) }] },
   { id: 'mid', label: 'Mid mile', icon: 'route', dept: 'ops', sub: () => 'Linehaul trips, manifests and hubs', tabs: [
-    { id: 'trips', label: 'Linehaul trips', view: L('trips'), n: () => S.data.trips.filter(t => ['Planned', 'Dispatched'].includes(stageOf('trips', t))).length },
-    { id: 'hubs', label: 'Warehouses', view: L('hubs'), n: () => S.data.hubs.length }, { id: 'routes', label: 'Route rates (pan India)', view: routeRates }] },
+    { id: 'trips', label: 'Linehaul trips', view: L('trips'), n: () => S.data.trips.filter(t => ['Planned', 'Dispatched'].includes(stageOf('trips', t))) },
+    { id: 'hubs', label: 'Warehouses', view: L('hubs'), n: () => S.data.hubs }, { id: 'routes', label: 'Route rates (pan India)', view: routeRates }] },
   { id: 'last', label: 'Last mile', icon: 'door', dept: 'ops', sub: () => 'Delivery runsheets, proof of delivery, COD settlement', tabs: [
-    { id: 'drs', label: 'Runsheets (DRS)', view: L('drs'), n: () => S.data.drs.filter(d => stageOf('drs', d) !== 'Closed').length },
+    { id: 'drs', label: 'Runsheets (DRS)', view: L('drs'), n: () => S.data.drs.filter(d => stageOf('drs', d) !== 'Closed') },
     { id: 'ofd', label: 'Out for delivery', view: L('shipments', { extraFilter: s => stageOf('shipments', s) === 'Out for delivery', noChips: true, noNew: true, cols: ['awb', 'consignee', 'phone', 'destCity', 'mode', 'cod', 'stage'], empty: 'Nothing out for delivery right now.' }) },
     { id: 'pod', label: 'Delivered today', view: L('shipments', { extraFilter: s => stageOf('shipments', s) === 'Delivered' && dayOf(s.deliveredAt) === today(), noChips: true, noNew: true, cols: ['awb', 'consignee', 'destCity', 'pod', 'mode', 'cod', 'stage'], empty: 'No deliveries recorded today yet.' }) }] },
   { id: 'reverse', label: 'Reverse logistics', icon: 'ret', dept: 'ops', sub: () => 'Customer returns, RTO, QC grading and refunds', tabs: [
-    { id: 'all', label: 'All returns', view: L('returns'), n: () => S.data.returns.filter(r => stageOf('returns', r) !== 'Closed').length },
+    { id: 'all', label: 'All returns', view: L('returns'), n: () => S.data.returns.filter(r => stageOf('returns', r) !== 'Closed') },
     { id: 'qc', label: 'QC desk', view: L('returns', { extraFilter: r => stageOf('returns', r) === 'Received at hub', noChips: true, noNew: true, empty: 'Nothing waiting for QC.' }) },
     { id: 'rto', label: 'RTO', view: L('returns', { extraFilter: r => r.type === 'RTO', noNew: true, empty: 'No RTO returns.' }) }] },
   { id: 'billing', label: 'Billing', icon: 'bill', dept: 'fin', sub: () => 'Billing runs, GST invoices, COD and customers', tabs: [
-    { id: 'run', label: 'Billing run', view: billingRun, n: () => S.data.shipments.filter(s => stageOf('shipments', s) === 'Delivered' && !s.invoiceNo).length },
-    { id: 'invoices', label: 'Invoices', view: L('invoices'), n: () => S.data.invoices.filter(i => !['Paid', 'Cancelled'].includes(stageOf('invoices', i))).length },
+    { id: 'run', label: 'Billing run', view: billingRun, n: () => S.data.shipments.filter(s => stageOf('shipments', s) === 'Delivered' && !s.invoiceNo) },
+    { id: 'invoices', label: 'Invoices', view: L('invoices'), n: () => S.data.invoices.filter(i => !['Paid', 'Cancelled'].includes(stageOf('invoices', i))) },
     { id: 'cod', label: 'COD reconciliation', view: codRecon }, { id: 'customers', label: 'Customers & vendors', view: L('customers') }] },
   { id: 'payments', label: 'Payments', icon: 'pay', dept: 'fin', sub: () => 'Receipts, payouts, vendor bills and ageing', tabs: [
-    { id: 'pay', label: 'Payments', view: L('payments'), n: () => S.data.payments.filter(p => stageOf('payments', p) === 'Pending').length },
-    { id: 'vb', label: 'Vendor bills', view: L('vendorbills'), n: () => S.data.vendorbills.filter(v => !SCHEMA.vendorbills.doneStages.includes(stageOf('vendorbills', v))).length },
+    { id: 'pay', label: 'Payments', view: L('payments'), n: () => S.data.payments.filter(p => stageOf('payments', p) === 'Pending') },
+    { id: 'vb', label: 'Vendor bills', view: L('vendorbills'), n: () => S.data.vendorbills.filter(v => !SCHEMA.vendorbills.doneStages.includes(stageOf('vendorbills', v))) },
     { id: 'ageing', label: 'Ageing', view: ageing }] },
   { id: 'accounts', label: 'Accounts', icon: 'book', dept: 'fin', sub: () => 'Double-entry books: journal, trial balance, P&L, balance sheet, GST', tabs: [
     { id: 'journal', label: 'Journal', view: journalView }, { id: 'tb', label: 'Trial balance', view: trialBalance }, { id: 'pl', label: 'Profit & loss', view: profitLoss },
     { id: 'bs', label: 'Balance sheet', view: balanceSheet }, { id: 'gst', label: 'GST', view: gstReport }] },
   { id: 'it', label: 'Helpdesk & assets', icon: 'ticket', dept: 'itd', sub: () => 'Helpdesk with SLA and escalation, assets, access control', tabs: [
-    { id: 'tickets', label: 'Tickets', view: L('tickets'), n: () => S.data.tickets.filter(t => !SCHEMA.tickets.doneStages.includes(stageOf('tickets', t))).length },
-    { id: 'assets', label: 'Assets', view: L('assets') }, { id: 'access', label: 'Access requests', view: L('access'), n: () => S.data.access.filter(a => ['Requested', 'Approved'].includes(stageOf('access', a))).length }] },
+    { id: 'tickets', label: 'Tickets', view: L('tickets'), n: () => S.data.tickets.filter(t => !SCHEMA.tickets.doneStages.includes(stageOf('tickets', t))) },
+    { id: 'assets', label: 'Assets', view: L('assets') }, { id: 'access', label: 'Access requests', view: L('access'), n: () => S.data.access.filter(a => ['Requested', 'Approved'].includes(stageOf('access', a))) }] },
   { id: 'admin', label: 'Approvals', icon: 'check', dept: 'adm', sub: () => 'Two-level approvals: manager, then finance above the limit', tabs: [
-    { id: 'approvals', label: 'All requests', view: L('approvals'), n: () => S.data.approvals.filter(a => stageOf('approvals', a).startsWith('Pending')).length },
+    { id: 'approvals', label: 'All requests', view: L('approvals'), n: () => S.data.approvals.filter(a => stageOf('approvals', a).startsWith('Pending')) },
     { id: 'register', label: 'All tickets (every dept)', view: requestRegister },
     { id: 'mine', label: 'Waiting for me', view: L('approvals', { extraFilter: canApproveReq, noNew: true, noChips: true, empty: 'Nothing waiting for your approval.' }) }] },
   { id: 'access', label: 'Roles & access', icon: 'key', dept: 'adm', sub: () => 'Who can see and change each department', tabs: [
-    { id: 'team', label: 'People & roles', view: teamView, n: () => (S.data.joinreq || []).filter(q => q.status === 'Pending').length },
+    { id: 'team', label: 'People & roles', view: teamView, n: () => (S.data.joinreq || []).filter(q => q.status === 'Pending') },
     { id: 'roles', label: 'Roles & permissions', view: rolesView }] },
   { id: 'people', label: 'Employees', icon: 'people', dept: 'hr', hidden: true, href: '../hr/#/hr-employees', sub: () => 'Employee records and daily attendance', tabs: [
-    { id: 'staff', label: 'Employees', view: L('staff'), n: () => S.data.staff.filter(s => stageOf('staff', s) !== 'Left').length }, { id: 'att', label: 'Attendance', view: attendanceView }] },
+    { id: 'staff', label: 'Employees', view: L('staff'), n: () => S.data.staff.filter(s => stageOf('staff', s) !== 'Left') }, { id: 'att', label: 'Attendance', view: attendanceView }] },
   { id: 'leave', label: 'Leave & approvals', icon: 'cal', dept: 'hr', hidden: true, href: '../hr/#/approvals', sub: () => 'Apply, approve, balances – approved leave marks attendance', tabs: [
-    { id: 'req', label: 'Leave requests', view: L('leaves'), n: () => S.data.leaves.filter(l => stageOf('leaves', l) === 'Applied').length }, { id: 'bal', label: 'Balances', view: leaveBalances }] },
+    { id: 'req', label: 'Leave requests', view: L('leaves'), n: () => S.data.leaves.filter(l => stageOf('leaves', l) === 'Applied') }, { id: 'bal', label: 'Balances', view: leaveBalances }] },
   { id: 'payroll', label: 'Payroll', icon: 'pay', dept: 'hr', hidden: true, href: '../hr/#/payroll', sub: () => 'Monthly payroll from attendance and leave, PF / ESI / PT, payslips', tabs: [
-    { id: 'run', label: 'Payroll run', view: payrollRun }, { id: 'slips', label: 'Payslips', view: L('payroll'), n: () => S.data.payroll.filter(p => stageOf('payroll', p) !== 'Paid').length }] },
+    { id: 'run', label: 'Payroll run', view: payrollRun }, { id: 'slips', label: 'Payslips', view: L('payroll'), n: () => S.data.payroll.filter(p => stageOf('payroll', p) !== 'Paid') }] },
   { id: 'fleet', label: 'Fleet', icon: 'bus', dept: 'ops', sub: () => 'Vehicles, papers, maintenance and fuel mileage', tabs: [
-    { id: 'vehicles', label: 'Vehicles', view: L('vehicles') }, { id: 'vtypes', label: 'Vehicle types', view: vtypesView, n: () => S.data.vtypes.length }, { id: 'mnt', label: 'Maintenance', view: L('maintenance') }, { id: 'fuel', label: 'Fuel log', view: L('fuel') }] },
+    { id: 'vehicles', label: 'Vehicles', view: L('vehicles') }, { id: 'vtypes', label: 'Vehicle types', view: vtypesView, n: () => S.data.vtypes }, { id: 'mnt', label: 'Maintenance', view: L('maintenance') }, { id: 'fuel', label: 'Fuel log', view: L('fuel') }] },
   { id: 'directory', label: 'Employee directory', icon: 'people', dept: 'overview', always: true, href: '../hr/#/people', sub: () => 'Find a colleague by employee ID or name', tabs: [{ id: 'main', label: 'Employee directory', view: directoryView }] },
   { id: 'account', label: 'Settings', icon: 'cog', dept: 'overview', always: true, hidden: true, sub: () => 'Password, Google sign-in and apps', tabs: [{ id: 'main', label: 'Settings', view: accountView }] },
   { id: 'me', label: 'My access', icon: 'key', dept: 'overview', always: true, sub: () => 'Your role and what it lets you do', tabs: [{ id: 'main', label: 'My access', view: myAccessView }] },
@@ -3545,17 +3545,23 @@ const SKINS = [
 function currentSkin() { return 'punch'; }
 function currentSkinOld() { let v = null; try { v = localStorage.getItem('movana.skin'); } catch (e) {} return (SKINS.find(x => x.id === v) || SKINS.find(x => x.id === SET().skin) || SKINS[0]).id; }
 function setSkin(id) { try { localStorage.setItem('movana.skin', id); } catch (e) {} document.body.dataset.skin = id; render(); }
+/* Sidebar counts = items that arrived or changed since that screen was last opened (shared with every SN app via seen.js) */
+const SEEN_SHARED = { 'firstmile.pickups': 'pickups', 'firstmile.pvendors': 'pvendors' };
+const seenKey = (m, t) => SEEN_SHARED[m.id + '.' + t.id] || 'portal_' + m.id + '_' + t.id;
+function tabN(m, t) { if (!t.n) return 0; const v = t.n(); return !Array.isArray(v) ? (+v || 0) : window.SNSeen ? SNSeen.count(v, seenKey(m, t)) : v.length; }
+if (window.SNSeen) SNSeen.on(() => { try { renderNav(); } catch (e) {} });
 function renderNav() {
   const open = S.deptOpen || (S.deptOpen = {});
   const cm = curMod(), cur = curTab();
+  if (window.SNSeen && cm && cur && cur.n && tabN(cm, cur)) SNSeen.mark(seenKey(cm, cur));
   const chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>';
-  const cnt = m => tabsOf(m).reduce((a, t) => a + (t.n && !['hubs', 'vtypes', 'staff'].includes(t.id) ? t.n() : 0), 0);
+  const cnt = m => tabsOf(m).reduce((a, t) => a + (t.n && !['hubs', 'vtypes', 'staff'].includes(t.id) ? tabN(m, t) : 0), 0);
   const modHtml = m => {
     if (m.href) return '<a class="mod" href="' + m.href + '" style="text-decoration:none">' + svg(m.icon) + '<span>' + esc(m.label) + '</span><span class="count" style="background:none;color:inherit;opacity:.6">↗</span></a>';
     const multi = tabsOf(m).length > 1, isOpen = multi && ((m.id === S.mod && !S.collapsed) || (S.open && S.open[m.id]));
     const n = cnt(m);
     return '<button type="button" class="mod" data-mod="' + m.id + '"' + (multi ? ' aria-expanded="' + !!isOpen + '"' : '') + (m.id === cm.id && !multi ? ' aria-current="page"' : '') + '>' + svg(m.icon) + '<span>' + esc(m.label) + '</span>' + (n ? '<span class="count">' + n + '</span>' : '') + (multi ? chev : '') + '</button>' +
-      (isOpen ? '<div class="subs">' + tabsOf(m).map(t => { const c = t.n ? t.n() : 0; return '<button type="button" class="sub" data-go="' + m.id + '" data-gotab="' + t.id + '"' + (m.id === cm.id && cur.id === t.id ? ' aria-current="page"' : '') + '><span>' + esc(t.label) + '</span>' + (c ? '<span class="n">' + c + '</span>' : '') + '</button>'; }).join('') + '</div>' : '');
+      (isOpen ? '<div class="subs">' + tabsOf(m).map(t => { const c = tabN(m, t); return '<button type="button" class="sub" data-go="' + m.id + '" data-gotab="' + t.id + '"' + (m.id === cm.id && cur.id === t.id ? ' aria-current="page"' : '') + '><span>' + esc(t.label) + '</span>' + (c ? '<span class="n">' + c + '</span>' : '') + '</button>'; }).join('') + '</div>' : '');
   };
   const w = whoAmI();
   if (w.role !== '_loading' && (w.roles || []).length && w.roles.every(r => r === 'employee')) { location.replace('../hr/'); return; }

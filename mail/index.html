@@ -100,6 +100,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <div class="shell"><nav class="nav" id="nav" aria-label="Mail folders"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <div id="cmpHost"></div>
 <script src="../portal/fb.js?v=20261027d"></script>
+<script src="../seen.js?v=1"></script>
 <script>
 (async function () {
 'use strict';
@@ -168,7 +169,7 @@ async function setSt(ids, patch) { for (const id of ids) { const m = S.msgs[id];
 function navHtml() {
   const u = all().filter(unread).length;
   return '<button class="compose-b" type="button" data-a="compose">' + svg('pen') + 'Compose</button>' + FOLD.map(([id, l, ic]) => '<a href="#/' + id + '"' + (S.folder === id && !S.th ? ' aria-current="page"' : '') + '>' + svg(ic) + '<span>' + l + '</span>' + (id === 'inbox' && u ? '<span class="n">' + u + '</span>' : '') + '</a>').join('') +
-    (S.admin ? (() => { const n = S.qs.filter(q => q.s === 'New').length; return '<a href="#/queries"' + (S.folder === 'queries' ? ' aria-current="page"' : '') + '>' + svg('inbox') + '<span>Queries <span class="mute small">query@ · website</span></span>' + (n ? '<span class="n">' + n + '</span>' : '') + '</a>'; })() : '') +
+    (S.admin ? (() => { const nw = S.qs.filter(q => q.s === 'New'); if (window.SNSeen && S.folder === 'queries' && SNSeen.count(nw, 'mail_queries', qt)) SNSeen.mark('mail_queries'); const n = window.SNSeen ? SNSeen.count(nw, 'mail_queries', qt) : nw.length; return '<a href="#/queries"' + (S.folder === 'queries' ? ' aria-current="page"' : '') + '>' + svg('inbox') + '<span>Queries <span class="mute small">query@ · website</span></span>' + (n ? '<span class="n">' + n + '</span>' : '') + '</a>'; })() : '') +
     (mailOf(ME) ? '<div class="mute small" style="padding:0 12px 10px;word-break:break-all">Your address<br><b style="color:var(--ink)">' + esc(mailOf(ME)) + '</b></div>' : '') + (S.superAdmin ? '<div class="mute small" style="padding:0 12px 10px">Super admin: you can also type an outside email address – it opens in your Gmail' + (S.extFrom ? ' (' + esc(S.extFrom) + ')' : '') + '.</div><a class="ext" href="https://mail.google.com/' + (S.extFrom ? '?authuser=' + encodeURIComponent(S.extFrom) : '') + '" target="_blank" rel="noopener">' + svg('all') + '<span>Outside mail (Gmail)</span></a>' : '') + '<div class="g">Apps</div><a class="ext" href="../hr/">' + svg('people') + '<span>SN People (HR)</span></a><a class="ext" href="../portal/">' + svg('tower') + '<span>Control tower (portal)</span></a>';
 }
 function listHtml() {
@@ -205,6 +206,9 @@ function queryHtml(id) {
     '<div class="bd">' + kv.map(r => '<div><span class="mute">' + esc(r[0]) + ':</span> <b>' + esc(r[1]) + '</b></div>').join('') + (q.msg ? '<p style="white-space:pre-wrap;margin-top:12px">' + esc(q.msg) + '</p>' : '') + '</div></article>' +
     '<div class="row" style="flex-wrap:wrap">' + (ph ? '<a class="btn p" href="tel:' + esc(ph) + '">Call</a><a class="btn" href="https://wa.me/' + esc(waN) + '" target="_blank" rel="noopener">WhatsApp</a>' : '') + (q.email ? '<a class="btn" href="mailto:' + esc(q.email) + '?subject=' + encodeURIComponent('Re: your enquiry ' + (q.ref || '')) + '">Email</a>' : '') + '<button class="btn" type="button" data-qa="fwd">' + svg('fwd') + ' Forward to a colleague</button></div>';
 }
+/* Queries count clears once the folder is opened, on every device and SN app (seen.js) */
+const qt = q => q.createdAt || q.at || q.t || 0;
+if (window.SNSeen) SNSeen.on(() => { try { $('#nav').innerHTML = navHtml(); } catch (e) {} });
 function render() {
   { const hq = (location.hash.match(/^#\/(queries|q)(?:\/(.+))?/) || []); if (hq[1] && S.admin) { S.folder = 'queries'; S.th = null; $('#nav').innerHTML = navHtml(); $('#main').innerHTML = hq[1] === 'q' ? queryHtml(decodeURIComponent(hq[2] || '')) : queriesHtml(); renderCmp(); document.title = 'Queries · SN Mail'; return; } }
   const h = (location.hash.match(/^#\/([\w-]+)(?:\/(.+))?/) || []); S.folder = FOLD.some(f => f[0] === h[1]) ? h[1] : h[1] === 't' ? S.folder : 'inbox'; S.th = h[1] === 't' ? decodeURIComponent(h[2] || '') : null;
