@@ -147,6 +147,8 @@ const SAL_E = ['superadmin', 'admin_head', 'hr_head', 'hr_gm', 'hr_sgm', 'hr_avp
 const S = { mode: 'emp', uid: null, self: null, me: {}, roles: [], d: {}, open: {}, q: {}, ym: ymNow(), f: {} };
 const has = list => S.roles.some(r => list.includes(r));
 const canAdminView = () => has(HR_ALL) || has(ADMIN) || has(SAL_V);
+/* deleting is for Super admin only; everyone else withdraws / cancels, which keeps the record */
+const superOnly = () => S.uid === S.ownerUid || has(['superadmin']);
 const isHR = () => has(HR_ALL), canAppr = () => has(HR_APPR), canSal = () => has(SAL_V), canSalE = () => has(SAL_E), isAdmin = () => has(ADMIN);
 
 /* ================= sign in (shared with the portal) ================= */
@@ -544,9 +546,9 @@ async function patchEmp(p, f) {
 function vAnnouncements() {
   const P = D.posts.slice().sort((a, b) => num(b.at) - num(a.at)), H = D.hol.slice().sort((a, b) => a.date < b.date ? -1 : 1);
   return ph('Announcements & holidays') + '<div class="grid g2"><section class="card"><h2>Announcements</h2>' + (isHR() ? '<div class="form">' + fld('an-title', 'Title', 'text') + fld('an-body', 'Message', 'textarea') + '<label>Pin to top<select id="an-pin"><option value="">No</option><option value="1">Yes</option></select></label></div><div class="row mt"><button class="btn p" type="button" data-a="an-add">Post</button></div>' : '') +
-    (P.length ? '<div class="feed mt">' + P.map(p => '<div class="post"><b>' + (p.pin ? '📌 ' : '') + esc(p.title) + '</b><p>' + esc(p.body) + '</p><small>' + esc(p.byName || '') + ' · ' + fmtT(p.at) + (isHR() ? ' · <a href="#" data-a="del" data-p="hr_posts/' + esc(p._id) + '">Delete</a>' : '') + '</small></div>').join('') + '</div>' : '<div class="empty mt">No announcements.</div>') + '</section>' +
+    (P.length ? '<div class="feed mt">' + P.map(p => '<div class="post"><b>' + (p.pin ? '📌 ' : '') + esc(p.title) + '</b><p>' + esc(p.body) + '</p><small>' + esc(p.byName || '') + ' · ' + fmtT(p.at) + (superOnly() ? ' · <a href="#" data-a="del" data-p="hr_posts/' + esc(p._id) + '">Delete</a>' : '') + '</small></div>').join('') + '</div>' : '<div class="empty mt">No announcements.</div>') + '</section>' +
     '<section class="card"><h2>Holidays ' + new Date().getFullYear() + '</h2>' + (isHR() ? '<div class="form">' + fld('ho-date', 'Date', 'date') + fld('ho-name', 'Holiday', 'text') + '</div><div class="row mt"><button class="btn p" type="button" data-a="ho-add">Add holiday</button></div>' : '') +
-    tbl(['Date', 'Day', 'Holiday', ''], H.map(h => '<tr><td>' + esc(fmtD(h.date)) + '</td><td>' + new Date(h.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' }) + '</td><td>' + esc(h.name) + '</td><td>' + (isHR() ? '<button class="btn s d" type="button" data-a="del" data-p="hr_holidays/' + esc(h._id) + '">Remove</button>' : '') + '</td></tr>'), 'No holidays listed.') + '</section></div>';
+    tbl(['Date', 'Day', 'Holiday', ''], H.map(h => '<tr><td>' + esc(fmtD(h.date)) + '</td><td>' + new Date(h.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' }) + '</td><td>' + esc(h.name) + '</td><td>' + (superOnly() ? '<button class="btn s d" type="button" data-a="del" data-p="hr_holidays/' + esc(h._id) + '">Remove</button>' : '') + '</td></tr>'), 'No holidays listed.') + '</section></div>';
 }
 function vCareers() {
   const J = D.jobs.filter(j => j.s !== 'Closed');
@@ -846,7 +848,7 @@ async function act(a, x, t) {
     case 'att-days': S.attOpen = S.attOpen === x ? null : x; render(); return;
     case 'att-csv': attCsv(); return;
     case 'dc-fix': if (await ask('Remove each listed check-in from everyone except the person you picked?', { ok: 'Fix check-ins' })) await fixDupes(); return;
-    case 'dc-stray': { const { stray } = attIssues(); if (!stray.length || !await ask('Delete ' + stray.length + ' attendance cop' + (stray.length === 1 ? 'y' : 'ies') + ' saved under logins that have no Punch profile? Real Punch attendance is not touched.', { ok: 'Remove', danger: 1 })) return; let n = 0; for (const d of stray) if (await del('punch_att/' + d._id)) n++; toast(n + ' removed'); render(); return; }
+    case 'dc-stray': { if (!superOnly()) { toast('Only Super admin can delete attendance copies.'); return; } const { stray } = attIssues(); if (!stray.length || !await ask('Delete ' + stray.length + ' attendance cop' + (stray.length === 1 ? 'y' : 'ies') + ' saved under logins that have no Punch profile? Real Punch attendance is not touched.', { ok: 'Remove', danger: 1 })) return; let n = 0; for (const d of stray) if (await del('punch_att/' + d._id)) n++; toast(n + ' removed'); render(); return; }
     case 'doc-view': await viewDoc(x); return;
     case 'doc-open': S.docFor = x; render(); window.scrollTo(0, 0); return;
     case 'doc-close': S.docFor = null; render(); return;
@@ -862,7 +864,7 @@ async function act(a, x, t) {
       await save('punch_req/' + now, Object.assign({}, base, { kind: 'att', v, days, why: val('ar-why'), s: 'Pending' }), 'Request sent to HR'); return; }
     case 'req-cancel': { const r = D.req.find(z => z._id === x); if (!r || !await ask('Cancel this request?', { ok: 'Cancel request', danger: 1 })) return; const b = Object.assign({}, r); delete b._id; await save('punch_req/' + x, Object.assign(b, { s: 'Cancelled', updatedAt: now }), 'Cancelled'); return; }
     case 'ex-send': { if (!(num(val('ex-amt')) > 0)) { toast('Enter the amount.'); return; } await save('hr_expenses/' + newId('ex'), Object.assign({}, base, { date: val('ex-date'), cat: val('ex-cat'), amount: num(val('ex-amt')), note: val('ex-note'), s: 'Pending' }), 'Claim submitted'); return; }
-    case 'own-del': { if (!await ask('Withdraw this?', { ok: 'Withdraw', danger: 1 })) return; if (await del(t.dataset.c + '/' + x)) toast('Withdrawn'); return; }
+    case 'own-del': { if (!await ask('Withdraw this? It stays on record as Cancelled.', { ok: 'Withdraw', danger: 1 })) return; try { await fs.doc(t.dataset.c + '/' + x).update({ s: 'Cancelled', cancelledAt: Date.now(), cancelledBy: S.uid }); toast('Withdrawn'); } catch (e) { toast('Could not withdraw.'); } return; }
     case 'gl-add': { if (!val('gl-title')) { toast('Write the goal.'); return; } await save('hr_goals/' + newId('gl'), Object.assign({}, base, { title: val('gl-title'), metric: val('gl-metric'), target: val('gl-target'), weight: num(val('gl-weight')), due: val('gl-due'), progress: 0, s: 'Active' }), 'Goal added'); return; }
     case 'rv-send': { const cyc = val('rv-cycle'), id = 'rv_' + S.self + '_' + cyc.replace(/\s+/g, ''), old = D.reviews.find(r => r._id === id); if (old && old.s === 'Final') { toast('This review is already final.'); return; }
       await save('hr_reviews/' + id, Object.assign({}, base, { cycle: cyc, self: { rating: num(val('rv-rate')), text: val('rv-text') }, mgr: (old && old.mgr) || null, s: 'Submitted' }), 'Review submitted'); return; }
@@ -918,7 +920,7 @@ async function act(a, x, t) {
     case 'pp-close': S.open.person = null; render(); return;
     case 'an-add': { if (!val('an-title')) { toast('Write a title.'); return; } await save('hr_posts/' + newId('an'), { title: val('an-title'), body: val('an-body'), pin: !!val('an-pin'), by: S.self, byName: S.me.name, at: now }, 'Posted'); return; }
     case 'ho-add': { if (!val('ho-date') || !val('ho-name')) { toast('Enter the date and holiday.'); return; } await save('hr_holidays/' + val('ho-date'), { date: val('ho-date'), name: val('ho-name'), by: S.self, at: now }, 'Holiday added'); return; }
-    case 'del': { if (!await ask('Delete this?', { ok: 'Delete', danger: 1 })) return; await del(t.dataset.p); return; }
+    case 'del': { if (!superOnly()) { toast('Only Super admin can delete. Raise a request in the portal › Approvals.'); return; } if (!await ask('Delete this?', { ok: 'Delete', danger: 1 })) return; await del(t.dataset.p); return; }
     case 'ap-ok': case 'ap-no': if (a === 'ap-no' && !await ask('Reject this request?', { ok: 'Reject', danger: 1 })) return; await decide(x, a === 'ap-ok'); return;
     case 'jb-add': { if (!val('jb-title')) { toast('Enter the role.'); return; } await save('hr_jobs/' + newId('jb'), { title: val('jb-title'), dept: val('jb-dept'), loc: val('jb-loc'), openings: num(val('jb-n')) || 1, type: val('jb-type'), desc: val('jb-desc'), s: 'Open', by: S.self, at: now }, 'Opening posted'); return; }
     case 'jb-toggle': { const j = D.jobs.find(z => z._id === x); if (!j) return; const b = Object.assign({}, j); delete b._id; b.s = j.s === 'Closed' ? 'Open' : 'Closed'; await save('hr_jobs/' + x, b); return; }

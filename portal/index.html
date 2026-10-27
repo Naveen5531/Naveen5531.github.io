@@ -1007,7 +1007,7 @@ const SCHEMA = {
       F('level', 'Access level', 'select', { opts: ['Read only', 'User', 'Supervisor', 'Admin'] }), F('approver', 'Approver', 'text', { list: 'staff' }), F('till', 'Valid till', 'date'), F('reason', 'Reason', 'textarea')],
     cols: ['no', 'person', 'system', 'level', 'approver', 'till', 'stage'] },
   approvals: { label: 'Approvals', noun: 'request', code: 'no', prefix: 'APR', stages: ['Pending L1', 'Pending L2', 'Approved'], extraStages: ['Rejected', 'Cancelled'], doneStages: ['Approved', 'Rejected', 'Cancelled'], noBulk: true,
-    fields: [F('no', 'Request no', 'code'), F('title', 'Request', 'text', { req: 1 }), F('kind', 'Type', 'select', { req: 1, opts: ['Expense claim', 'Purchase', 'Advance', 'Leave', 'Vehicle repair', 'Rate change', 'Other'] }),
+    fields: [F('no', 'Request no', 'code'), F('title', 'Request', 'text', { req: 1 }), F('kind', 'Type', 'select', { req: 1, opts: ['Expense claim', 'Purchase', 'Advance', 'Leave', 'Vehicle repair', 'Rate change', 'Cancel / delete record', 'Change record', 'Other'] }),
       F('amount', 'Amount', 'money'), F('requestedBy', 'Requested by', 'text', { req: 1, list: 'staff' }), F('center', 'Hub / department', 'text', { list: 'hubs' }), F('due', 'Needed by', 'date'), F('notes', 'Details', 'textarea')],
     cols: ['no', 'title', 'kind', 'amount', 'requestedBy', 'levels', 'due', 'stage'] },
   staff: { label: 'Staff', noun: 'person', code: 'empId', prefix: 'EMP', titleField: 'name', stages: ['Active', 'On leave', 'Left'], doneStages: ['Left'], freeStage: true,
@@ -1228,7 +1228,7 @@ function drawDrawer(keepScroll) {
     }
     if (D.confirmDelete) panel += '<div class="confirm">Delete this ' + esc(sc.noun) + ' for everyone?' + (D.k === 'staff' && r && r.puid ? ' They are also removed from the Punch app (their login and attendance history stay).' : '') + ' <button class="btn small danger solid" type="button" data-act="delete-yes">Delete</button><button class="btn small" type="button" data-act="delete-no">Keep</button></div>';
     body = '<div class="rec">' + sideTabs(tabs, cur, 'data-vtab') + '<div class="rec-body">' + panel + '</div></div>';
-    if (writable(D.k) && !(isReq(D.k) && !reqHandler(D.k))) foot = (canDelete(D.k) ? '<button class="btn danger" type="button" data-act="delete">Delete</button>' : '') + (sc.noForm ? '' : '<button class="btn primary" type="button" data-act="edit">Edit</button>');
+    if (writable(D.k) && !(isReq(D.k) && !reqHandler(D.k))) foot = (canDelete(D.k) ? '<button class="btn danger" type="button" data-act="delete">Delete</button>' : D.k !== 'approvals' ? '<button class="btn" type="button" data-act="req-change" data-how="del">Request cancel / delete</button><button class="btn" type="button" data-act="req-change">Request change</button>' : '') + (sc.noForm ? '' : '<button class="btn primary" type="button" data-act="edit">Edit</button>');
   } else if (D.mode === 'edit' || D.mode === 'new') {
     const r = D.mode === 'edit' ? rec(D.k, D.id) || {} : (D.draft || {});
     head = D.mode === 'new' ? 'New ' + esc(sc.noun) : 'Edit ' + esc(r[sc.titleField || sc.code] || sc.noun);
@@ -2311,6 +2311,17 @@ HOOK.actions.approvals = r => {
     (D && D.sub === 'reject' ? '<div class="form" style="align-items:end"><label class="wide">Reason for rejecting<input id="rej-reason" type="text"></label><button class="btn danger solid" type="button" data-act="appr-no-save">Reject request</button></div>' : '');
 };
 async function approve(r) {
+  if (['Cancel / delete record', 'Change record'].includes(r.kind)) {
+    if (!isSuperAdm()) { toast('Only Super admin can approve a cancel / delete or change request.'); return; }
+    const tg = r.target || {}, who = (S.me && S.me.name) || 'Super admin';
+    if (r.kind === 'Cancel / delete record' && tg.k && tg.id) {
+      if (rec(tg.k, tg.id) && !(await ask('Approve and delete ' + (tg.label || tg.k) + ' ' + (tg.code || '') + ' now? This cannot be undone.', { ok: 'Approve & delete', danger: 1 }))) return;
+      if (rec(tg.k, tg.id) && !(await remove(tg.k, tg.id, 'Deleted on approved request ' + r.no))) return;
+    }
+    await setStage('approvals', r._id, 'Approved', 'Approved by ' + who + (r.kind === 'Change record' ? ' – make the change on the record' : ' – record deleted'));
+    if (r.kind === 'Change record' && tg.k && tg.id && rec(tg.k, tg.id)) openDrawer({ mode: 'edit', k: tg.k, id: tg.id });
+    return;
+  }
   if (!canApproveReq(r)) { toast('Your role cannot approve this step.'); return; }
   const st = stageOf('approvals', r);
   const big = num(r.amount) > num(SET().approvalL1);
@@ -2669,7 +2680,9 @@ const tabsOf = m => m.always ? m.tabs : m.tabs.filter(t => tabLvl(m.id, t.id) >=
 function curTabId(mod) { const m = NAV.find(x => x.id === mod); if (!m) return null; const ts = tabsOf(m); const t = ts.find(x => x.id === S.tab[mod]) || ts[0]; return t ? t.id : null; }
 function rawLvl(mod) { return mod === S.mod ? tabLvl(mod, curTabId(mod)) : anyLvl(mod); }
 const lvlOf = k => lvl(COLL_MOD[k] || S.mod);
-const canDelete = k => writable(k) && lvlOf(k) >= 3;
+/* Only Super admin deletes. Everyone else raises a cancel / delete or change request (Approvals) – Super admin approves it. */
+const isSuperAdm = () => !!(S.isOwner || hasRoleAny(['superadmin']));
+const canDelete = k => writable(k) && isSuperAdm();
 const serverAdmin = () => !!(S.isOwner || S.isEditor);
 function canApproveReq(r) {
   const st = stageOf('approvals', r);
@@ -2681,6 +2694,9 @@ const _apActions = HOOK.actions.approvals;
 HOOK.actions.approvals = r => {
   const st = stageOf('approvals', r);
   if (!['Pending L1', 'Pending L2'].includes(st)) return '';
+  if (['Cancel / delete record', 'Change record'].includes(r.kind)) { const tg = r.target || {}, t = tg.k && tg.id && rec(tg.k, tg.id);
+    return (t ? '<div class="actions"><button class="btn small" type="button" data-open="' + esc(tg.k + '|' + tg.id) + '">Open ' + esc((tg.label || tg.k) + ' ' + (tg.code || '')) + '</button></div>' : '<p class="help">The record is already gone.</p>') +
+      (isSuperAdm() ? _apActions(r).replace(/Approve \((manager|finance)\)/, r.kind === 'Change record' ? 'Approve change' : 'Approve &amp; delete') : '<p class="help">Waiting for Super admin.</p>'); }
   if (canApproveReq(r)) return _apActions(r);
   return '<p class="help">Waiting for ' + (st === 'Pending L1' ? 'a manager (needs <b>Full</b> on Admin › Approvals)' : 'finance (needs <b>Full</b> on Finance › Accounts or Payments)') + '.</p>';
 };
@@ -3463,7 +3479,7 @@ function punchEmployees() {
       [['name', 'Full name'], ['eid', 'Employee ID'], ['desg', 'Designation'], ['grade', 'Grade'], ['cat', 'Department'], ['join', 'Date of joining', 'date']].map(([k, l, t]) => ed ? '<label class="mini">' + l + '<input data-pe="' + k + '" type="' + (t || 'text') + '" value="' + esc(e[k] || '') + '"></label>' : roVal(l, k === 'join' ? fmtDate(e[k]) : e[k])).join('') +
       (ed ? '<label class="mini">Workplace name<input data-pe="wp.name" value="' + esc((e.wp || {}).name || '') + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Workplace latitude<input data-pe="wp.lat" type="number" step="0.000001" value="' + esc((e.wp || {}).lat == null ? '' : e.wp.lat) + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Workplace longitude<input data-pe="wp.lng" type="number" step="0.000001" value="' + esc((e.wp || {}).lng == null ? '' : e.wp.lng) + '"' + (ed ? '' : ' disabled') + '></label><label class="mini">Check-in radius (m)<input data-pe="radius" type="number" value="' + esc(e.radius || 150) + '"' + (ed ? '' : ' disabled') + '></label></div>' +
       '<p class="mini" style="margin:10px 0 4px">Weekly off</p><div class="toolbar">' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => '<label class="mini" style="display:flex;gap:4px;align-items:center"><input type="checkbox" data-pwo="' + i + '"' + (wo.includes(i) ? ' checked' : '') + (ed ? '' : ' disabled') + '>' + d + '</label>').join('') + '</div>' +
-      (ed ? '<p><button class="btn small primary" type="button" data-pa="empsave" data-x="' + esc(e._id) + '">Save</button> <button class="btn small" type="button" data-pa="empclose">Close</button> <button class="btn small" type="button" data-pa="empdel" data-x="' + esc(e._id) + '">Remove from Punch</button></p>' : '<p><button class="btn small" type="button" data-pa="empclose">Close</button></p>') : roVal('Workplace', (e.wp || {}).name) + roVal('Check-in radius', (e.radius || 150) + ' m') + '</div><p class="mini" style="margin:10px 0 0">Weekly off: ' + esc(wo.map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ') || 'none') + '</p><p><button class="btn small" type="button" data-pa="empclose">Close</button></p>') +
+      (ed ? '<p><button class="btn small primary" type="button" data-pa="empsave" data-x="' + esc(e._id) + '">Save</button> <button class="btn small" type="button" data-pa="empclose">Close</button>' + (isSuperAdm() ? ' <button class="btn small" type="button" data-pa="empdel" data-x="' + esc(e._id) + '">Remove from Punch</button>' : '') + '</p>' : '<p><button class="btn small" type="button" data-pa="empclose">Close</button></p>') : roVal('Workplace', (e.wp || {}).name) + roVal('Check-in radius', (e.radius || 150) + ' m') + '</div><p class="mini" style="margin:10px 0 0">Weekly off: ' + esc(wo.map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ') || 'none') + '</p><p><button class="btn small" type="button" data-pa="empclose">Close</button></p>') +
       (ed ? '<p class="help">Latitude and longitude: open the workplace in Google Maps, long-press the spot and copy the numbers shown.</p>' : '') + '</section>'; }
   if (!E.length) return h + pNoEmp();
   return h + '<div class="tablewrap"><table><thead><tr><th>Name</th><th>ID</th><th>Designation</th><th>Joined</th><th>Workplace</th><th>Login</th><th></th></tr></thead><tbody>' + E.map(e => { const m = memberOf(e._id); return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + fmtDate(e.join) + '</td><td>' + esc((e.wp && e.wp.name) || '—') + '</td><td>' + esc(m ? roleById(m.role).name : '—') + '</td><td><button class="btn small" type="button" data-pa="emp" data-x="' + esc(e._id) + '">' + (ed ? 'Edit' : 'View') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
@@ -3495,6 +3511,7 @@ document.addEventListener('click', async e => {
   if (a === 'empclose') { S.pEmp = null; render(); return; }
   if (a === 'empsave') { const cur = (S.data.punch_emp || []).find(e => e._id === x) || { _id: x }, o = pReadEmp(cur); if (!o.name) { toast('Enter the full name'); return; } o.updatedAt = Date.now();
     if (await pSet('punch_emp', x, o)) { audit('punch_emp', 'Punch details saved for ' + o.name); toast('Saved'); S.pEmp = null; render(); } return; }
+  if (a === 'empdel' && !isSuperAdm()) { toast('Only Super admin can remove someone from Punch.'); return; }
   if (a === 'empdel') { if (!await ask('Remove this person from Punch? Their login stays; their attendance history stays.', { ok: 'Remove', danger: 1 })) return; try { await S.db.collection('punch_emp').doc(x).delete(); S.pEmp = null; toast('Removed from Punch'); } catch (err) { toast('Your role is not allowed to do this.'); } return; }
   if (a === 'add') { S.pAdd = 'new'; S.pEmp = null; S.pAddPre = null; S.pAddPw = Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 8).toUpperCase(); render(); return; }
   if (a === 'link') { S.pAdd = 'link'; S.pEmp = null; render(); return; }
@@ -3827,6 +3844,11 @@ document.addEventListener('click', async e => {
     case 'save': submitForm(); return;
     case 'delete': D.confirmDelete = true; drawDrawer(true); return;
     case 'delete-no': D.confirmDelete = false; drawDrawer(true); return;
+    case 'req-change': { const k = D.k, sc = SCHEMA[k], code = (r && (r[sc.titleField || sc.code] || '')) || '', del = ds.how === 'del';
+      const why = await ask((del ? 'Ask Super admin to cancel / delete ' : 'Ask for a change to ') + sc.noun + ' ' + code + '. ' + (del ? 'Why should it go?' : 'What should change?'), { input: del ? 'Reason' : 'Describe the change (field, old value → new value)', ok: 'Raise request' }); if (!why) return;
+      if (S.data.approvals.some(a => a.target && a.target.k === k && a.target.id === D.id && stageOf('approvals', a).startsWith('Pending'))) { toast('A request for this ' + sc.noun + ' is already waiting for approval.'); return; }
+      const id = await save('approvals', null, { title: (del ? 'Cancel / delete ' : 'Change ') + sc.noun + ' ' + code, kind: del ? 'Cancel / delete record' : 'Change record', requestedBy: myStaffName() || (S.me && S.me.name) || '', notes: why, target: { k, id: D.id, code, label: sc.label }, stage: 'Pending L1', events: [{ s: 'Pending L1', t: Date.now(), n: 'Raised from ' + sc.label }] }, (del ? 'Delete' : 'Change') + ' request for ' + sc.noun + ' ' + code);
+      if (id) toast('Request raised – Super admin will review it in Approvals.'); return; }
     case 'delete-yes': { const k = D.k, sc = SCHEMA[k]; if (await remove(k, D.id, 'Deleted ' + sc.noun + ' ' + (r && (r[sc.titleField || sc.code] || '')))) { toast('Deleted'); closeDrawer(); } return; }
     case 'import-go': runImport(); return;
     case 'bulk-clear': { const k = curTabKey(); if (k) S.sel[k].clear(); render(); return; }

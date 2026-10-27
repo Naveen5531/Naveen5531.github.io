@@ -278,7 +278,10 @@ service cloud.firestore {
     // Punch employees are kept out of all of this; Punch data has its own rules above.
     match /{coll}/{id} {
       allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*') && !(coll in ['mail', 'queries', 'pvendors', 'pvdocs', 'seen']);
-      allow write: if canWrite() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*')
+      allow create, update: if canWrite() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*')
+        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'queries', 'pvendors', 'pvdocs', 'counters', 'seen']);
+      // deleting records is Super admin only – everyone else raises a cancel / delete request in Approvals
+      allow delete: if (isOwner() || (isMember() && myRoles().hasAny(['superadmin']))) && !punchColl(coll) && !coll.matches('hr_.*')
         && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'queries', 'pvendors', 'pvdocs', 'counters', 'seen']);
     }
   }
