@@ -78,6 +78,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 .chip{display:inline-flex;gap:6px;align-items:center;background:var(--soft);border-radius:999px;padding:3px 4px 3px 10px;font-size:.85rem;font-weight:600}.chip button{border:0;background:var(--line);border-radius:50%;width:20px;height:20px;line-height:1;padding:0}
 .sug{position:absolute;left:58px;top:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh);z-index:5;min-width:260px;max-height:260px;overflow:auto}.sug button{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;padding:8px 12px;text-align:left}.sug button:hover,.sug button.on{background:var(--soft)}
 @media (max-width:560px){.cmp{right:0;width:100vw;max-height:100vh;height:100vh;border-radius:0}.cmp .ch{border-radius:0}}
+.btn svg{width:18px;height:18px;flex:none;vertical-align:-3px}.btn{display:inline-flex;align-items:center;gap:6px}
 </style>
 <script>window.MOVANA_APP_TITLE = 'SN Mail'; window.MOVANA_APP_SUB = 'Internal mail for SN Logistics · same login as the staff portal and Punch';</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -94,7 +95,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <div class="menu" id="menu" role="menu" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="Mail folders"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <div id="cmpHost"></div>
-<script src="../portal/fb.js?v=20261027a"></script>
+<script src="../portal/fb.js?v=20261027b"></script>
 <script>
 (async function () {
 'use strict';

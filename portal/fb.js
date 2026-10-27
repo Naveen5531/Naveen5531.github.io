@@ -191,11 +191,14 @@
   const usedMails = async () => new Set((await fs.collection('users').get()).docs.map(d => d.data().mail).filter(Boolean));
   window.MOVANA_FB = {
     domain: DOMAIN, toEmail, toUser, mailDomain: MAIL_DOMAIN, mailBase,
-    /** Give every login without an SN Mail ID one (admins and HR only – others are refused by the rules). Punch employees first, so they get the plain name. */
+    /** Give every login except super admins an SN Mail ID (admins and HR only – others are refused by the rules). Punch employees first, so they get the plain name. */
     async assignMailIds() {
       const q = await fs.collection('users').get(), U = q.docs.map(d => Object.assign({ id: d.id }, d.data())), used = new Set(U.map(u => u.mail).filter(Boolean));
       let pe = new Set(); try { pe = new Set((await fs.collection('punch_emp').get()).docs.map(d => d.id)); } catch (e) {}
-      const todo = U.filter(u => !u.mail && u.name).sort((a, b) => (pe.has(b.id) ? 1 : 0) - (pe.has(a.id) ? 1 : 0) || (+a.createdAt || 0) - (+b.createdAt || 0));
+      // super admins (and the owner) do not get an SN Mail ID
+      const sup = new Set(); try { const o = await fs.doc('settings/owner').get(); if (o.exists) sup.add(o.data().uid); (await fs.collection('members').get()).docs.forEach(d => { const m = d.data(); if ([m.role].concat(m.roles || []).includes('superadmin')) sup.add(d.id); }); } catch (e) { return 0; }
+      for (const u of U.filter(x => x.mail && sup.has(x.id))) { const b = Object.assign({}, u); delete b.id; delete b.mail; try { await fs.doc('users/' + u.id).set(b); } catch (e) {} }
+      const todo = U.filter(u => !u.mail && u.name && !sup.has(u.id)).sort((a, b) => (pe.has(b.id) ? 1 : 0) - (pe.has(a.id) ? 1 : 0) || (+a.createdAt || 0) - (+b.createdAt || 0));
       let n = 0; for (const u of todo) { const m = freeMail(u.name, used); try { await fs.doc('users/' + u.id).update({ mail: m }); profCache[u.id] = Object.assign({}, profCache[u.id], { mail: m }); n++; } catch (e) { return n; } } return n;
     },
     async createStaff(name, username, password) {

@@ -67,6 +67,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 .modesw{display:flex;background:var(--soft);border-radius:999px;padding:3px;gap:2px}.modesw[hidden]{display:none}.modesw button{border:0;background:none;border-radius:999px;padding:6px 12px;font:700 .8rem var(--body);color:var(--mute);cursor:pointer}.modesw button[aria-pressed="true"]{background:var(--card);color:var(--in);box-shadow:0 1px 4px rgba(0,0,0,.12)}@media (max-width:560px){.modesw button{padding:5px 8px;font-size:.72rem}}
 .notif{position:absolute;right:60px;top:58px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 50px -20px rgba(0,0,0,.35);padding:6px;width:min(320px,92vw);z-index:30;display:grid;gap:2px}.notif[hidden]{display:none}.notif .h{padding:10px 12px;font-weight:800;border-bottom:1px solid var(--line);margin-bottom:4px}.notif a{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;text-decoration:none;color:var(--ink);font-weight:600}.notif a:hover{background:var(--soft)}.notif a svg{width:18px;height:18px;flex:none;color:var(--in)}.notif a .n{margin-left:auto;background:var(--bad,#d33);color:#fff;border-radius:99px;padding:0 7px;font-size:.72rem}.notif .e{padding:14px 12px;color:var(--mute)}
 .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}.pc{background:var(--card);border-radius:14px;padding:12px;box-shadow:var(--sh);border-left:4px solid var(--line)}.pc.in{border-color:var(--in)}.pc.none{border-color:var(--warn,#e8a33d)}.pc.out{border-color:#64748b}.pc.off{border-color:#a78bfa}.pc b{display:block}.pc .st{font-weight:700;margin-top:4px}.pc .sb{font-size:.8rem;color:var(--mute)}
+.btn svg{width:18px;height:18px;flex:none;vertical-align:-3px}.btn{display:inline-flex;align-items:center;gap:6px}
 </style>
 <script>window.MOVANA_APP_TITLE = 'SN People'; window.MOVANA_APP_SUB = 'HR for SN Logistics · same login as the staff portal and Punch';</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -85,7 +86,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 </header>
 <div class="menu" id="menu" role="menu" hidden></div><div class="notif" id="notif" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="People"></nav><main id="main"><div class="empty">Loading…</div></main></div>
-<script src="../portal/fb.js?v=20261027a"></script>
+<script src="../portal/fb.js?v=20261027b"></script>
 <script src="../portal/offer.js?v=4"></script>
 <script src="../portal/payslip.js?v=2"></script>
 <script>
@@ -214,11 +215,18 @@ async function makePunchLogin(p) {
   } catch (e) { toast('Login ' + eid + ' was made, but saving the profile failed. Try again.'); }
   const um = (await fs.doc('users/' + uid).get().catch(() => null)); return { name: p.name, user: eid, uid, mail: um && um.exists ? um.data().mail || '' : '' };
 }
+/** Welcome message with the login details – the same text for SN Mail, Copy and WhatsApp. */
+const credText = x => { const e = D.emp.find(o => o._id === x.uid) || {}, base = location.origin + location.pathname.replace(/\/hr\/.*$/, '/');
+  return 'Dear ' + x.name + ',\n\nWelcome to SN Logistics. Your login details are below.\n\n' +
+    'Employee ID : ' + x.user + '\nPunch ID    : ' + x.user + '\nPassword    : ' + DEFAULT_PW + '\n' + (x.mail ? 'SN Mail ID  : ' + x.mail + '\n' : '') + (e.desg ? 'Designation : ' + e.desg + '\n' : '') + (e.join ? 'Joining date: ' + fmtD(e.join) + '\n' : '') +
+    '\nHow to start\n1. Install the Punch app: ' + base + 'Punch.apk\n2. Sign in with your Punch ID and password.\n3. Set your own password: ' + base + 'hr/#/settings\n4. SN People (leave, payslips, HR tickets): ' + base + 'hr/\n5. SN Mail (internal mail): ' + base + 'mail/\n\nThe same login works in all of them. Please do not share your password.\n\nRegards,\nHR – SN Logistics'; };
 const credCard = () => { const c = S.creds; if (!c || !c.length) return '';
-  const txt = c.map(x => x.name + '\nPunch ID: ' + x.user + '\nPassword: ' + DEFAULT_PW + (x.mail ? '\nSN Mail ID: ' + x.mail : '')).join('\n\n') + '\n\nInstall Punch: https://naveen5531.github.io/Punch.apk\nSign in with your Punch ID and password, then set your own password at https://naveen5531.github.io/hr/#/settings';
+  const txt = c.map(credText).join('\n\n────────────\n\n');
   return '<section class="card" style="margin-bottom:14px;border:2px solid var(--in)"><h2>Punch login' + (c.length > 1 ? 's' : '') + ' created</h2><p class="mute small">Punch ID is the employee ID. Everyone starts with the password <b>' + DEFAULT_PW + '</b> and is asked to set their own after signing in.</p>' +
-    tbl(['Employee', 'Punch ID', 'Password', 'SN Mail ID'], c.map(x => '<tr><td>' + esc(x.name) + '</td><td><b>' + esc(x.user) + '</b></td><td>' + DEFAULT_PW + '</td><td>' + esc(x.mail || '') + '</td></tr>')) +
-    '<div class="row mt"><button class="btn p" type="button" data-a="cr-copy">Copy</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(txt) + '">Share on WhatsApp</a><button class="btn" type="button" data-a="cr-done">Done</button></div><textarea id="cr-txt" hidden>' + esc(txt) + '</textarea></section>'; };
+    tbl(['Employee', 'Punch ID', 'Password', 'SN Mail ID', 'Sent'], c.map(x => '<tr><td>' + esc(x.name) + '</td><td><b>' + esc(x.user) + '</b></td><td>' + DEFAULT_PW + '</td><td>' + esc(x.mail || mailOf(x.uid) || '') + '</td><td>' + (x.sent ? pill('Mailed', 'good') : '') + '</td></tr>')) +
+    '<label class="row mt" style="gap:8px"><input type="checkbox" id="cr-mgr" checked> Also send a copy to the reporting manager</label>' +
+    '<div class="row mt"><button class="btn p" type="button" data-a="cr-mail">' + svg('mail') + ' Send by SN Mail</button><button class="btn" type="button" data-a="cr-copy">Copy</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(txt) + '">Share on WhatsApp</a><button class="btn" type="button" data-a="cr-done">Done</button></div>' +
+    '<details class="mt"><summary class="mute small">Message that will be sent</summary><pre style="white-space:pre-wrap;font:inherit;background:var(--soft);padding:12px;border-radius:12px">' + esc(txt) + '</pre></details><textarea id="cr-txt" hidden>' + esc(txt) + '</textarea></section>'; };
 const pwCard = () => '<section class="card" id="pwcard"><h2>' + svg('key') + ' Set your own password</h2>' + (onDefaultPw() ? '<p class="mute">You are still on the starting password. Choose your own – it works for the Punch app and this site.</p>' : '<p class="mute small">Changes the password for the Punch app and this site.</p>') +
   '<div class="form">' + fld('pw-old', 'Current password', 'password') + fld('pw-n1', 'New password', 'password') + fld('pw-n2', 'New password again', 'password') + '</div><div class="row mt"><button class="btn p" type="button" data-a="pw-set">Save password</button></div></section>';
 /** Super admins (and the owner) are exempt from the mandatory employee details and joining documents. */
@@ -837,6 +845,12 @@ async function act(a, x, t) {
       if (out.length) { S.creds = out; toast(out.length + ' Punch login' + (out.length > 1 ? 's' : '') + ' created'); } render(); window.scrollTo(0, 0); return; }
     case 'cr-copy': { const v = ($('#cr-txt') || {}).value || ''; try { await navigator.clipboard.writeText(v); toast('Copied'); } catch (e) { toast('Copy failed – select and copy by hand.'); } return; }
     case 'cr-done': S.creds = null; render(); return;
+    case 'cr-mail': { const L = (S.creds || []).filter(c => !c.sent); if (!L.length) { toast('Already sent.'); return; } const cc = $('#cr-mgr') && $('#cr-mgr').checked; let n = 0;
+      for (const c of L) { const e = D.emp.find(o => o._id === c.uid) || {}, m = cc && e.mgr ? D.emp.find(o => !o.noPunch && normN(o.name) === normN(e.mgr)) : null, to = [c.uid], ccL = m && m._id !== c.uid && m._id !== S.uid ? [m._id] : [];
+        const rcpt = to.concat(ccL), toNames = {}; rcpt.forEach(u => toNames[u] = u === c.uid ? c.name : m.name); const ref = fs.collection('mail').doc();
+        try { await ref.set({ from: S.uid, fromName: S.me.name, to, cc: ccL, rcpt, toNames, subject: 'Welcome to SN Logistics – your login details', body: credText(Object.assign({}, c, { mail: c.mail || mailOf(c.uid) })), at: Date.now(), thread: ref.id, st: { [S.uid]: { r: 1 } } }); c.sent = 1; n++; }
+        catch (x) { toast('Could not send to ' + c.name + ' (' + (x.code || 'error') + ').'); } }
+      if (n) toast('Sent to ' + n + ' employee' + (n > 1 ? 's' : '') + ' in SN Mail' + (cc ? ' (manager copied)' : '')); render(); return; }
     case 'pw-set': { const o = val('pw-old'), n1 = val('pw-n1'), n2 = val('pw-n2');
       if (!o) { toast('Enter your current password.'); return; } if (n1.length < 8) { toast('New password: at least 8 characters.'); return; } if (n1 !== n2) { toast('The two new passwords do not match.'); return; } if (n1 === DEFAULT_PW || n1 === o) { toast('Choose a password different from the current one.'); return; }
       try { await MOVANA_FB.changePassword(o, n1); } catch (e) { toast(e && (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') ? 'Current password is wrong.' : e && e.code === 'auth/requires-recent-login' ? 'Sign out and in again, then retry.' : 'Could not change the password (' + ((e && e.code) || 'error') + ').'); return; }
