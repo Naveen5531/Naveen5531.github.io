@@ -160,7 +160,7 @@ document.addEventListener('click', async e => {
   if (!v) return;
   const upd = async (patch, msg) => { try { await fs.collection('pvendors').doc(v._id).update(Object.assign(patch, { updatedAt: Date.now() })); if (msg) toast(msg); } catch (x) { toast('Could not save (' + (x.code || 'error') + ').', true); } };
   if (act === 'up') { pickDoc(v, k); return; }
-  if (act === 'view') { try { const d = await fs.doc('pvdocs/' + v._id + '_' + k).get(); if (!d.exists) { toast('Document not found.', true); return; } showDoc(d.data()); } catch (x) { toast('Could not open (' + (x.code || 'error') + ').', true); } return; }
+  if (act === 'view') { try { const d = await fs.doc('pvdocs/' + v._id + '_' + k).get(); if (!d.exists) { toast('The file is missing – ask the vendor to upload it again.', true); return; } showDoc(d.data()); } catch (x) { toast(x.code === 'permission-denied' ? 'No permission to open documents – publish the latest Firestore rules.' : 'Could not open (' + (x.code || 'error') + ').', true); } return; }
   if (act === 'dok') { await upd({ ['docs.' + k + '.s']: 'Verified', ['docs.' + k + '.by']: S.name, ['docs.' + k + '.vat']: now }, 'Document verified.'); return; }
   if (act === 'dno') { const why = prompt('What is wrong with this document?'); if (!why) return; await upd({ ['docs.' + k + '.s']: 'Rejected', ['docs.' + k + '.note']: why.slice(0, 160), ['docs.' + k + '.by']: S.name, status: v.status === 'Submitted' ? 'Rejected' : v.status, rejectWhy: 'Document: ' + why.slice(0, 160) }, 'Document rejected. The vendor goes back for correction.'); return; }
   if (act === 'submit') { await upd({ status: 'Submitted', submittedAt: now, submittedBy: S.name, rejectWhy: '' }, 'Sent for verification.'); return; }
@@ -186,10 +186,28 @@ function pickDoc(v, k) {
   i.click();
 }
 function shrink(f) { return new Promise(ok => { const img = new Image(), u = URL.createObjectURL(f); img.onload = () => { const m = 1500, sc = Math.min(1, m / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(u); let q = .75, d = c.toDataURL('image/jpeg', q); while (d.length > 700000 && q > .3) { q -= .1; d = c.toDataURL('image/jpeg', q); } ok(d); }; img.onerror = () => ok(''); img.src = u; }); }
+/* document viewer: photos shown as they are; PDFs drawn page by page (phones cannot show a PDF inside a page) */
 function showDoc(d) {
-  const w = document.createElement('div'); w.className = 'cam'; w.style.background = 'rgba(0,0,0,.92)';
-  w.innerHTML = '<div class="ct">' + esc(d.name || '') + '</div>' + (/pdf/.test(d.mime) ? '<iframe src="' + esc(d.data) + '" style="flex:1;border:0;background:#fff;margin:50px 0 80px"></iframe>' : '<img src="' + esc(d.data) + '" alt="" style="flex:1;object-fit:contain;max-width:100%;margin:50px 0 80px">') + '<div class="cb"><button class="btn" type="button">Close</button></div>';
+  const w = document.createElement('div'); w.className = 'cam'; w.style.background = 'rgba(0,0,0,.92)'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', d.name || 'Document');
+  const pdf = /pdf/.test(d.mime || '') || /^data:application\/pdf/.test(d.data || '');
+  w.innerHTML = '<div class="ct">' + esc(d.name || '') + (d.byName ? ' · ' + esc(d.byName) : '') + '</div><div id="dv" style="flex:1;overflow:auto;margin:50px 0 80px;padding:0 8px;display:flex;flex-direction:column;align-items:center;gap:10px">' +
+    (pdf ? '<p style="color:#fff">Opening PDF…</p>' : '<img src="' + esc(d.data) + '" alt="' + esc(d.name || '') + '" style="max-width:100%;height:auto;background:#fff">') + '</div>' +
+    '<div class="cb"><a class="btn" id="dvdl" download="' + esc(d.name || ('document' + (pdf ? '.pdf' : '.jpg'))) + '">Download</a><button class="btn" type="button">Close</button></div>';
   document.body.appendChild(w); w.querySelector('button').onclick = () => w.remove();
+  let bytes = null; try { const b64 = String(d.data || '').split(',')[1] || '', bin = atob(b64); bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); w.querySelector('#dvdl').href = URL.createObjectURL(new Blob([bytes], { type: d.mime || (pdf ? 'application/pdf' : 'image/jpeg') })); } catch (e) { w.querySelector('#dvdl').href = d.data; }
+  if (!pdf) return;
+  const box = w.querySelector('#dv');
+  const load = () => new Promise((ok, no) => { if (window.pdfjsLib) return ok(); const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+  load().then(async () => {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const doc = await pdfjsLib.getDocument({ data: bytes }).promise; box.innerHTML = '';
+    for (let n = 1; n <= Math.min(doc.numPages, 20); n++) {
+      const pg = await doc.getPage(n), vw = pg.getViewport({ scale: 1 }), sc = Math.min(2, (Math.min(innerWidth, 900) - 16) / vw.width * (devicePixelRatio || 1)), v = pg.getViewport({ scale: sc });
+      const c = document.createElement('canvas'); c.width = v.width; c.height = v.height; c.style.cssText = 'width:100%;max-width:' + Math.round(v.width / (devicePixelRatio || 1)) + 'px;height:auto;background:#fff'; box.appendChild(c);
+      await pg.render({ canvasContext: c.getContext('2d'), viewport: v }).promise;
+    }
+    if (doc.numPages > 20) box.insertAdjacentHTML('beforeend', '<p style="color:#fff">Showing 20 of ' + doc.numPages + ' pages – use Download for all.</p>');
+  }).catch(() => { box.innerHTML = '<p style="color:#fff;text-align:center">This PDF could not be shown here. Tap Download to open it.</p>'; });
 }
 
 /* vendor login: a separate sign-in instance makes the account, so the staff member stays signed in */
