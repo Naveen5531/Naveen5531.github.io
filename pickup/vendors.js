@@ -36,6 +36,7 @@ P.vendorStatusColor = VST;
 
 /* ---------- who may do what ---------- */
 const canOnboard = () => P.canAssign() || P.has(['vendor_coord']);
+const isSuper = () => P.has(['superadmin']) || (P.S && P.S.owner);
 const canVerify = () => P.has(['superadmin', 'director', 'gm', 'admin_head', 'ops_manager', 'ops_mgr', 'ops_srm', 'ops_gm', 'ops_sgm', 'ops_avp', 'ops_vp', 'ops_svp', 'fin_head', 'fin_manager', 'fin_mgr']);
 P.canVendors = () => !P.hht && (canOnboard() || canVerify());   // never on the HHT app
 
@@ -67,7 +68,7 @@ function formHtml(v) {
 }
 function checksHtml(v) { return '<h3 style="margin:0 0 8px">Automatic checks</h3>' + checks(v).map(([l, ok, d]) => '<div style="display:flex;gap:8px;padding:4px 0;font-size:.88rem"><span style="width:20px;font-weight:800;color:' + (ok === true ? 'var(--in)' : ok === false ? 'var(--bad)' : 'var(--mute)') + '">' + (ok === true ? '✓' : ok === false ? '✗' : '…') + '</span><span style="flex:1"><b>' + esc(l) + '</b>' + (d ? '<br><span class="mute small">' + esc(d) + '</span>' : '') + '</span></div>').join(''); }
 function detailHtml(v) {
-  const ds = v.docs || {}, mine = v.createdBy === S.me, allUp = DOCS.every(([k]) => ds[k] && ds[k].s !== 'Rejected'), allOk = DOCS.every(([k]) => ds[k] && ds[k].s === 'Verified'), auto = checks(v).every(c => c[1] === true);
+  const ds = v.docs || {}, mine = v.createdBy === S.me && !isSuper(), self = v.createdBy === S.me, allUp = DOCS.every(([k]) => ds[k] && ds[k].s !== 'Rejected'), allOk = DOCS.every(([k]) => ds[k] && ds[k].s === 'Verified'), auto = checks(v).every(c => c[1] !== false), pend = checks(v).filter(c => c[1] === null).length;
   let h = '<button class="btn sm" type="button" data-v="back">← Vendors</button><div class="ph" style="margin-top:12px"><div><h1>' + esc(v.name) + '</h1><p>' + esc([v.code, v.gstin].filter(Boolean).join(' · ')) + '</p></div><span class="st" style="--c:' + VST[v.status || 'Draft'] + '">' + esc(v.status || 'Draft') + '</span></div>';
   if (v.status === 'Rejected' && v.rejectWhy) h += '<div class="card" style="border-color:var(--bad)"><b style="color:var(--bad)">Rejected:</b> ' + esc(v.rejectWhy) + (v.verifiedByName ? ' – ' + esc(v.verifiedByName) : '') + '</div>';
   /* documents */
@@ -81,7 +82,7 @@ function detailHtml(v) {
   h += '<div class="card">' + checksHtml(v) + '</div>';
   /* submit / verify */
   if (v.status === 'Draft' || v.status === 'Rejected') h += '<div class="card"><button class="btn p full" type="button" data-v="submit"' + (allUp ? '' : ' disabled') + '>' + (allUp ? 'Send for verification' : 'Upload all 5 documents to send for verification') + '</button></div>';
-  if (v.status === 'Submitted') h += canVerify() && !mine ? '<div class="card"><h2>Verify vendor</h2><p class="mute small">You are the checker. Approve only after opening every document and matching it with the details.</p><div class="row"><button class="btn d" type="button" data-v="reject">Reject</button><button class="btn p" type="button" data-v="approve"' + (allOk && auto ? '' : ' disabled') + '>' + (allOk && auto ? 'Approve vendor' : !auto ? 'Fix failed checks first' : 'Verify all documents first') + '</button></div></div>'
+  if (v.status === 'Submitted') h += canVerify() && !mine ? '<div class="card"><h2>Verify vendor</h2><p class="mute small">' + (self ? 'You onboarded this vendor. As Super admin you may approve it yourself – it is recorded as self-approved.' : 'You are the checker. Approve only after opening every document and matching it with the details.') + (pend ? ' ' + pend + ' automatic check' + (pend > 1 ? 's' : '') + ' could not run – confirm ' + (pend > 1 ? 'them' : 'it') + ' from the documents.' : '') + '</p><div class="row"><button class="btn d" type="button" data-v="reject">Reject</button><button class="btn p" type="button" data-v="approve"' + (allOk && auto ? '' : ' disabled') + '>' + (allOk && auto ? 'Approve vendor' : !auto ? 'Fix failed checks first' : 'Verify all documents first') + '</button></div></div>'
     : '<div class="card mute">Waiting for a checker (operations manager, admin or finance head) – ' + (mine ? 'someone other than you' : 'not you') + ' must verify.</div>';
   if (v.status === 'Verified') h += credHtml(v);
   return h + '<details class="card"><summary style="cursor:pointer;font-weight:700">Vendor details</summary>' + formHtml(v) + '</details>' +
@@ -163,9 +164,9 @@ document.addEventListener('click', async e => {
   if (act === 'dok') { await upd({ ['docs.' + k + '.s']: 'Verified', ['docs.' + k + '.by']: S.name, ['docs.' + k + '.vat']: now }, 'Document verified.'); return; }
   if (act === 'dno') { const why = prompt('What is wrong with this document?'); if (!why) return; await upd({ ['docs.' + k + '.s']: 'Rejected', ['docs.' + k + '.note']: why.slice(0, 160), ['docs.' + k + '.by']: S.name, status: v.status === 'Submitted' ? 'Rejected' : v.status, rejectWhy: 'Document: ' + why.slice(0, 160) }, 'Document rejected. The vendor goes back for correction.'); return; }
   if (act === 'submit') { await upd({ status: 'Submitted', submittedAt: now, submittedBy: S.name, rejectWhy: '' }, 'Sent for verification.'); return; }
-  if (act === 'approve') { if (v.createdBy === S.me) { toast('The person who onboarded cannot verify.', true); return; }
-    if (!confirm('Approve ' + v.name + '? You confirm you checked all 5 documents.')) return;
-    await upd({ status: 'Verified', verifiedAt: now, verifiedBy: S.me, verifiedByName: S.name, rejectWhy: '' }, 'Vendor verified. Now create the vendor login.'); return; }
+  if (act === 'approve') { const self = v.createdBy === S.me; if (self && !isSuper()) { toast('The person who onboarded cannot verify.', true); return; }
+    if (!confirm('Approve ' + v.name + '? You confirm you checked all 5 documents.' + (self ? '\n\nYou onboarded this vendor – this is recorded as self-approved by Super admin.' : ''))) return;
+    await upd({ status: 'Verified', verifiedAt: now, verifiedBy: S.me, verifiedByName: S.name + (self ? ' (self-approved, Super admin)' : ''), selfApproved: self, rejectWhy: '' }, 'Vendor verified. Now create the vendor login.'); return; }
   if (act === 'reject') { const why = prompt('Why is this vendor rejected?'); if (!why) return; await upd({ status: 'Rejected', rejectWhy: why.slice(0, 200), verifiedByName: S.name, rejectedAt: now }, 'Vendor rejected.'); return; }
   if (act === 'block') { const why = prompt('Why block this vendor?'); if (!why) return; await upd({ status: 'Blocked', rejectWhy: why.slice(0, 200), blockedBy: S.name, blockedAt: now, uid: '' }, 'Vendor blocked.'); return; }
   if (act === 'cred') { if (!confirm('Make a new login for ' + v.name + '? The old login stops working.')) return; await upd({ uid: '', username: '' }); return; }

@@ -147,13 +147,13 @@ service cloud.firestore {
     // ----- Vendors (SN Pickup › Vendors, vendor portal at /vendor) -----
     // A vendor login has no members record, so it reaches nothing else in the database: only its own vendor record,
     // its own documents and its own pickups. Staff onboard vendors; only a checker who did not onboard the vendor
-    // (operations manager and above, admin, finance head) can verify, reject or block one.
+    // (operations manager and above, admin, finance head) can verify, reject or block one. Super admin may approve their own.
     function staffOps() { return isMember() && !isEmpOnly() && canWrite(); }
     function vendorChecker() { return hasRole(['superadmin', 'director', 'gm', 'admin_head', 'ops_manager', 'ops_mgr', 'ops_srm', 'ops_gm', 'ops_sgm', 'ops_avp', 'ops_vp', 'ops_svp', 'fin_head', 'fin_manager', 'fin_mgr']); }
     function vStatusOk(oldS, newS, maker) {
       return newS == oldS
         || (newS in ['Draft', 'Submitted'] && oldS in ['Draft', 'Submitted', 'Rejected'])
-        || (newS in ['Verified', 'Rejected', 'Blocked'] && vendorChecker() && maker != request.auth.uid)
+        || (newS in ['Verified', 'Rejected', 'Blocked'] && vendorChecker() && (maker != request.auth.uid || hasRole(['superadmin'])))
         || (newS == 'Rejected' && oldS == 'Submitted' && vendorChecker());
     }
     function myVendor(vid) { return signedIn() && exists(/databases/$(db)/documents/pvendors/$(vid)) && get(/databases/$(db)/documents/pvendors/$(vid)).data.get('uid', '') == request.auth.uid; }
