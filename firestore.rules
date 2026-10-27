@@ -148,6 +148,9 @@ service cloud.firestore {
       allow create, update: if isAdmin() || hrApprove()
         || (uid == request.auth.uid && exists(memberDoc()) && gmailOk(get(memberDoc()).data.role))
         || (uid == request.auth.uid && !exists(memberDoc()) && !exists(ownerDoc()));
+      // after setting their own password, a person clears the "starting password" flag on their own login
+      allow update: if uid == request.auth.uid && resource.data.get('pwDefault', false) == true && request.resource.data.pwDefault == false
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pwDefault', 'pwSetAt']);
       allow delete: if isAdmin();
     }
 

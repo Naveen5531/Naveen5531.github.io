@@ -165,6 +165,36 @@ function resolvePeople() {
   if (!D.emp.some(p => p._id === S.uid) && isHR()) { const m = D.emp.filter(p => !p.noPunch && normN(p.name) === normN(S.me.name)); if (m.length === 1) S.self = m[0]._id; }
 }
 const nextEmpId = () => { const used = new Set(D.staff.map(r => r.empId).concat(D.pemp.map(e => e.eid)).map(v => String(v || '').trim()).filter(v => /^\d{8}$/.test(v)).map(Number)); let n = 10000000; while (used.has(n)) n++; return String(n); };
+/** Every new Punch login starts with this password; the employee then sets their own (Me › My profile, or the banner on Home). */
+const DEFAULT_PW = 'Welcome@123';
+const loginOf = uid => { const u = D.users.find(x => x._id === uid); return u ? String(u.username || '').replace(/@staff\.movana\.app$/, '') : ''; };
+const onDefaultPw = () => { const u = D.users.find(x => x._id === S.uid); return !!(u && u.pwDefault); };
+/** Create the Punch app login for someone in the employee list: Punch ID = employee ID, password Welcome@123.
+ *  Writes the login, the Punch profile and links the portal record, so the person shows "On Punch" everywhere. */
+async function makePunchLogin(p) {
+  if (!canAppr()) { toast('HR team lead and above create Punch logins.'); return null; }
+  if (!window.MOVANA_FB || !MOVANA_FB.createStaff) { toast('Sign-in service not ready. Reload the page.'); return null; }
+  const now = Date.now(); let eid = String(p.eid || '').trim();
+  if (!/^\d{8}$/.test(eid) || D.emp.some(o => o !== p && o._id !== p._id && String(o.eid || '') === eid)) eid = nextEmpId();
+  const sid = p.staffId || newId('st'), st = Object.assign({ stage: 'Active', createdAt: now }, D.staff.find(z => z._id === sid) || { name: p.name, role: p.desg || '', dept: p.cat || '', hub: (p.wp || {}).name || '', joined: p.join || '' }); delete st._id;
+  let uid;
+  try { uid = await MOVANA_FB.createStaff(p.name, eid, DEFAULT_PW); }
+  catch (e) { toast(e && e.code === 'auth/email-already-in-use' ? 'A Punch login ' + eid + ' already exists. Change the employee ID and try again.' : e && e.code === 'auth/network-request-failed' ? 'No internet connection.' : 'Could not create the login (' + ((e && e.code) || 'error') + ').'); return null; }
+  try {
+    await fs.doc('users/' + uid).set({ name: p.name, username: eid, pwDefault: true, createdAt: now, createdBy: S.uid });
+    await fs.doc('members/' + uid).set({ role: 'employee', status: 'Active', createdAt: now, updatedAt: now, addedBy: S.uid });
+    await fs.doc('punch_emp/' + uid).set({ name: p.name, eid, desg: p.desg || st.role || '', grade: p.grade || st.grade || '', cat: p.cat || st.dept || '', join: p.join || st.joined || '', mgr: p.mgr || st.mgr || '', wp: { name: (p.wp || {}).name || st.hub || '' }, wo: [0], radius: 150, createdAt: now, updatedAt: now });
+    await fs.doc('staff/' + sid).set(Object.assign(st, { empId: eid, puid: uid, updatedAt: now }));
+  } catch (e) { toast('Login ' + eid + ' was made, but saving the profile failed. Try again.'); }
+  return { name: p.name, user: eid, uid };
+}
+const credCard = () => { const c = S.creds; if (!c || !c.length) return '';
+  const txt = c.map(x => x.name + '\nPunch ID: ' + x.user + '\nPassword: ' + DEFAULT_PW).join('\n\n') + '\n\nInstall Punch: https://naveen5531.github.io/Punch.apk\nSign in with your Punch ID and password, then set your own password at https://naveen5531.github.io/hr/#/profile';
+  return '<section class="card" style="margin-bottom:14px;border:2px solid var(--in)"><h2>Punch login' + (c.length > 1 ? 's' : '') + ' created</h2><p class="mute small">Punch ID is the employee ID. Everyone starts with the password <b>' + DEFAULT_PW + '</b> and is asked to set their own after signing in.</p>' +
+    tbl(['Employee', 'Punch ID', 'Password'], c.map(x => '<tr><td>' + esc(x.name) + '</td><td><b>' + esc(x.user) + '</b></td><td>' + DEFAULT_PW + '</td></tr>')) +
+    '<div class="row mt"><button class="btn p" type="button" data-a="cr-copy">Copy</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(txt) + '">Share on WhatsApp</a><button class="btn" type="button" data-a="cr-done">Done</button></div><textarea id="cr-txt" hidden>' + esc(txt) + '</textarea></section>'; };
+const pwCard = () => '<section class="card" id="pwcard"><h2>' + svg('key') + ' Set your own password</h2>' + (onDefaultPw() ? '<p class="mute">You are still on the starting password. Choose your own – it works for the Punch app and this site.</p>' : '<p class="mute small">Changes the password for the Punch app and this site.</p>') +
+  '<div class="form">' + fld('pw-old', 'Current password', 'password') + fld('pw-n1', 'New password', 'password') + fld('pw-n2', 'New password again', 'password') + '</div><div class="row mt"><button class="btn p" type="button" data-a="pw-set">Save password</button></div></section>';
 const mine = arr => arr.filter(x => x.uid === S.self);
 const empOf = uid => D.emp.find(e => e._id === uid);
 const meEmp = () => empOf(S.self) || { _id: S.self, name: S.me.name, wo: [0] };
@@ -227,7 +257,8 @@ const val = id => { const el = document.getElementById(id); return el ? el.value
 function vHome() {
   const e = meEmp(), ym = ymNow(), at = attDoc(S.self, ym), dd = today().slice(8), d = at && at.days && at.days[dd], open = at && at.open && iso(new Date(at.open.t)) === today() ? at.open : null, b = balOf(S.self), h = new Date().getHours();
   const st = open ? 'Checked in at ' + tm(open.t) : d && d.a ? 'Today ' + tm(d.a) + ' – ' + (d.b ? tm(d.b) : '…') + ' · ' + hm(d.ms) : 'Not checked in yet today';
-  let x = '<div class="grid g2"><section class="card hero"><div class="row" style="align-items:center;gap:14px"><span class="av lg" style="background:rgba(255,255,255,.2)">' + esc(ini(e.name)) + '</span><div><h1 style="color:#fff">Good ' + (h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening') + ', ' + esc(String(e.name || S.me.name).split(' ')[0]) + '</h1><p>' + esc([e.desg, e.eid].filter(Boolean).join(' · ') || 'Welcome to Movana People') + '</p></div></div>' +
+  const pwNote = onDefaultPw() ? '<section class="card" style="margin-bottom:14px;border:2px solid var(--warn,#e8a33d)"><div class="row"><b>You are using the starting password.</b><span class="mute">Set your own – it is used for the Punch app too.</span><a class="btn s p" href="#/profile" style="margin-left:auto">Set password</a></div></section>' : '';
+  let x = pwNote + '<div class="grid g2"><section class="card hero"><div class="row" style="align-items:center;gap:14px"><span class="av lg" style="background:rgba(255,255,255,.2)">' + esc(ini(e.name)) + '</span><div><h1 style="color:#fff">Good ' + (h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening') + ', ' + esc(String(e.name || S.me.name).split(' ')[0]) + '</h1><p>' + esc([e.desg, e.eid].filter(Boolean).join(' · ') || 'Welcome to Movana People') + '</p></div></div>' +
     '<div class="tiles mt"><a class="t" href="#/attendance"><span>Today</span><b style="font-size:1rem">' + esc(st) + '</b></a>' + (b ? ['PL', 'SL', 'CL'].map(t => '<a class="t" href="#/leave"><span>' + { PL: 'Privilege', SL: 'Sick', CL: 'Casual' }[t] + ' leave</span><b>' + r2((b.lv || {})[t] ? b.lv[t].b : 0) + '</b></a>').join('') + '<a class="t" href="#/leave"><span>Comp off</span><b>' + r2((b.co || {}).b) + '</b></a>' : '<a class="t" href="#/leave"><span>Leave balance</span><b style="font-size:1rem">Open Punch once to load it</b></a>') + '</div></section>';
   x += '<section class="card"><h2>Quick actions</h2><div class="qa">' + [['leave', 'cal', 'Apply leave'], ['requests', 'req', 'Attendance request'], ['payslips', 'pay', 'Payslips'], ['expenses', 'exp', 'Claim expense'], ['helpdesk', 'help', 'Ask HR'], ['documents', 'doc', 'My documents'], ['goals', 'goal', 'My goals'], ['learning', 'learn', 'Training']].map(([r, i, l]) => '<a href="#/' + r + '">' + svg(i) + l + '</a>').join('') + '</div></section></div>';
   if (isHR()) { const P = pend(); x += '<section class="card mt"><h2>Waiting for HR <a class="more" href="#/approvals">Open approvals</a></h2><div class="tiles">' + [['Leave & attendance', P.req, 'approvals'], ['Expenses', P.exp, 'hr-expenses'], ['Helpdesk', P.help, 'hr-helpdesk'], ['Resignations', P.exits, 'hr-exits'], ['Candidates in pipeline', P.cands, 'recruitment'], ['Offers awaiting acceptance', P.offers, 'onboarding']].map(([l, n, r]) => '<a class="t" href="#/' + r + '"><span>' + l + '</span><b>' + n + '</b></a>').join('') + '</div></section>'; }
@@ -246,7 +277,7 @@ function pend() { return { req: D.req.filter(r => r.s === 'Pending').length, exp
 function vProfile() {
   const e = meEmp(), u = D.users.find(x => x._id === S.self) || {};
   return ph('My profile', 'Kept by HR. Ask HR through the helpdesk to change anything.') + '<section class="card"><div class="row" style="gap:16px;margin-bottom:14px"><span class="av lg">' + esc(ini(e.name)) + '</span><div><h2>' + esc(e.name || S.me.name) + '</h2><div class="mute">' + esc([e.desg, e.grade && 'Grade ' + e.grade].filter(Boolean).join(' · ')) + '</div><div class="row mt">' + S.roles.map(r => pill(roleName(r), 'info')).join('') + '</div></div></div>' +
-    '<div class="kv">' + [['Employee ID', e.eid], ['Designation', e.desg], ['Grade', e.grade], ['Department', e.cat], ['Workplace', (e.wp || {}).name], ['Date of joining', fmtD(e.join)], ['Weekly off', (e.wo || []).map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ')], ['Login', u.username || S.me.email]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>';
+    '<div class="kv">' + [['Employee ID', e.eid], ['Designation', e.desg], ['Grade', e.grade], ['Department', e.cat], ['Workplace', (e.wp || {}).name], ['Date of joining', fmtD(e.join)], ['Weekly off', (e.wo || []).map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ')], ['Login', u.username || S.me.email]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>' + '<div class="mt"></div>' + pwCard();
 }
 const ROLE_N = { superadmin: 'Super admin', admin_head: 'Admin head', hr_head: 'HR head', hr_manager: 'HR manager', hr_exec: 'HR executive', employee: 'Employee', none: 'No role yet' };
 const roleName = r => ROLE_N[r] || r.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -365,20 +396,20 @@ function empForm() {
   return '<section class="card" style="margin-bottom:14px"><h2>' + (id === 'new' ? 'New employee' : 'Edit ' + esc(e.name)) + '</h2><div class="form">' + fld('em-name', 'Full name', 'text', e.name) + fld('em-eid', 'Employee ID', 'text', e.eid) + fld('em-desg', 'Designation', 'text', e.desg) +
     '<label>Grade<select id="em-grade">' + opt(GRADES, e.grade) + '</select></label><label>Department<select id="em-cat">' + opt(DEPTS_HR, e.cat) + '</select></label>' + fld('em-hub', 'Workplace', 'text', (e.wp || {}).name) + fld('em-join', 'Date of joining', 'date', e.join) +
     '<label>Reporting manager<select id="em-mgr">' + opt(D.emp.filter(o => o._id !== id).map(o => o.name).sort(), e.mgr) + '</select></label>' + fld('em-phone', 'Mobile', 'tel', e.phone) + '</div>' +
-    '<p class="mute small mt">Saved to the portal\'s employee list' + (e.noPunch || id === 'new' ? '' : ' and this person\'s Punch app profile') + ' at the same time.</p><div class="row mt"><button class="btn p" type="button" data-a="em-save">Save</button><button class="btn" type="button" data-a="em-cancel">Cancel</button></div></section>';
+    '<p class="mute small mt">' + (id === 'new' ? (canAppr() ? 'Saving also creates the Punch app login: Punch ID = employee ID, password ' + DEFAULT_PW + '.' : 'Saved to the employee list. HR team lead and above create the Punch login.') : 'Saved to the portal\'s employee list' + (e.noPunch ? '' : ' and this person\'s Punch app profile') + ' at the same time.') + '</p><div class="row mt"><button class="btn p" type="button" data-a="em-save">Save</button><button class="btn" type="button" data-a="em-cancel">Cancel</button></div></section>';
 }
 function vHrEmployees() {
   const q = lc(S.q.emp || ''), E = D.emp.filter(e => !q || lc([e.name, e.eid, e.desg, e.cat].join(' ')).includes(q)).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = ymNow(), np = D.emp.filter(e => e.noPunch).length;
-  return ph('Employees', D.emp.length + ' employees · ' + (D.emp.length - np) + ' on Punch' + (np ? ' · ' + np + ' without a Punch login' : ''), '<input id="q-emp" type="search" class="btn" placeholder="Name or ID" value="' + esc(S.q.emp || '') + '" style="min-width:min(200px,100%)"><button class="btn p" type="button" data-a="em-new">＋ New employee</button>') +
-    (S.edit ? empForm() : '') +
+  return ph('Employees', D.emp.length + ' employees · ' + (D.emp.length - np) + ' on Punch' + (np ? ' · ' + np + ' without a Punch login' : ''), '<input id="q-emp" type="search" class="btn" placeholder="Name or ID" value="' + esc(S.q.emp || '') + '" style="min-width:min(200px,100%)"><button class="btn p" type="button" data-a="em-new">＋ New employee</button>' + (np && canAppr() ? '<button class="btn" type="button" data-a="pl-all">Create Punch logins (' + np + ')</button>' : '')) +
+    credCard() + (S.edit ? empForm() : '') +
     tbl(['Name', 'Designation', 'Department', 'Joined', 'Punch', '#Present', 'Offer', ''], E.map(e => { const o = D.offer.find(x => x._id === e._id);
-      return '<tr><td><b>' + esc(e.name) + '</b><div class="mute small">' + esc(e.eid || 'No ID') + '</div></td><td class="w" style="min-width:160px">' + esc([e.desg, e.grade].filter(Boolean).join(' · ')) + '</td><td>' + esc(e.cat || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (e.noPunch ? '<a href="../portal/#punch" class="pill warn">Create login</a>' : pill('On Punch', 'good')) + '</td><td class="n">' + (e.noPunch ? '—' : monthSum(e, ym).p) + '</td><td>' + (o ? stPill(o.status) : canSal() && !e.noPunch ? '<span class="mute">—</span>' : '') + '</td>' +
+      return '<tr><td><b>' + esc(e.name) + '</b><div class="mute small">' + esc(e.eid || 'No ID') + '</div></td><td class="w" style="min-width:160px">' + esc([e.desg, e.grade].filter(Boolean).join(' · ')) + '</td><td>' + esc(e.cat || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (e.noPunch ? (canAppr() ? '<button class="btn s p" type="button" data-a="pl-one" data-x="' + esc(e._id) + '">Create Punch login</button>' : pill('No Punch login', 'warn')) : pill('Punch ID ' + (loginOf(e._id) || e.eid || ''), 'good')) + '</td><td class="n">' + (e.noPunch ? '—' : monthSum(e, ym).p) + '</td><td>' + (o ? stPill(o.status) : canSal() && !e.noPunch ? '<span class="mute">—</span>' : '') + '</td>' +
         '<td style="white-space:nowrap;position:sticky;right:0;background:var(--card)"><button class="btn s" type="button" data-a="em-edit" data-x="' + esc(e._id) + '">Edit</button> <button class="btn s d" type="button" data-a="em-left" data-x="' + esc(e._id) + '">Mark left</button></td></tr>'; }), 'No employees match.');
 }
 function vOnboarding() {
   const E = D.emp.filter(e => e.noPunch || !e.join || e.join >= iso(new Date(Date.now() - 90 * 864e5))).sort((a, b) => String(b.join) < String(a.join) ? -1 : 1);
-  return ph('Onboarding', 'New joiners in the last 90 days and upcoming joiners, with their offer letter status.', '<a class="btn p" href="../portal/#punch">＋ New joiner (create Punch login)</a>') +
-    tbl(['Name', 'ID', 'Designation', 'Joining', 'Offer letter', 'Punch app'], E.map(e => { const o = D.offer.find(x => x._id === e._id), at = D.att.some(a => a.uid === e._id); return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (o ? stPill(o.status) : pill('Not prepared')) + '</td><td>' + (e.noPunch ? '<a href="../portal/#punch" class="pill warn">Create Punch login</a>' : at ? pill('Using', 'good') : pill('Not yet', 'warn')) + '</td></tr>'; }), 'No new joiners.') +
+  return ph('Onboarding', 'New joiners in the last 90 days and upcoming joiners, with their offer letter status.', '<a class="btn p" href="#/hr-employees">＋ New employee</a>') +
+    tbl(['Name', 'ID', 'Designation', 'Joining', 'Offer letter', 'Punch app'], E.map(e => { const o = D.offer.find(x => x._id === e._id), at = D.att.some(a => a.uid === e._id); return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (o ? stPill(o.status) : pill('Not prepared')) + '</td><td>' + (e.noPunch ? '<a href="#/hr-employees" class="pill warn">Create Punch login</a>' : at ? pill('Using', 'good') : pill('Not yet', 'warn')) + '</td></tr>'; }), 'No new joiners.') +
     '<p class="mute small mt">Packages and offer letters are prepared and released in the portal: Team live › Package &amp; offer letter.</p>';
 }
 function vTeamAtt() {
@@ -410,7 +441,7 @@ function vPayroll() {
 const STG = ['Applied', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
 function vRecruit() {
   const J = D.jobs.slice().sort((a, b) => num(b.at) - num(a.at)), C = D.cands;
-  return ph('Recruitment', 'Open roles and the candidate pipeline. Hired? Create their Punch login and offer letter.', '<a class="btn p" href="../portal/#punch">＋ New joiner (portal)</a>') +
+  return ph('Recruitment', 'Open roles and the candidate pipeline. Hired? Create their Punch login and offer letter.', '<a class="btn p" href="#/hr-employees">＋ New employee</a>') +
     '<div class="grid g2"><section class="card"><h2>Job openings</h2><div class="form">' + fld('jb-title', 'Role', 'text') + fld('jb-dept', 'Department', 'select:Operations|Finance|HR|Admin|IT|Transport|Other') + fld('jb-loc', 'Location', 'text', 'DC Isnapur') + fld('jb-n', 'Openings', 'number', '1') + fld('jb-type', 'Type', 'select:Full-time|Contract|Intern') + fld('jb-desc', 'Description', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="jb-add">Post opening</button></div>' +
     tbl(['Role', 'Dept', '#Open', '#Candidates', 'Status', ''], J.map(j => '<tr><td>' + esc(j.title) + '</td><td>' + esc(j.dept || '') + '</td><td class="n">' + esc(j.openings || '') + '</td><td class="n">' + C.filter(c => c.job === j._id).length + '</td><td>' + stPill(j.s || 'Open') + '</td><td><button class="btn s" type="button" data-a="jb-toggle" data-x="' + esc(j._id) + '">' + (j.s === 'Closed' ? 'Reopen' : 'Close') + '</button></td></tr>'), 'No openings.') + '</section>' +
     '<section class="card"><h2>Add candidate</h2><div class="form">' + fld('cd-name', 'Name', 'text') + fld('cd-mob', 'Mobile', 'tel') + fld('cd-email', 'Email', 'email') + '<label>For role<select id="cd-job">' + J.filter(j => j.s !== 'Closed').map(j => '<option value="' + esc(j._id) + '">' + esc(j.title) + '</option>').join('') + '</select></label>' + fld('cd-src', 'Source', 'select:Referral|Job portal|Walk-in|Agency|Campus|Other') + fld('cd-note', 'Notes', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="cd-add"' + (J.length ? '' : ' disabled') + '>Add candidate</button></div></section></div>' +
@@ -536,7 +567,21 @@ async function act(a, x, t) {
       if (!(await save('staff/' + sid, sb))) return;
       if (p && !p.noPunch) { const raw = Object.assign({}, D.pemp.find(z => z._id === p._id) || {}); delete raw._id;
         if (!(await save('punch_emp/' + p._id, Object.assign(raw, { name: f.name, eid: f.eid, desg: f.desg, grade: f.grade, cat: f.cat, join: f.join, mgr: f.mgr, wp: Object.assign({}, raw.wp, { name: f.hub }), updatedAt: now })))) return; }
-      S.edit = null; toast(p ? 'Saved – portal' + (p.noPunch ? '' : ' and Punch app') + ' updated' : 'Employee added'); render(); return; }
+      S.edit = null;
+      if (!p && canAppr()) { toast('Employee added – creating the Punch login…'); const c = await makePunchLogin({ name: f.name, eid: f.eid, desg: f.desg, grade: f.grade, cat: f.cat, wp: { name: f.hub }, join: f.join, mgr: f.mgr, staffId: sid }); if (c) S.creds = [c]; render(); window.scrollTo(0, 0); return; }
+      toast(p ? 'Saved – portal' + (p.noPunch ? '' : ' and Punch app') + ' updated' : 'Employee added'); render(); return; }
+    case 'pl-one': case 'pl-all': {
+      const L = a === 'pl-one' ? [empOf(x)].filter(Boolean) : D.emp.filter(o => o.noPunch); if (!L.length) return;
+      if (!confirm('Create Punch login' + (L.length > 1 ? 's' : '') + ' for ' + L.map(o => o.name).join(', ') + '?\nPunch ID = employee ID, password ' + DEFAULT_PW + '.')) return;
+      const out = []; for (const o of L) { const c = await makePunchLogin(o); if (c) out.push(c); }
+      if (out.length) { S.creds = out; toast(out.length + ' Punch login' + (out.length > 1 ? 's' : '') + ' created'); } render(); window.scrollTo(0, 0); return; }
+    case 'cr-copy': { const v = ($('#cr-txt') || {}).value || ''; try { await navigator.clipboard.writeText(v); toast('Copied'); } catch (e) { toast('Copy failed – select and copy by hand.'); } return; }
+    case 'cr-done': S.creds = null; render(); return;
+    case 'pw-set': { const o = val('pw-old'), n1 = val('pw-n1'), n2 = val('pw-n2');
+      if (!o) { toast('Enter your current password.'); return; } if (n1.length < 8) { toast('New password: at least 8 characters.'); return; } if (n1 !== n2) { toast('The two new passwords do not match.'); return; } if (n1 === DEFAULT_PW || n1 === o) { toast('Choose a password different from the current one.'); return; }
+      try { await MOVANA_FB.changePassword(o, n1); } catch (e) { toast(e && (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') ? 'Current password is wrong.' : e && e.code === 'auth/requires-recent-login' ? 'Sign out and in again, then retry.' : 'Could not change the password (' + ((e && e.code) || 'error') + ').'); return; }
+      const u = D.users.find(z => z._id === S.uid); if (u && u.pwDefault) { const b = Object.assign({}, u); delete b._id; b.pwDefault = false; b.pwSetAt = Date.now(); try { await fs.doc('users/' + S.uid).set(b); } catch (e) {} }
+      ['pw-old', 'pw-n1', 'pw-n2'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; }); toast('Password changed – use it in the Punch app too'); render(); return; }
     case 'em-left': { const p = empOf(x); if (!p || !confirm('Mark ' + p.name + ' as left? They drop off every list; their Punch history is kept.')) return;
       const sid = p.staffId || 'p_' + p._id, cur = Object.assign({}, D.staff.find(z => z._id === sid) || { name: p.name, empId: p.eid || '', role: p.desg || '', puid: p.noPunch ? '' : p._id, createdAt: now }); delete cur._id;
       if (await save('staff/' + sid, Object.assign(cur, { stage: 'Left', leftAt: now, updatedAt: now }), p.name + ' marked as left')) render(); return; }
