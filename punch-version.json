@@ -1,9 +1,9 @@
 {
-  "versionCode": 58,
-  "versionName": "7.4",
+  "versionCode": 59,
+  "versionName": "7.5",
   "date": "27 Oct 2026",
-  "size": 3056240,
+  "size": 3056448,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Brings back your saved home and office, and fixes auto check-in.",
-  "list": ["Your saved workplace, home and places come back after signing in.","Auto check-in works again after login or switching person."]
+  "notes": "Access by role, set by your admin.",
+  "list": ["Only roles allowed by your admin can sign in to Punch."]
 }
