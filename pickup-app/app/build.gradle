@@ -6,8 +6,8 @@ android {
         applicationId 'com.snlogistics.pickup'
         minSdk 26
         targetSdk 34
-        versionCode 3
-        versionName '1.2'
+        versionCode 4
+        versionName '1.3'
     }
     // Signing key comes from the GitHub secret SNP_KEYSTORE (never stored in this public repo).
     // Without it the build uses a temporary key, and each new APK must be installed fresh.
@@ -19,5 +19,6 @@ android {
         debug { if (ks.exists()) signingConfig signingConfigs.sn }
         release { minifyEnabled false; if (ks.exists()) signingConfig signingConfigs.sn }
     }
+    buildFeatures { buildConfig true }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

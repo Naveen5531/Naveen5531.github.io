@@ -1,0 +1,2 @@
+Update SN Pickup from inside the app.
+Google sign-in button opens Chrome.

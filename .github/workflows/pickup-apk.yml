@@ -16,18 +16,30 @@ jobs:
         with: { distribution: temurin, java-version: "17" }
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: "8.9" }
-      - name: Signing key from secret (optional)
+      # One fixed signing key, so every new APK installs as an update over the old one.
+      # It lives in this repository's private build cache (never in the public code), or in the SNP_KEYSTORE secret if set.
+      - name: Signing key (private cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.snp-key
+          key: snp-signing-key-v1
+      - name: Signing key
         env:
           KS: ${{ secrets.SNP_KEYSTORE }}
         shell: bash
         run: |
-          if [ -n "$KS" ]; then echo "$KS" | base64 -d > pickup-app/app/sign.jks; fi
+          mkdir -p ~/.snp-key
+          if [ -n "$KS" ]; then echo "$KS" | base64 -d > ~/.snp-key/sign.jks
+          elif [ ! -f ~/.snp-key/sign.jks ]; then
+            keytool -genkeypair -keystore ~/.snp-key/sign.jks -storepass snpcache -keypass snpcache -alias snpickup -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=SN Logistics, O=SN Logistics, C=IN"
+          fi
+          cp ~/.snp-key/sign.jks pickup-app/app/sign.jks
       - name: Build
         id: build
         working-directory: pickup-app
         shell: bash
         env:
-          SNP_PASS: ${{ secrets.SNP_PASS }}
+          SNP_PASS: ${{ secrets.SNP_PASS || 'snpcache' }}
           SNP_ALIAS: ${{ secrets.SNP_ALIAS }}
         run: |
           set -o pipefail
@@ -38,7 +50,12 @@ jobs:
         run: |
           { echo "commit: ${GITHUB_SHA::7}"; echo "result: ${{ steps.build.outcome }}"; grep -E "error:|FAILED|What went wrong" pickup-app/build.log | head -40 || true; } > pickup-app-status.txt
           [ -f pickup-app/app/build/outputs/apk/debug/app-debug.apk ] && cp pickup-app/app/build/outputs/apk/debug/app-debug.apk SNPickup.apk
+          if [ -f SNPickup.apk ]; then
+            VC=$(grep -oP 'versionCode \K\d+' pickup-app/app/build.gradle); VN=$(grep -oP "versionName '\K[^']+" pickup-app/app/build.gradle)
+            NOTES=$(cat pickup-app/notes.txt 2>/dev/null | head -c 600 | python3 -c 'import json,sys; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))')
+            printf '{\n  "versionCode": %s,\n  "versionName": "%s",\n  "date": "%s",\n  "size": %s,\n  "url": "https://naveen5531.github.io/SNPickup.apk",\n  "list": %s\n}\n' "$VC" "$VN" "$(date -u +'%d %b %Y')" "$(stat -c%s SNPickup.apk)" "${NOTES:-[]}" > snpickup-version.json
+          fi
           git config user.name github-actions; git config user.email actions@github.com
-          rm -f pickup-app/app/sign.jks; git add pickup-app-status.txt; [ -f SNPickup.apk ] && git add SNPickup.apk
+          rm -f pickup-app/app/sign.jks; git add pickup-app-status.txt; [ -f SNPickup.apk ] && git add SNPickup.apk snpickup-version.json
           git commit -qm "SN Pickup build ${GITHUB_SHA::7}: ${{ steps.build.outcome }}" || exit 0
           git pull -q --rebase origin main && git push -q origin HEAD:main

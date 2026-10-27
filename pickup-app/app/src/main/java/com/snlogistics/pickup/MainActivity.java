@@ -21,12 +21,15 @@ public class MainActivity extends Activity {
     static final int CAM_REQ = 41, LOC_REQ = 42, FILE_REQ = 43;
     private ValueCallback<Uri[]> fileCb;
     private GeolocationPermissions.Callback geoCb; private String geoOrigin;
-    private WebView web;
+    static WebView web;
+    static Activity current;
+    static String quote(String s) { return "'" + s.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ") + "'"; }
     private PermissionRequest pending;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
+        current = this;
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         web = new WebView(this);
         setContentView(web);
@@ -93,6 +96,8 @@ public class MainActivity extends Activity {
         }
     }
 
+    @Override protected void onResume() { super.onResume(); current = this; Updater.resume(getApplicationContext()); }
+
     @Override public void onBackPressed() { if (web.canGoBack()) web.goBack(); else super.onBackPressed(); }
 
     /** Called from the page as window.SNPickup.* */
@@ -110,7 +115,10 @@ public class MainActivity extends Activity {
                 pm.print(name, web.createPrintDocumentAdapter(name), at);
             });
         }
-        @JavascriptInterface public String version() { return "1.2"; }
+        @JavascriptInterface public String version() { return BuildConfig.VERSION_NAME; }
+        @JavascriptInterface public int versionCode() { return BuildConfig.VERSION_CODE; }
+        /** in-app update: download the new APK inside the app and open Android's installer */
+        @JavascriptInterface public void updateApp(String url) { Updater.start(getApplicationContext(), url); }
         /** open a page in Chrome (Google sign-in is not allowed inside app web views) */
         @JavascriptInterface public void openExternal(String url) {
             runOnUiThread(() -> {

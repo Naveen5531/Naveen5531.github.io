@@ -477,6 +477,28 @@ function code128(text, hPx) {
   let x = 10, bars = ''; v.forEach(c => { const w = C128[c]; for (let i = 0; i < w.length; i++) { const n = +w[i]; if (i % 2 === 0) bars += '<rect x="' + x + '" y="0" width="' + n + '" height="' + hPx + '"/>'; x += n; } });
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + (x + 10) + ' ' + (hPx + 16) + '" preserveAspectRatio="none" style="width:100%;height:100%"><rect width="100%" height="100%" fill="#fff"/><g fill="#000">' + bars + '</g><text x="' + ((x + 10) / 2) + '" y="' + (hPx + 13) + '" font-family="Arial" font-size="12" text-anchor="middle">' + esc(text) + '</text></svg>';
 }
+
+/* ================= in-app update (HHT app) =================
+   Compares this app with the latest SN Pickup on the website (snpickup-version.json). App 1.3+ downloads and installs
+   inside the app with a progress bar; older apps open the download in the browser. */
+(function () {
+  const A = window.SNPickup; if (!A) return;
+  const cur = A.versionCode ? A.versionCode() : (A.openExternal ? 3 : 2), curN = A.version ? A.version() : '';
+  let latest = null, busy = false;
+  const bar = () => { let b = $('#ub'); if (!latest || latest.versionCode <= cur) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('div'); b.id = 'ub'; b.style.cssText = 'position:fixed;left:10px;right:10px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:70;background:#101828;color:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 12px 30px -10px rgba(0,0,0,.5);font-size:14px'; document.body.appendChild(b); }
+    b.innerHTML = '<div style="display:flex;gap:10px;align-items:center"><img src="../brand/sn-icon-64.png" alt="" style="width:36px;height:36px;border-radius:9px;background:#fff;padding:2px"><div style="flex:1;min-width:0"><b>Update available – SN Pickup ' + esc(latest.versionName) + '</b><div id="ubt" style="opacity:.8;font-size:12.5px">' + esc((latest.list || []).join(' · ') || (latest.size ? (latest.size / 1048576).toFixed(1) + ' MB' : '')) + '</div></div><button type="button" id="ubg" class="btn sm" style="background:#25cf9f;color:#04120d">Update</button></div><div id="ubp" hidden style="height:5px;border-radius:5px;background:rgba(255,255,255,.2);margin-top:10px;overflow:hidden"><i id="ubi" style="display:block;height:100%;width:0;background:#25cf9f;transition:width .3s"></i></div>';
+    $('#ubg').onclick = go; };
+  function go() { const u = latest.url || 'https://naveen5531.github.io/SNPickup.apk';
+    if (A.updateApp) { busy = true; upd('dl', 'Starting the download…'); A.updateApp(u); } else if (A.openExternal) A.openExternal(u); else location.href = 'https://www.google.com/url?q=' + encodeURIComponent(u); }
+  function upd(st, tx) { if (st === 'fail' || st === 'ok' || st === 'perm') busy = false; const t = $('#ubt'), g = $('#ubg'), pg = $('#ubp'), m = /(\d+)%/.exec(tx);
+    if (t) t.textContent = tx; if (pg) pg.hidden = st !== 'dl'; if (m && $('#ubi')) $('#ubi').style.width = m[1] + '%';
+    if (g) { g.disabled = busy; g.textContent = st === 'fail' ? 'Try again' : st === 'perm' ? 'Continue' : busy ? '…' : 'Update'; }
+    if (st === 'fail') toast(tx, true); }
+  window.__updState = upd;
+  async function check() { if (busy) return; try { const r = await fetch('../snpickup-version.json?t=' + Date.now(), { cache: 'no-store' }); if (r.ok) latest = await r.json(); } catch (e) {} bar(); }
+  setTimeout(check, 2500); document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+})();
 /* ---- labels: one 4 × 6 inch label per box, Code 128 barcode "LR-box-total" ---- */
 const code = (lr, i, n) => lr + '-' + pad(i, 3) + '-' + pad(n, 3);
 function printLabels(p) {
