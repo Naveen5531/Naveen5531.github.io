@@ -171,7 +171,15 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     // a verified vendor raises pickup requests and sees its own pickups (staff use the general rule below)
+    // short vendor list for pickup executives (no bank details or documents); staff keep it in step
+    match /pvlist/{id} {
+      allow read: if isMember();
+      allow write: if staffOps();
+    }
     match /pickups/{id} {
+      // pickup executive (any login, including Employee / Punch logins): only pickups assigned to them
+      allow read: if signedIn() && resource.data.get('exec', '') == request.auth.uid;
+      allow update: if isMember() && resource.data.get('exec', '') == request.auth.uid && request.resource.data.get('exec', '') in [request.auth.uid, ''];
       allow read: if signedIn() && resource.data.get('vendorUid', '') == request.auth.uid;
       allow create: if signedIn() && request.resource.data.vendorUid == request.auth.uid && request.resource.data.source == 'vendor' && request.resource.data.stage == 'Requested'
         && !('exec' in request.resource.data) && myVendor(request.resource.data.vendorId) && get(/databases/$(db)/documents/pvendors/$(request.resource.data.vendorId)).data.status == 'Verified';
@@ -182,7 +190,13 @@ service cloud.firestore {
     match /track/{id} {
       allow get: if true;
       allow list: if false;
-      allow write: if canWrite() && !isEmpOnly();
+      allow write: if (canWrite() && !isEmpOnly())
+        || (isMember() && exists(/databases/$(db)/documents/shipments/$('LR-' + id)) && get(/databases/$(db)/documents/shipments/$('LR-' + id)).data.get('pickedBy', '') == request.auth.uid);
+    }
+    // a pickup executive creates the LR (shipment) for a pickup assigned to them, when the pickup is complete
+    match /shipments/{id} {
+      allow create: if isMember() && id.matches('LR-SN[0-9]+') && request.resource.data.pickedBy == request.auth.uid
+        && get(/databases/$(db)/documents/pickups/$(request.resource.data.pickupId)).data.get('exec', '') == request.auth.uid;
     }
 
     // "Is the portal set up yet?" – readable before login so the first screen knows what to show.
@@ -234,8 +248,8 @@ service cloud.firestore {
 
     // Unique ticket ids: claimed once, never reused.
     match /ticketids/{id} {
-      allow read: if canWrite();
-      allow create: if canWrite();
+      allow read: if canWrite() || (isMember() && id.matches('LR-SN[0-9]+'));
+      allow create: if canWrite() || (isMember() && id.matches('LR-SN[0-9]+') && request.resource.data.claimedBy == request.auth.uid);
       allow update: if canWrite() && resource.data.claimedBy == request.auth.uid;
       allow delete: if false;
     }

@@ -95,6 +95,12 @@ function credHtml(v) {
 }
 function genPw() { const a = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789', r = new Uint32Array(10); crypto.getRandomValues(r); return [...r].map(x => a[x % a.length]).join('').replace(/^(.{4})(.{3})/, '$1@$2'); }
 
+/* Short vendor list for pickup executives (pvlist): only what a pickup needs – never bank details or documents.
+   Kept in step from the staff Vendors screen whenever a vendor changes. */
+let pvSig = {};
+P.syncVendorList = () => { if (!P.canVendors()) return;
+  S.vendors.forEach(v => { const d = { name: v.name || '', code: v.code || '', gstin: v.gstin || '', phone: v.phone || '', address: v.address || '', pin: v.pin || '', city: v.city || '', state: v.state || '', status: v.status || 'Draft', uid: v.uid || '' }, h = JSON.stringify(d);
+    if (pvSig[v._id] === h) return; pvSig[v._id] = h; fs.collection('pvlist').doc(v._id).set(Object.assign(d, { updatedAt: Date.now() })).catch(() => { delete pvSig[v._id]; }); }); };
 P.vendorsView = () => { if (VS.open === 'new') return '<button class="btn sm" type="button" data-v="back">← Vendors</button><div style="margin-top:12px">' + formHtml(null) + '</div>';
   const v = VS.open && S.vendors.find(x => x._id === VS.open); return v ? detailHtml(v) : listHtml(); };
 P.vendorsReset = () => { VS.open = null; };

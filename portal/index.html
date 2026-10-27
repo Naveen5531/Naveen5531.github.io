@@ -1711,7 +1711,7 @@ HOOK.actions.pickups = r => {
 /* SN Pickup (HHT) progress for this pickup, live: executive, accept, vendor, invoice, LR, boxes scanned, proof */
 const pkName = id => { const n = S.names && S.names[id]; return String((typeof n === 'string' ? n : n && n.name) || id).replace(/ \(@[^)]*\)$/, ''); };
 function hhtHtml(r) {
-  const ops = (S.data.members || []).filter(m => m.status !== 'Suspended' && [m.role].concat(m.roles || []).some(x => /^(ops_|pickup_coord|hub_sup|rider|booking_exec|vendor_coord|lastmile_lead)/.test(x)));
+  const ops = (S.data.members || []).filter(m => m.status !== 'Suspended' && [m.role].concat(m.roles || []).some(x => /^(ops_|pickup_coord|hub_sup|rider|booking_exec|vendor_coord|lastmile_lead|employee$)/.test(x)));
   try { wantNames(ops.map(m => m._id)); } catch (e) {}
   const can = writable() && !['Completed'].includes(r.hht || '');
   let h = '<h4 class="section-title">SN Pickup (HHT)</h4><div class="kv-grid">';

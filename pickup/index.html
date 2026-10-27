@@ -136,7 +136,7 @@ const HHT = /SNPickup\//.test(navigator.userAgent);
 const canAssign = () => !HHT && has(MGMT.concat(MGR_UP, ['admin_head', 'branch_manager', 'pickup_coord', 'ops_tl', 'ops_am']));
 const canInbound = () => !HHT && (canAssign() || has(['hub_sup']));
 const canCost = () => !HHT && has(MGMT.concat(MGR_UP, ACCOUNTS));        // accounts, or operations manager and above
-const isExecRole = r => /^(ops_|pickup_coord|hub_sup|rider|booking_exec|vendor_coord|lastmile_lead)/.test(r);
+const isExecRole = r => /^(ops_|pickup_coord|hub_sup|rider|booking_exec|vendor_coord|lastmile_lead|employee$)/.test(r);
 
 /* ================= login ================= */
 function showLogin(msg) { $('#app').hidden = true; $('#login').hidden = false; $('#le').textContent = msg || ''; }
@@ -172,7 +172,8 @@ const onUser = async u => {
     const [m, o, p] = await Promise.all([fs.doc('members/' + u.uid).get(), fs.doc('settings/owner').get().catch(() => null), fs.doc('users/' + u.uid).get().catch(() => null)]);
     const md = m.exists ? m.data() : null;
     S.owner = !!(o && o.exists && o.data().uid === u.uid);
-    if (!S.owner && (!md || md.status === 'Suspended' || md.role === 'none' || md.role === 'employee' && !(md.roles || []).length)) { await auth.signOut(); showLogin('This login has no access to SN Pickup. Ask your manager.'); return; }
+    /* Employee (Punch) logins may use SN Pickup as pickup executives: they see only pickups assigned to them */
+    if (!S.owner && (!md || md.status === 'Suspended' || md.role === 'none')) { await auth.signOut(); showLogin('This login has no access to SN Pickup. Ask your manager.'); return; }
     S.me = u.uid; S.roles = md ? [md.role].concat(md.roles || []) : []; S.name = (p && p.exists && p.data().name) || String(u.email || '').split('@')[0];
   } catch (x) { showLogin('Could not check your access (' + (x.code || 'error') + ').'); return; }
   $('#login').hidden = true; $('#app').hidden = false; $('#who').textContent = S.name; net();
@@ -190,7 +191,8 @@ function listen() {
   let seen = null; S.unsub.push(fs.collection('pickups').where('exec', '==', S.me).onSnapshot(s => { const ids = s.docs.filter(d => d.data().hht === 'Assigned').map(d => d.id);
     if (seen) { const fresh = ids.filter(i => !seen.has(i)); if (fresh.length) { beep(true); setTimeout(() => beep(true), 250); toast('New pickup assigned to you' + (fresh.length > 1 ? ' (' + fresh.length + ')' : '') + '.'); } } seen = new Set(ids); }, () => {}));
   if (canInbound()) L(fs.collection('shipments').where('inbound', '==', 'Pending'), 'ships', (a, b) => num(b.pickedAt) - num(a.pickedAt));
-  L(fs.collection('pvendors'), 'vendors', (a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
+  if (SNP.canVendors && SNP.canVendors()) L(fs.collection('pvendors'), 'vendors', (a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
+  else L(fs.collection('pvlist'), 'vendors', (a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
   if (canAssign()) {
     S.unsub.push(fs.collection('members').onSnapshot(async s => {
       const ms = s.docs.map(d => Object.assign({ _id: d.id }, d.data())).filter(x => x.status !== 'Suspended' && [x.role].concat(x.roles || []).some(isExecRole));
@@ -204,7 +206,7 @@ function listen() {
   }
 }
 window.SNP = { hht: HHT, $, $$, esc, num, toast, fs, S, fd, fdt, pinInfo: (...a) => pinInfo(...a), canAssign: () => canAssign(), has: l => has(l), renderNow: f => { if (f) S.force = true; render(); } };
-let rq = false; const later = () => { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); }); };
+let rq = false; const later = () => { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); try { SNP.syncVendorList && SNP.syncVendorList(); } catch (e) {} }); };
 
 /* ================= cost (same rules as the portal's price calculation) ================= */
 const DEF = { volDivisor: 5000, fuelPct: 12, docket: 50, gstPct: 18, minCharge: 150, roundTo: 0.5, rLocal: 18, rRegional: 24, rMetro: 30, rNational: 38, rSpecial: 55, tLocal: 1, tRegional: 2, tMetro: 3, tNational: 5, tSpecial: 7, state: 'Telangana' };
@@ -597,5 +599,5 @@ async function receive(btn, short) {
 }
 })();
 </script>
-<script src="vendors.js?v=4"></script>
+<script src="vendors.js?v=5"></script>
 </body></html>
