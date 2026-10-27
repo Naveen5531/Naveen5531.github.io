@@ -1,7 +1,7 @@
 {
-  "versionCode": 53,
-  "versionName": "6.9",
+  "versionCode": 54,
+  "versionName": "7.0",
   "date": "27 Oct 2026",
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Fix: Profile shows the details of the person who is logged in."
+  "notes": "Updates now download and install inside Punch. Profile shows the logged-in person's details."
 }
