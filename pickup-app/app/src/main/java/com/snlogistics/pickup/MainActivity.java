@@ -40,7 +40,8 @@ public class MainActivity extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
                 Uri u = r.getUrl();
-                if ("naveen5531.github.io".equals(u.getHost())) return false;
+                if ("intent".equals(u.getScheme())) { try { startActivity(Intent.parseUri(u.toString(), Intent.URI_INTENT_SCHEME)); } catch (Exception ignored) {} return true; }
+                if ("https".equals(u.getScheme()) && "naveen5531.github.io".equals(u.getHost())) return false;
                 try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception ignored) {}
                 return true;
             }
@@ -109,6 +110,14 @@ public class MainActivity extends Activity {
                 pm.print(name, web.createPrintDocumentAdapter(name), at);
             });
         }
-        @JavascriptInterface public String version() { return "1.0"; }
+        @JavascriptInterface public String version() { return "1.2"; }
+        /** open a page in Chrome (Google sign-in is not allowed inside app web views) */
+        @JavascriptInterface public void openExternal(String url) {
+            runOnUiThread(() -> {
+                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                i.setPackage("com.android.chrome");
+                try { startActivity(i); } catch (Exception e) { try { startActivity(i.setPackage(null)); } catch (Exception ignored) {} }
+            });
+        }
     }
 }
