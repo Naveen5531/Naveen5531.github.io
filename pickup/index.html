@@ -59,7 +59,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-l
 .lbl{box-sizing:border-box;width:4in;height:6in;padding:.14in;font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;display:flex;flex-direction:column;gap:.06in;border:1px solid #000}
 .lbl .h{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:.05in}.lbl .h img{height:.42in}.lbl .h b{font-size:15pt}
 .lbl .bxn{font-size:34pt;font-weight:900;text-align:right;line-height:1}.lbl .bxn small{font-size:10pt;display:block;font-weight:700}
-.lbl .lr{font-size:20pt;font-weight:900;letter-spacing:.02em}.lbl .bc{height:1.25in}.bcw{height:100%;display:flex;flex-direction:column;background:#fff;padding:0 .25in}.bcw svg{flex:1;width:100%;display:block;margin:0 auto}.bct{text-align:center;font:700 10pt/1.2 Arial,sans-serif;letter-spacing:.08em;padding-top:2px}
+.lbl .lr{font-size:20pt;font-weight:900;letter-spacing:.02em}.lbl .bc{height:1.25in}.bcw{height:100%;display:flex;flex-direction:column;background:#fff;padding:0 .25in}.bcw img{flex:1;min-height:0;display:block;margin:0 auto;image-rendering:pixelated;image-rendering:crisp-edges}.bct{text-align:center;font:700 10pt/1.2 Arial,sans-serif;letter-spacing:.08em;padding-top:2px}
 .lbl .ad{display:grid;grid-template-columns:1fr 1fr;gap:.08in;font-size:8.5pt;border-top:1px solid #000;padding-top:.05in}.lbl .ad b{display:block;font-size:7pt;text-transform:uppercase}
 .lbl .pin{font-size:18pt;font-weight:900}.lbl .ft{margin-top:auto;display:flex;justify-content:space-between;font-size:8.5pt;border-top:1px solid #000;padding-top:.05in}
 </style>
@@ -533,8 +533,12 @@ function code128(text, hPx) {
     const c = t.charCodeAt(i); v.push(c >= 32 && c <= 126 ? c - 32 : 0); i++;
   }
   let sum = v[0]; for (let k = 1; k < v.length; k++) sum += v[k] * k; v.push(sum % 103); v.push(106);
-  let x = 0, bars = ''; v.forEach(c => { const w = C128[c]; for (let k = 0; k < w.length; k++) { const n = +w[k]; if (k % 2 === 0) bars += '<rect x="' + x + '" y="0" width="' + n + '" height="1"/>'; x += n; } });
-  return '<div class="bcw"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + x + ' 1" preserveAspectRatio="none" shape-rendering="crispEdges" style="max-width:' + (x * 0.014).toFixed(2) + 'in"><g fill="#000">' + bars + '</g></svg><div class="bct">' + esc(t) + '</div></div>';
+  /* Drawn as a sharp PNG (6 pixels per bar unit) – SVG barcodes smear into black blocks in Android's print/PDF */
+  const mods = []; v.forEach(c => { for (const ch of C128[c]) mods.push(+ch); });
+  const X = mods.reduce((a, b) => a + b, 0), PX = 6, cv = document.createElement('canvas'); cv.width = X * PX; cv.height = 60;
+  const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.fillStyle = '#000';
+  let x = 0; mods.forEach((n, k) => { if (k % 2 === 0) g.fillRect(x * PX, 0, n * PX, cv.height); x += n; });
+  return '<div class="bcw"><img alt="" src="' + cv.toDataURL('image/png') + '" style="width:' + (X * 0.014).toFixed(3) + 'in;max-width:100%"><div class="bct">' + esc(t) + '</div></div>';
 }
 
 /* ================= in-app update (HHT app) =================
