@@ -1,2 +1,2 @@
-Always opens the newest screens when online.
-Employee logins can do their assigned pickups.
+Clearer, shorter barcodes on box labels that scan faster.
+When a new version is out, the app shows the update screen on opening.
