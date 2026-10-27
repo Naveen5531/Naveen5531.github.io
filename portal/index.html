@@ -1866,11 +1866,12 @@ HOOK.detail.trips = r => {
     (num(r.cost) && wt ? '<div><span class="mini">Cost per kg</span><div><b>' + money2(num(r.cost) / wt) + '</b></div></div>' : '') + (r.departedAt ? '<div><span class="mini">Departed</span><div>' + esc(fmtTime(r.departedAt)) + '</div></div>' : '') + (r.arrivedAt ? '<div><span class="mini">Arrived</span><div>' + esc(fmtTime(r.arrivedAt)) + ' (' + ((r.arrivedAt - r.departedAt) / 36e5).toFixed(1) + ' h)</div></div>' : '') + '</div>';
   if (cap && wt > cap) h += '<p class="banner">Over vehicle capacity by ' + inr.format(wt - cap) + ' kg.</p>';
   if (cbmCap && cbmUsed > cbmCap) h += '<p class="banner">Over vehicle volume by ' + r2(cbmUsed - cbmCap) + ' CBM.</p>';
-  { const dd = r.drsNo && S.data.drs.find(x => x.no === r.drsNo); h += '<p class="help">' + esc(tripKind(r)) + ' · ' + esc(TRIP_HELP[tripKind(r)] || '') + '</p>' + (dd ? '<div class="actions"><button class="btn small" type="button" data-open="drs|' + dd._id + '">Open runsheet ' + esc(dd.no) + ' (' + esc(stageOf('drs', dd)) + ')</button></div>' : ''); }
+  { const dd = r.drsNo && S.data.drs.find(x => x.no === r.drsNo); h += '<p class="help">' + esc(tripKind(r)) + ' · ' + esc(TRIP_HELP[tripKind(r)] || '') + '</p><div class="actions"><button class="btn small primary" type="button" data-act="trip-sheet">Trip sheet (PDF)</button>' + (dd ? '<button class="btn small" type="button" data-open="drs|' + dd._id + '">Open runsheet ' + esc(dd.no) + ' (' + esc(stageOf('drs', dd)) + ')</button>' : '') + '</div>'; }
   h += '<h4 class="section-title">Manifest (' + on.length + ')</h4>' + (on.length ? on.map(s => '<div class="pickrow"><span class="code">' + esc(s.awb) + '</span><span class="grow">' + esc((s.consignee || '') + ' · ' + (s.destCity || '') + ' · ' + shipPrice(s).chg + ' kg') + '</span>' + pill(stageOf('shipments', s)) + (writable() && st === 'Planned' ? '<button class="btn small" type="button" data-trip-remove="' + s._id + '">Remove</button>' : '') + '</div>').join('') : '<p class="mini">No shipments loaded.</p>');
   if (writable() && st === 'Planned') {
     const cands = tripCands(r).filter(s => !ids.includes(s._id) && !S.data.trips.some(t => t._id !== r._id && !['Arrived', 'Closed'].includes(stageOf('trips', t)) && (t.awbIds || []).includes(s._id)));
-    h += '<h4 class="section-title">Ready to load (' + cands.length + ')</h4>' + (cands.length ? '<div>' + cands.slice(0, 300).map(s => '<label class="pickrow"><input type="checkbox" class="cand" value="' + s._id + '"><span class="code">' + esc(s.awb) + '</span><span class="grow">' + esc((s.destCity || s.consignee || '') + ' · ' + shipPrice(s).chg + ' kg') + '</span>' + pill(stageOf('shipments', s)) + '</label>').join('') + '</div><div class="actions"><button class="btn small" type="button" data-act="cand-all">Tick all</button><button class="btn small primary" type="button" data-act="trip-load">Load ticked</button></div>' : '<p class="mini">Shipments appear here when they are Picked up or At origin hub.</p>');
+    h += '<h4 class="section-title">Ready to load (' + cands.length + ')</h4>' + (cands.length ? '<div>' + cands.slice(0, 300).map(s => '<label class="pickrow"><input type="checkbox" class="cand" value="' + s._id + '"><span class="code">' + esc(s.awb) + '</span><span class="grow">' + esc((s.destCity || s.consignee || '') + ' · ' + shipPrice(s).chg + ' kg') + '</span>' + pill(stageOf('shipments', s)) + '</label>').join('') + '</div><div class="actions"><button class="btn small" type="button" data-act="cand-all">Tick all</button><button class="btn small primary" type="button" data-act="trip-load">Load ticked</button></div>' : '<p class="mini">' + esc({ 'First mile': 'Shipments that are Booked, Picked up or Pickup in transit show here.', 'Mid mile': 'Shipments received at the origin hub (At origin hub) show here.', 'Last mile': 'Shipments At destination hub (or failed deliveries due again) show here.' }[tripKind(r)] || 'Nothing ready.') + '</p>');
+    h += '<h4 class="section-title">Add shipment</h4><div class="actions" style="align-items:center"><input id="tripAdd" type="search" placeholder="Scan or type AWB / LR / client ref" aria-label="Add shipment by AWB" style="flex:1 1 220px;min-width:0" enterkeyhint="go"><button class="btn small primary" type="button" data-act="trip-add">Add to trip</button></div><p class="mini" id="tripAddMsg"' + (D && D.tripMsgBad ? ' style="color:var(--bad, #c0392b)"' : '') + '>' + esc((D && D.tripMsg) || '') + '</p>';
   }
   if (writable() && lvl('payments') >= 2 && num(r.cost) && r.vendor && !r.billNo) h += '<button class="btn small" type="button" data-act="trip-bill">Create vendor bill for ' + money(r.cost) + '</button>';
   return (pu ? chainHtml(pu) : '') + h;
@@ -1880,8 +1881,56 @@ function tripCands(r) {
   const k = tripKind(r), st = s => stageOf('shipments', s), nearHub = (s, hub) => !hub || !s.origin || lc(s.origin) === lc(hub);
   if (k === 'First mile') return S.data.shipments.filter(s => ['Booked', 'Picked up', 'Pickup in transit'].includes(st(s)));
   if (k === 'Last mile') return S.data.shipments.filter(s => st(s) === 'At destination hub' || (st(s) === 'NDR' && (!s.nextAttempt || s.nextAttempt <= today())));
-  if (k === 'Mid mile') return S.data.shipments.filter(s => st(s) === 'At origin hub' && nearHub(s, r.from));
+  if (k === 'Mid mile') return S.data.shipments.filter(s => st(s) === 'At origin hub').sort((a, b) => (nearHub(b, r.from) ? 1 : 0) - (nearHub(a, r.from) ? 1 : 0));
   return [];
+}
+/** Add one shipment to a planned trip by AWB / LR / client ref (scanner or typed), with a clear reason when it can't go */
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target && e.target.id === 'tripAdd') { e.preventDefault(); const b = document.querySelector('#layer [data-act="trip-add"]'); if (b) b.click(); } });
+async function tripAddOne(r) {
+  const inp = $('#tripAdd'), msg = $('#tripAddMsg'), q = String((inp && inp.value) || '').trim().toUpperCase().replace(/-\d{3}-\d{3}$/, ''); if (!q) { if (inp) inp.focus(); return; }
+  const s = S.data.shipments.find(x => [x.awb, x.ref, x.lr].some(v => v && String(v).toUpperCase() === q));
+  const say = (t, bad) => { if (D) { D.tripMsg = t; D.tripMsgBad = !!bad; } if (msg) { msg.textContent = t; msg.style.color = bad ? 'var(--bad, #c0392b)' : ''; } if (inp) { inp.value = ''; inp.focus(); } };
+  if (!s) return say('No shipment with AWB / LR / ref ' + q + '.', true);
+  if (stageOf('trips', r) !== 'Planned') return say('Shipments can be added only while the trip is Planned.', true);
+  if ((r.awbIds || []).includes(s._id)) return say(s.awb + ' is already on this trip.', true);
+  const other = S.data.trips.find(t => t._id !== r._id && !['Arrived', 'Closed'].includes(stageOf('trips', t)) && (t.awbIds || []).includes(s._id));
+  if (other) return say(s.awb + ' is already on trip ' + other.no + ' (' + stageOf('trips', other) + ').', true);
+  if (!tripCands(r).some(x => x._id === s._id)) { const need = { 'First mile': 'Booked, Picked up or Pickup in transit', 'Mid mile': 'At origin hub (received at the hub)', 'Last mile': 'At destination hub' }[tripKind(r)] || '';
+    return say(s.awb + ' is ' + stageOf('shipments', s) + '. A ' + tripKind(r).toLowerCase() + ' trip takes shipments that are ' + need + '.', true); }
+  if (tripKind(r) === 'Mid mile' && r.from && s.origin && lc(s.origin) !== lc(r.from) && !(await ask(s.awb + ' is at ' + s.origin + ', but this trip leaves from ' + r.from + '. Add it anyway?', { ok: 'Add anyway' }))) return say('');
+  const ok = await save('trips', r._id, { awbIds: uniq((r.awbIds || []).concat([s._id])) }, 'Added ' + s.awb + ' to ' + r.no);
+  if (ok) say('✓ ' + s.awb + ' added (' + (s.pieces || 1) + ' boxes).');
+}
+/** Print a document page (invoice, trip sheet) – on a phone this opens the print screen where "Save as PDF" is a choice */
+function printDoc(html, title) {
+  const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'; document.body.appendChild(f);
+  const d = f.contentDocument; d.open(); d.write(html.replace(/<script[\s\S]*?<\/script>/g, '')); d.close();
+  const go = () => { try { f.contentWindow.document.title = title || ''; f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { saveFile((title || 'document') + '.html', html); } setTimeout(() => f.remove(), 60000); };
+  const im = d.images[0]; if (im && !im.complete) { im.onload = im.onerror = () => setTimeout(go, 100); } else setTimeout(go, 200);
+}
+/** Trip sheet / manifest in the company letterhead */
+function tripSheetHtml(r, logo) {
+  const st = SET(), col = '#2459a5', on = (r.awbIds || []).map(id => rec('shipments', id)).filter(Boolean), kind = tripKind(r), drs = r.drsNo && S.data.drs.find(x => x.no === r.drsNo);
+  const kv = (k, v) => v ? '<tr><td class="k">' + k + '</td><td>' + esc(v) + '</td></tr>' : '';
+  const boxes = sum(on, x => Math.max(1, num(x.pieces))), kg = r2(sum(on, x => num(x.weight))), cod = sum(on.filter(x => x.mode === 'COD'), x => num(x.cod));
+  const css = '*{box-sizing:border-box}body{margin:0;background:#eef1f5;font:13px/1.45 Arial,Helvetica,sans-serif;color:#1b2430;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '.pg{width:794px;min-height:1123px;margin:16px auto;background:#fff;padding:40px 44px;box-shadow:0 4px 24px rgba(0,0,0,.08)}.lh{display:flex;align-items:center;gap:16px;padding-bottom:10px}.lh img{height:58px;width:auto}.lht{margin-left:auto;text-align:right;font-size:11px;color:#4b5563;line-height:1.5}.lht b{color:#1b2430;font-size:12px}' +
+    '.bar{height:4px;border-radius:2px;background:linear-gradient(90deg,' + col + ',#c9d6ee);margin-bottom:14px}.dt{text-align:center;font-weight:800;font-size:16px;letter-spacing:.6px;padding:7px 0;border-bottom:1px solid #d6dae0;margin-bottom:14px}' +
+    '.two{display:flex;gap:14px;margin-bottom:14px}.box{flex:1;border:1px solid #d6dae0;border-radius:8px;padding:10px 12px}.box h4{margin:0 0 6px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:' + col + '}.box td{padding:2px 0;vertical-align:top}.box td.k{color:#6a7686;width:42%}' +
+    'table{width:100%;border-collapse:collapse}.it th{background:' + col + ';color:#fff;font-size:12px;padding:7px 6px;text-align:left}.it th.r{text-align:right}.it td{border-bottom:1px solid #e3e7ec;padding:7px 6px;font-size:12px}.it tr:nth-child(even) td{background:#f7f9fc}.it tr.t td{font-weight:800;background:#eef2f9}.r{text-align:right}' +
+    '.sg{display:flex;gap:18px;margin-top:46px}.sg div{flex:1;border-top:1px solid #9aa0a6;padding-top:4px;text-align:center;font-size:12px}.ft{margin-top:26px;font-size:11px;color:#6a7686;border-top:1px solid #e3e7ec;padding-top:8px;text-align:center}' +
+    '@media print{body{background:#fff}.pg{margin:0;box-shadow:none;width:auto;min-height:0;padding:28px 32px}@page{size:A4;margin:0}}';
+  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=820"><title>Trip ' + esc(r.no) + '</title><style>' + css + '</style></head><body><div class="pg">' +
+    '<div class="lh"><img src="' + esc(logo || LOGO_URL) + '" alt="' + esc(st.company) + '"><div class="lht"><b>' + esc(st.company) + '</b>' + (st.address ? '<br>' + esc(st.address) : '') + '<br>GSTIN: ' + esc(st.gstin || '—') + '</div></div><div class="bar"></div>' +
+    '<div class="dt">TRIP SHEET · ' + esc(kind.toUpperCase()) + '</div>' +
+    '<div class="two"><div class="box"><h4>Trip</h4><table>' + kv('Trip no', r.no) + kv('Operation', kind) + kv('From', r.from) + kv('To', r.to) + kv('Status', stageOf('trips', r)) + kv('Planned', fmtDate(r.planned)) + kv('Departed', r.departedAt ? fmtTime(r.departedAt) : '') + kv('Arrived', r.arrivedAt ? fmtTime(r.arrivedAt) : '') + kv('Runsheet', drs ? drs.no : '') + '</table></div>' +
+    '<div class="box"><h4>Vehicle &amp; driver</h4><table>' + kv('Vehicle', r.vehicle || '—') + kv('Driver', r.driver || '—') + kv('Transporter', r.vendor) + kv('Seal no', r.seal) + kv('Distance', num(r.km) ? r.km + ' km' : '') + (COST_OK() && num(r.cost) ? kv('Trip cost', money(r.cost)) : '') + '</table></div></div>' +
+    '<table class="it"><thead><tr><th>#</th><th>AWB / LR</th><th>Consignee</th><th>Destination</th><th class="r">Boxes</th><th class="r">Weight kg</th><th>Payment</th><th class="r">COD ₹</th><th>Status</th></tr></thead><tbody>' +
+    (on.length ? on.map((x, i) => '<tr><td>' + (i + 1) + '</td><td><b>' + esc(x.awb) + '</b>' + (x.ref ? '<br><span style="color:#6a7686">' + esc(x.ref) + '</span>' : '') + '</td><td>' + esc(x.consignee || '') + '</td><td>' + esc([x.destCity, x.pincode].filter(Boolean).join(' ')) + '</td><td class="r">' + esc(Math.max(1, num(x.pieces))) + '</td><td class="r">' + esc(num(x.weight) || '') + '</td><td>' + esc(x.mode || '') + '</td><td class="r">' + (x.mode === 'COD' ? inr2.format(num(x.cod)) : '') + '</td><td>' + esc(stageOf('shipments', x)) + '</td></tr>').join('') +
+      '<tr class="t"><td></td><td>' + on.length + ' shipments</td><td></td><td></td><td class="r">' + boxes + '</td><td class="r">' + kg + '</td><td></td><td class="r">' + (cod ? inr2.format(cod) : '') + '</td><td></td></tr>' : '<tr><td colspan="9" style="text-align:center;color:#6a7686">No shipments on this trip yet.</td></tr>') + '</tbody></table>' +
+    (r.notes ? '<p style="margin-top:12px"><b>Notes:</b> ' + esc(r.notes) + '</p>' : '') +
+    '<div class="sg"><div>Loaded by (hub)</div><div>Driver</div><div>Received by</div></div>' +
+    '<div class="ft">Printed ' + esc(fmtTime(Date.now())) + ' · ' + esc(st.company) + ' – Speed &amp; Trust</div></div></body></html>';
 }
 const TRIP_HELP = { 'First mile': 'Pickup run: collect boxes from shippers and bring them to the hub. Dispatch → Pickup in transit; Arrived → received at the hub (At origin hub).',
   'Mid mile': 'Linehaul: hub to hub. Only shipments received at the origin hub can be loaded. Dispatch → In transit; Arrived → At destination hub.',
@@ -2068,7 +2117,7 @@ HOOK.actions.invoices = r => {
   let h = '<div class="actions">';
   if (st === 'Raised') h += '<button class="btn small" type="button" data-stage-to="Sent">Mark sent</button>';
   if (!['Paid', 'Cancelled'].includes(st)) h += '<button class="btn primary small" type="button" data-act="inv-pay">Record payment</button><button class="btn small danger" type="button" data-act="inv-cancel">Cancel invoice</button>';
-  h += '<button class="btn small" type="button" data-act="inv-download">Download invoice</button></div>';
+  h += '<button class="btn small" type="button" data-act="inv-print">Print / save PDF</button><button class="btn small" type="button" data-act="inv-download">Download invoice</button></div>';
   if (D && D.sub === 'pay') h += '<div class="form" style="align-items:end"><label>Amount received<input id="ip-amt" type="number" step="any" value="' + r2(num(r.total) - num(r.paid)) + '"></label><label>Mode<select id="ip-mode">' + PAY_MODES.map(m => '<option>' + m + '</option>').join('') + '</select></label><label>UTR / cheque no<input id="ip-utr" type="text"></label><label>TDS deducted by customer<input id="ip-tds" type="number" step="any" value="0"></label><button class="btn primary" type="button" data-act="inv-pay-save">Save receipt</button></div>';
   return h;
 };
@@ -3883,6 +3932,9 @@ document.addEventListener('click', async e => {
       toast('Pickup ' + no + ' made – assign an executive or vehicle'); openDrawer({ mode: 'view', k: 'pickups', id }); return; }
     case 'cand-all': $$('#layer .cand').forEach(x => { x.checked = true; }); return;
     case 'link-pickup': { const ids = ticked(); for (const id of ids) await save('shipments', id, { pickupNo: r.no }); if (ids.length && stageOf('pickups', r) === 'Requested' && r.rider) await setStage('pickups', r._id, 'Assigned', ids.length + ' shipments linked', {}, true); toast(ids.length + ' shipments linked'); return; }
+    case 'trip-add': await tripAddOne(r); return;
+    case 'trip-sheet': printDoc(tripSheetHtml(r, await logoData()), 'Trip ' + r.no); return;
+    case 'inv-print': printDoc(invoiceHtml(r, await logoData()), 'Invoice ' + r.no); return;
     case 'trip-load': { const ok = new Set(tripCands(r).map(s => s._id)), ids = ticked().filter(id => ok.has(id)); if (!ids.length) return; await save('trips', r._id, { awbIds: uniq((r.awbIds || []).concat(ids)) }, 'Loaded ' + ids.length + ' on trip ' + r.no); toast(ids.length + ' loaded on ' + r.no); return; }
     case 'trip-bill': { const id = await save('vendorbills', null, { no: nextCode('VB', 'vendorbills', 'no'), vendor: r.vendor, billNo: 'Trip ' + r.no, billDate: today(), account: 'Vendor freight', amount: num(r.cost), gstPct: '0', tds: '1', due: addDays(today(), num((partyOf(r.vendor) || {}).creditDays) || 30), trip: r.no, stage: 'Received', events: [{ s: 'Received', t: Date.now(), n: 'From trip ' + r.no }] }, 'Vendor bill for trip ' + r.no); if (id) { await save('trips', r._id, { billNo: 'Trip ' + r.no }); toast('Vendor bill created'); } return; }
     case 'drs-load': { const ids = ticked(); if (!ids.length) return; await save('drs', r._id, { awbIds: uniq((r.awbIds || []).concat(ids)) }, 'Added ' + ids.length + ' to ' + r.no); toast(ids.length + ' added to ' + r.no); return; }
