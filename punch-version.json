@@ -1,9 +1,9 @@
 {
-  "versionCode": 57,
-  "versionName": "7.3",
+  "versionCode": 58,
+  "versionName": "7.4",
   "date": "27 Oct 2026",
-  "size": 3055696,
+  "size": 3056240,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Top bar fix: Admin and Employee no longer overlap.",
-  "list": ["Top bar: Admin and Employee buttons no longer overlap. In Admin, tap 'Admin ⇄' to switch to Employee."]
+  "notes": "Brings back your saved home and office, and fixes auto check-in.",
+  "list": ["Your saved workplace, home and places come back after signing in.","Auto check-in works again after login or switching person."]
 }
