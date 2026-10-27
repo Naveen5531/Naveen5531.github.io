@@ -198,7 +198,7 @@ const mailOf = uid => ((D.users.find(x => x._id === uid) || {}).mail || '');
 const onDefaultPw = () => { const u = D.users.find(x => x._id === S.uid); return !!(u && u.pwDefault); };
 /** Create the Punch app login for someone in the employee list: Punch ID = employee ID, password Welcome@123.
  *  Writes the login, the Punch profile and links the portal record, so the person shows "On Punch" everywhere. */
-async function makePunchLogin(p) {
+async function makePunchLogin(p, quiet) {
   if (!canAppr()) { toast('HR team lead and above create Punch logins.'); return null; }
   if (!window.MOVANA_FB || !MOVANA_FB.createStaff) { toast('Sign-in service not ready. Reload the page.'); return null; }
   const now = Date.now(); let eid = String(p.eid || '').trim();
@@ -206,7 +206,7 @@ async function makePunchLogin(p) {
   const sid = p.staffId || newId('st'), st = Object.assign({ stage: 'Active', createdAt: now }, D.staff.find(z => z._id === sid) || { name: p.name, role: p.desg || '', dept: p.cat || '', hub: (p.wp || {}).name || '', joined: p.join || '' }); delete st._id;
   let uid;
   try { uid = await MOVANA_FB.createStaff(p.name, eid, DEFAULT_PW); }
-  catch (e) { toast(e && e.code === 'auth/email-already-in-use' ? 'A Punch login ' + eid + ' already exists. Change the employee ID and try again.' : e && e.code === 'auth/network-request-failed' ? 'No internet connection.' : 'Could not create the login (' + ((e && e.code) || 'error') + ').'); return null; }
+  catch (e) { if (quiet && e && e.code === 'auth/email-already-in-use') return null; toast(e && e.code === 'auth/email-already-in-use' ? 'A Punch login ' + eid + ' already exists. Change the employee ID and try again.' : e && e.code === 'auth/network-request-failed' ? 'No internet connection.' : 'Could not create the login (' + ((e && e.code) || 'error') + ').'); return null; }
   try {
     await fs.doc('users/' + uid).set({ name: p.name, username: eid, pwDefault: true, createdAt: now, createdBy: S.uid }, { merge: true });
     await fs.doc('members/' + uid).set({ role: 'employee', status: 'Active', createdAt: now, updatedAt: now, addedBy: S.uid });
@@ -220,6 +220,23 @@ const credText = x => { const e = D.emp.find(o => o._id === x.uid) || {}, base =
   return 'Dear ' + x.name + ',\n\nWelcome to SN Logistics. Your login details are below.\n\n' +
     'Employee ID : ' + x.user + '\nPunch ID    : ' + x.user + '\nPassword    : ' + DEFAULT_PW + '\n' + (x.mail ? 'SN Mail ID  : ' + x.mail + '\n' : '') + (e.desg ? 'Designation : ' + e.desg + '\n' : '') + (e.join ? 'Joining date: ' + fmtD(e.join) + '\n' : '') +
     '\nHow to start\n1. Install the Punch app: ' + base + 'Punch.apk\n2. Sign in with your Punch ID and password.\n3. Set your own password: ' + base + 'hr/#/settings\n4. SN People (leave, payslips, HR tickets): ' + base + 'hr/\n5. SN Mail (internal mail): ' + base + 'mail/\n\nThe same login works in all of them. Please do not share your password.\n\nRegards,\nHR – SN Logistics'; };
+/** Mail the welcome message with the login details to each new employee's SN Mail (and their reporting manager if asked). */
+async function sendCreds(L, cc) { let n = 0;
+  for (const c of L) { const e = D.emp.find(o => o._id === c.uid) || {}, m = cc && e.mgr ? D.emp.find(o => !o.noPunch && normN(o.name) === normN(e.mgr)) : null, to = [c.uid], ccL = m && m._id !== c.uid && m._id !== S.uid ? [m._id] : [];
+    const rcpt = to.concat(ccL), toNames = {}; rcpt.forEach(u => toNames[u] = u === c.uid ? c.name : m.name); const ref = fs.collection('mail').doc();
+    try { await ref.set({ from: S.uid, fromName: S.me.name, to, cc: ccL, rcpt, toNames, subject: 'Welcome to SN Logistics – your login details', body: credText(Object.assign({}, c, { mail: c.mail || mailOf(c.uid) })), at: Date.now(), thread: ref.id, st: { [S.uid]: { r: 1 } } }); c.sent = 1; n++; }
+    catch (x) { toast('Could not mail ' + c.name + ' (' + (x.code || 'error') + ').'); } }
+  if (n) toast('Login details sent to ' + n + ' employee' + (n > 1 ? 's' : '') + ' in SN Mail' + (cc ? ' (manager copied)' : '')); return n; }
+/** Automatic Punch IDs: anyone in the employee list without a Punch login gets one (Punch ID = employee ID, password Welcome@123),
+ *  and the login details go to their SN Mail. Runs for HR team lead and above while SN People is open. */
+let plBusy = false, plLast = 0;
+async function autoPunch() {
+  if (plBusy || !canAppr() || !S.ready || Date.now() - plLast < 20000) return; const L = D.emp.filter(o => o.noPunch && o.name); if (!L.length) return;
+  plBusy = true; plLast = Date.now(); const out = [];
+  try { for (const o of L) { const c = await makePunchLogin(o, true); if (c) out.push(c); } } finally { plBusy = false; }
+  if (!out.length) return; toast('Punch ID created for ' + out.map(c => c.name).join(', '));
+  await new Promise(r => setTimeout(r, 1500)); for (const c of out) if (!c.mail) c.mail = mailOf(c.uid);
+  await sendCreds(out, true); S.creds = (S.creds || []).concat(out); render(); }
 const credCard = () => { const c = S.creds; if (!c || !c.length) return '';
   const txt = c.map(credText).join('\n\n────────────\n\n');
   return '<section class="card" style="margin-bottom:14px;border:2px solid var(--in)"><h2>Punch login' + (c.length > 1 ? 's' : '') + ' created</h2><p class="mute small">Punch ID is the employee ID. Everyone starts with the password <b>' + DEFAULT_PW + '</b> and is asked to set their own after signing in.</p>' +
@@ -538,7 +555,7 @@ function empForm() {
 }
 function vHrEmployees() {
   const q = lc(S.q.emp || ''), E = D.emp.filter(e => !q || lc([e.name, e.eid, e.desg, e.cat].join(' ')).includes(q)).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = ymNow(), np = D.emp.filter(e => e.noPunch).length;
-  return ph('Employees', D.emp.length + ' employees · ' + (D.emp.length - np) + ' on Punch' + (np ? ' · ' + np + ' without a Punch login' : ''), '<input id="q-emp" type="search" class="btn" placeholder="Name or ID" value="' + esc(S.q.emp || '') + '" style="min-width:min(200px,100%)"><button class="btn p" type="button" data-a="em-new">＋ New employee</button>' + (np && canAppr() ? '<button class="btn" type="button" data-a="pl-all">Create Punch logins (' + np + ')</button>' : '')) +
+  return ph('Employees', D.emp.length + ' employees · ' + (D.emp.length - np) + ' on Punch' + (np ? ' · ' + np + ' without a Punch login' : ''), '<input id="q-emp" type="search" class="btn" placeholder="Name or ID" value="' + esc(S.q.emp || '') + '" style="min-width:min(200px,100%)"><button class="btn p" type="button" data-a="em-new">＋ New employee</button>' + (np && canAppr() ? '<span class="mute small">Creating Punch IDs…</span>' : '')) +
     credCard() + (S.edit ? empForm() : '') +
     tbl(['Name', 'Designation', 'Department', 'Joined', 'Punch', '#Present', 'Offer', ''], E.map(e => { const o = D.offer.find(x => x._id === e._id);
       return '<tr><td><b>' + esc(e.name) + '</b><div class="mute small">' + esc(e.eid || 'No ID') + '</div></td><td class="w" style="min-width:160px">' + esc([e.desg, e.grade].filter(Boolean).join(' · ')) + '</td><td>' + esc(e.cat || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (e.noPunch ? (canAppr() ? '<button class="btn s p" type="button" data-a="pl-one" data-x="' + esc(e._id) + '">Create Punch login</button>' : pill('No Punch login', 'warn')) : pill('Punch ID ' + (loginOf(e._id) || e.eid || ''), 'good')) + '</td><td class="n">' + (e.noPunch ? '—' : monthSum(e, ym).p) + '</td><td>' + (o ? stPill(o.status) : canSal() && !e.noPunch ? '<span class="mute">—</span>' : '') + '</td>' +
@@ -741,6 +758,8 @@ ext('Apps', 'Website', 'home', '../', E_);
 /* ================= render ================= */
 function render() {
   resolvePeople();
+  if (!S.ready && D.users.length && (D.pemp.length || D.staff.length)) S.ready = Date.now() + 3000;
+  if (S.ready && Date.now() > S.ready) setTimeout(autoPunch, 0); else if (S.ready && !S.readyT) S.readyT = setTimeout(() => render(), 3200);
   const want = (location.hash.match(/^#\/([\w-]+)/) || [])[1], vis = V.filter(v => v.id && v.ok());
   let cur = vis.find(v => v.id === want);
   if (cur && sideOf(cur) !== 'both' && sideOf(cur) !== S.mode && !cur.hide) { S.mode = sideOf(cur); try { localStorage.setItem('hr.mode', S.mode); } catch (e) {} }
@@ -836,7 +855,8 @@ async function act(a, x, t) {
         const wo = $$('[data-wo]').filter(c => c.checked).map(c => +c.dataset.wo), extra = $('#em-radius') ? { radius: num(val('em-radius')) || 150, wo } : {};
         if (!(await save('punch_emp/' + p._id, Object.assign(raw, { name: f.name, eid: f.eid, desg: f.desg, grade: f.grade, cat: f.cat, join: f.join, mgr: f.mgr, wp, updatedAt: now }, extra)))) return; }
       S.edit = null;
-      if (!p && canAppr()) { toast('Employee added – creating the Punch login…'); const c = await makePunchLogin({ name: f.name, eid: f.eid, desg: f.desg, grade: f.grade, cat: f.cat, wp: { name: f.hub }, join: f.join, mgr: f.mgr, staffId: sid }); if (c) S.creds = [c]; render(); window.scrollTo(0, 0); return; }
+      if (!p && canAppr()) { toast('Employee added – creating the Punch ID…'); plBusy = true; let c; try { c = await makePunchLogin({ name: f.name, eid: f.eid, desg: f.desg, grade: f.grade, cat: f.cat, wp: { name: f.hub }, join: f.join, mgr: f.mgr, staffId: sid }); } finally { plBusy = false; plLast = Date.now(); }
+        if (c) { await new Promise(r => setTimeout(r, 800)); if (!c.mail) c.mail = mailOf(c.uid); await sendCreds([c], true); S.creds = [c]; } render(); window.scrollTo(0, 0); return; }
       toast(p ? 'Saved – portal' + (p.noPunch ? '' : ' and Punch app') + ' updated' : 'Employee added'); render(); return; }
     case 'pl-one': case 'pl-all': {
       const L = a === 'pl-one' ? [empOf(x)].filter(Boolean) : D.emp.filter(o => o.noPunch); if (!L.length) return;
@@ -845,12 +865,7 @@ async function act(a, x, t) {
       if (out.length) { S.creds = out; toast(out.length + ' Punch login' + (out.length > 1 ? 's' : '') + ' created'); } render(); window.scrollTo(0, 0); return; }
     case 'cr-copy': { const v = ($('#cr-txt') || {}).value || ''; try { await navigator.clipboard.writeText(v); toast('Copied'); } catch (e) { toast('Copy failed – select and copy by hand.'); } return; }
     case 'cr-done': S.creds = null; render(); return;
-    case 'cr-mail': { const L = (S.creds || []).filter(c => !c.sent); if (!L.length) { toast('Already sent.'); return; } const cc = $('#cr-mgr') && $('#cr-mgr').checked; let n = 0;
-      for (const c of L) { const e = D.emp.find(o => o._id === c.uid) || {}, m = cc && e.mgr ? D.emp.find(o => !o.noPunch && normN(o.name) === normN(e.mgr)) : null, to = [c.uid], ccL = m && m._id !== c.uid && m._id !== S.uid ? [m._id] : [];
-        const rcpt = to.concat(ccL), toNames = {}; rcpt.forEach(u => toNames[u] = u === c.uid ? c.name : m.name); const ref = fs.collection('mail').doc();
-        try { await ref.set({ from: S.uid, fromName: S.me.name, to, cc: ccL, rcpt, toNames, subject: 'Welcome to SN Logistics – your login details', body: credText(Object.assign({}, c, { mail: c.mail || mailOf(c.uid) })), at: Date.now(), thread: ref.id, st: { [S.uid]: { r: 1 } } }); c.sent = 1; n++; }
-        catch (x) { toast('Could not send to ' + c.name + ' (' + (x.code || 'error') + ').'); } }
-      if (n) toast('Sent to ' + n + ' employee' + (n > 1 ? 's' : '') + ' in SN Mail' + (cc ? ' (manager copied)' : '')); render(); return; }
+    case 'cr-mail': { const n = await sendCreds((S.creds || []).filter(c => !c.sent), $('#cr-mgr') && $('#cr-mgr').checked); if (!n) toast('Already sent.'); render(); return; }
     case 'pw-set': { const o = val('pw-old'), n1 = val('pw-n1'), n2 = val('pw-n2');
       if (!o) { toast('Enter your current password.'); return; } if (n1.length < 8) { toast('New password: at least 8 characters.'); return; } if (n1 !== n2) { toast('The two new passwords do not match.'); return; } if (n1 === DEFAULT_PW || n1 === o) { toast('Choose a password different from the current one.'); return; }
       try { await MOVANA_FB.changePassword(o, n1); } catch (e) { toast(e && (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') ? 'Current password is wrong.' : e && e.code === 'auth/requires-recent-login' ? 'Sign out and in again, then retry.' : 'Could not change the password (' + ((e && e.code) || 'error') + ').'); return; }
