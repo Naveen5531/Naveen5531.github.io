@@ -123,7 +123,8 @@ const I = {
   assign: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.6 3-5.5 6-5.5s5.4 1.9 6 5.5M17 8v6M14 11h6"/>',
   inbound: '<path d="M3 9l9-6 9 6v11H3z"/><path d="M12 11v6M9 14l3 3 3-3"/>',
   done: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
-  vendor: '<path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6M3 21h18"/>'
+  vendor: '<path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6M3 21h18"/>',
+  deliv: '<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>'
 };
 const svg = k => '<svg viewBox="0 0 24 24" aria-hidden="true">' + I[k] + '</svg>';
 const ST_C = { Assigned: '#3557b5', Accepted: '#b54708', Labelled: '#f26a1b', Completed: '#0c9b76', Rejected: '#d92d20', Requested: '#6b7280' };
@@ -151,7 +152,8 @@ const HHT = /SNPickup\//.test(navigator.userAgent);
    (SN Pickup › Assign › Scan options, saved in settings/pickup). Managers always have both. Off = HHT scan trigger only. */
 const SCAN_MGR = ['superadmin', 'director', 'gm', 'admin_head', 'branch_manager', 'ops_mgr', 'ops_manager', 'ops_srm', 'ops_gm', 'ops_sgm', 'ops_avp', 'ops_vp', 'ops_svp'];
 const scanMgr = () => S.owner || (S.roles || []).some(r => SCAN_MGR.includes(r));
-const camOK = () => scanMgr() || !!(S.scanCfg && S.scanCfg.cam), manOK = () => scanMgr() || !!(S.scanCfg && S.scanCfg.manual);
+/* Scan only: nobody types a label or taps a box by hand any more – pickup, hub, trips and delivery all need a real scan */
+const camOK = () => scanMgr() || !!(S.scanCfg && S.scanCfg.cam), manOK = () => false;
 function scanBox() {
   /* the phone keyboard never opens by itself (HHT scans don't need it); ⌨ opens it when typing is allowed */
   return '<div class="scanbox" style="margin-top:10px"><input class="in" id="scan" placeholder="Press the HHT scan trigger" autocomplete="off" autocapitalize="characters" enterkeyhint="go" aria-label="Scan label" inputmode="none" readonly' + (manOK() ? '' : ' data-noman="1"') + '>' +
@@ -162,8 +164,8 @@ const tiles = (N, sc) => Array.from({ length: N }, (_, i) => manOK() && !sc[i + 
 function scanOptsHtml() {
   if (!scanMgr()) return '';
   const c = S.scanCfg || {}, row = (k, t, d) => '<label style="display:flex;gap:10px;align-items:flex-start;margin-top:10px"><input type="checkbox" data-scanopt="' + k + '"' + (c[k] ? ' checked' : '') + ' style="width:20px;height:20px;margin-top:2px;flex:none"><span><b>' + t + '</b><br><span class="mute small">' + d + '</span></span></label>';
-  return '<div class="card"><h2>Scan options for executives</h2><p class="mute small">Off = executives can only scan with the HHT scan trigger. Managers always have both.</p>' +
-    row('cam', 'Camera scan', 'Show the 📷 button to scan labels with the phone camera.') + row('manual', 'Type label / tap boxes by hand', 'Allow typing the label number and tapping a box to mark it scanned.') + '</div>';
+  return '<div class="card"><h2>Scan options for executives</h2><p class="mute small">Off = executives can only scan with the HHT scan trigger. Managers always have the camera.</p>' +
+    row('cam', 'Camera scan', 'Show the 📷 button to scan labels with the phone camera.') + '<p class="mute small" style="margin:10px 0 0">Typing a label or tapping a box by hand is not allowed – every box must be scanned.</p></div>';
 }
 const canAssign = () => !HHT && has(MGMT.concat(MGR_UP, ['admin_head', 'branch_manager', 'pickup_coord', 'ops_tl', 'ops_am']));
 const canInbound = () => !HHT && (canAssign() || has(['hub_sup']));
@@ -229,6 +231,11 @@ function listen() {
   if (canInbound()) L(fs.collection('shipments').where('inbound', '==', 'Pending'), 'ships', (a, b) => num(b.pickedAt) - num(a.pickedAt));
   if (canInbound()) { S.tripsP = []; S.tripsD = []; const upT = () => { S.trips = S.tripsP.concat(S.tripsD).filter(t => ['First mile', 'Mid mile'].includes(t.kind || (t.pickupNo ? 'Direct (FTL)' : 'Mid mile'))); };
     L(fs.collection('trips').where('stage', '==', 'Planned'), 'tripsP'); L(fs.collection('trips').where('stage', '==', 'Dispatched'), 'tripsD'); S.unsub.push(() => {}); S._upT = upT; }
+  /* last mile runsheets: leads see every open / running one; a rider sees the runsheets the portal gave them */
+  S.drsL = []; S.drsO = []; S.drsM = [];
+  const LD = (q, k) => S.unsub.push(q.onSnapshot(x => { S[k] = x.docs.map(d => Object.assign({ _id: d.id }, d.data())); later(); }, () => {}));
+  if (dLead()) { LD(fs.collection('drs').where('stage', '==', 'Open'), 'drsL'); LD(fs.collection('drs').where('stage', '==', 'Out for delivery'), 'drsO'); }
+  LD(fs.collection('drs').where('riderUid', '==', S.me), 'drsM');
   if (SNP.canVendors && SNP.canVendors()) L(fs.collection('pvendors'), 'vendors', (a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
   else L(fs.collection('pvlist'), 'vendors', (a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
   if (canAssign()) {
@@ -288,12 +295,12 @@ async function pinInfo(pin) {
 /* ================= screens ================= */
 const STEP = p => p.hht === 'Completed' ? 5 : p.scanned && Object.keys(p.scanned).length ? 4 : p.lr ? 4 : (p.boxes || []).length ? 3 : p.invoice ? 2 : p.hht === 'Accepted' ? 1 : 0;
 const mine = () => S.pickups.filter(p => p.exec === S.me);
-const SEEN_K = { mine: 'pickups_mine', assign: 'pickups', inbound: 'ships_inbound', vendors: 'pvendors', trips: 'trips_hub' };
+const SEEN_K = { mine: 'pickups_mine', assign: 'pickups', inbound: 'ships_inbound', vendors: 'pvendors', trips: 'trips_hub', deliv: 'drs_runs' };
 if (window.SNSeen) SNSeen.on(() => { try { const nv = $('#bar'); if (nv && S.me) nv.innerHTML = navHtml(); } catch (e) {} });
 function navHtml() {
   const open = mine().filter(p => ['Assigned', 'Accepted', 'Labelled'].includes(p.hht));
   const T = [['mine', 'My pickups', 'list', open]].concat(canAssign() ? [['assign', 'Assign', 'assign', S.pickups.filter(p => !p.exec && !['Completed', 'Cancelled'].includes(p.hht || '') && !['Picked up', 'Delivered', 'Closed', 'Cancelled'].includes(p.stage || ''))]] : [])
-    .concat(canInbound() ? [['inbound', 'Inbound', 'inbound', S.ships], ['trips', 'Trips', 'list', (S._upT && S._upT(), S.trips || [])]] : []).concat(window.SNP.canVendors && SNP.canVendors() ? [['vendors', 'Vendors', 'vendor', S.vendors.filter(v => v.status === 'Submitted' && v.createdBy !== S.me)]] : []).concat([['done', 'Done', 'done', []]]);
+    .concat(canInbound() ? [['inbound', 'Inbound', 'inbound', S.ships], ['trips', 'Trips', 'list', (S._upT && S._upT(), S.trips || [])]] : []).concat(dLead() || runs().length ? [['deliv', 'Deliveries', 'deliv', runs()]] : []).concat(window.SNP.canVendors && SNP.canVendors() ? [['vendors', 'Vendors', 'vendor', S.vendors.filter(v => v.status === 'Submitted' && v.createdBy !== S.me)]] : []).concat([['done', 'Done', 'done', []]]);
   /* counts = new since that tab was last opened; reading clears it in the portal and every other device too (seen.js) */
   T.forEach(r => { const k = SEEN_K[r[0]], L = r[3]; if (window.SNSeen && k && S.tab === r[0] && !S.open && SNSeen.count(L, k)) SNSeen.mark(k); r[3] = window.SNSeen && k ? SNSeen.count(L, k) : L.length; });
   return T.map(([id, l, ic, n]) => '<button type="button" data-tab="' + id + '"' + (S.tab === id && !S.open ? ' aria-current="page"' : '') + '>' + svg(ic) + l + (n ? '<span class="n">' + n + '</span>' : '') + '</button>').join('');
@@ -433,7 +440,7 @@ function shipHtml(s) {
 /* ================= render ================= */
 /* ---- back navigation: every screen is a step in the phone's history, so Back (on screen or the phone's own)
    goes to the previous screen – detail → list → main screen – instead of leaving the app ---- */
-const navKey = () => JSON.stringify([S.tab, S.open ? S.open.k + ':' + (S.open.id || '') : '', SNP.vendorOpen ? SNP.vendorOpen() || '' : '', S.edit || '']);
+const navKey = () => JSON.stringify([S.tab, S.open ? S.open.k + ':' + (S.open.id || '') + (S.open.s ? ':' + S.open.s : '') : '', SNP.vendorOpen ? SNP.vendorOpen() || '' : '', S.edit || '']);
 let navLast = null, navPop = false;
 const atHome = () => S.tab === 'mine' && !S.open && !(SNP.vendorOpen && SNP.vendorOpen());
 function navTrack() {
@@ -464,6 +471,9 @@ function render() {
   else if (S.open && S.open.k === 's') { const s = S.ships.find(x => x._id === S.open.id); h = s ? shipHtml(s) : '<div class="card ok">Received at hub ✓</div><button class="btn" type="button" data-act="back">← Inbound</button>'; }
   else if (S.open && S.open.k === 'new') h = newHtml();
   else if (S.open && S.open.k === 't') { const t = (S.trips || []).find(x => x._id === S.open.id); h = t ? tripHtml(t) : '<div class="card ok">Trip done ✓</div><button class="btn" type="button" data-act="back">← Trips</button>'; }
+  else if (S.open && S.open.k === 'd') { const r = runs().find(x => x._id === S.open.id) || S.runDone; h = r ? runHtml(r) : '<div class="card">This runsheet is no longer open.</div><button class="btn" type="button" data-act="back">← Deliveries</button>'; }
+  else if (S.open && S.open.k === 'dv') { const r = runs().find(x => x._id === S.open.id) || S.runDone, x = S.dship[S.open.s]; h = r && x ? doorHtml(r, x) : '<div class="card">Loading…</div>'; }
+  else if (S.tab === 'deliv' && (dLead() || runs().length)) h = runsHtml();
   else if (S.tab === 'trips' && canInbound()) h = tripsHtml();
   else if (S.tab === 'vendors' && SNP.canVendors && SNP.canVendors()) h = SNP.vendorsView();
   else h = S.tab === 'assign' && canAssign() ? assignHtml() : S.tab === 'inbound' && canInbound() ? inboundHtml() : S.tab === 'done' ? doneHtml() : mineHtml();
@@ -479,9 +489,15 @@ document.addEventListener('click', async e => {
   const t = e.target.closest('[data-tab]'); if (t) { S.tab = t.dataset.tab; if (SNP.vendorsReset) SNP.vendorsReset(); go(null); return; }
   const o = e.target.closest('[data-open]'); if (o && !e.target.closest('select')) { go({ k: 'p', id: o.dataset.open }); return; }
   const sh = e.target.closest('[data-ship]'); if (sh) { go({ k: 's', id: sh.dataset.ship }); return; }
+  const rn = e.target.closest('[data-run]'); if (rn) { watchRun(rn.dataset.run); go({ k: 'd', id: rn.dataset.run }); return; }
+  const dv = e.target.closest('[data-dv]'); if (dv && S.open) { go({ k: 'dv', id: S.open.id, s: dv.dataset.dv }); return; }
   const tp = e.target.closest('[data-trip]'); if (tp) { watchTrip(tp.dataset.trip); go({ k: 't', id: tp.dataset.trip }); return; }
   const a = e.target.closest('[data-act]'); if (!a) return; const act = a.dataset.act, p = cur();
-  if (act === 'back') { go(null); return; }
+  if (act === 'back') { go(S.open && S.open.k === 'dv' ? { k: 'd', id: S.open.id } : null); return; }
+  if (act === 'runstart' || act === 'dlvok' || act === 'dlvfail' || act === 'podphoto') { const r = runs().find(x => S.open && x._id === S.open.id); if (!r) return;
+    if (act === 'runstart') { a.disabled = true; await startRun(r); a.disabled = false; return; }
+    const x = S.dship[S.open.s]; if (!x) return; if (act === 'podphoto') { podPhoto(); return; }
+    a.disabled = true; if (act === 'dlvok') await deliverAt(r, x); else await failAt(r, x); a.disabled = false; return; }
   if (act === 'new') { go({ k: 'new' }); return; }
   if (act === 'editVendor') { S.edit = 'vendor'; S.force = true; render(); return; }
   if (act === 'editBoxes') { S.edit = 'boxes'; S.force = true; render(); return; }
@@ -668,6 +684,7 @@ async function onScan(raw) {
     if ((p.scanned || {})[idx]) { beep(false); er.textContent = 'Box ' + idx + '/' + tot + ' is already scanned.'; return; }
     beep(true); er.textContent = ''; await save(p, { ['scanned.' + idx]: Date.now() }); return; }
   if (S.open && S.open.k === 't') { const t = (S.trips || []).find(x => x._id === S.open.id); if (t) await tripScan(t, lr, idx, tot, er); return; }
+  if (S.open && (S.open.k === 'd' || S.open.k === 'dv')) { const r = runs().find(x => x._id === S.open.id); if (r) await runScan(r, lr, idx, tot, er); return; }
   if (S.open && S.open.k === 's') { const s = S.ships.find(x => x._id === S.open.id); if (!s) return;
     if (lr !== s.awb) { beep(false); er.textContent = 'This label is for LR ' + lr + ', not ' + s.awb + '.'; return; }
     if ((s.inScan || {})[idx]) { beep(false); er.textContent = 'Box ' + idx + '/' + tot + ' already received.'; return; }
@@ -747,9 +764,136 @@ async function tripMove(t, arrive, short) {
 }
 async function writeTrack(sh) {
   const key = v => String(v || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
-  const body = { awb: sh.awb, stage: sh.stage, from: sh.originCity || '', to: sh.destCity || '', pieces: num(sh.pieces), promised: sh.promised || '', deliveredAt: 0, events: (sh.events || []).slice(-30).map(e => ({ s: String(e.s || ''), t: num(e.t) })), updatedAt: Date.now() };
+  const body = { awb: sh.awb, stage: sh.stage, from: sh.originCity || '', to: sh.destCity || '', pieces: num(sh.pieces), promised: sh.promised || '', deliveredAt: num(sh.deliveredAt) || 0, events: (sh.events || []).slice(-30).map(e => ({ s: String(e.s || ''), t: num(e.t) })), updatedAt: Date.now() };
   const ids = [key(sh.awb)].concat(key(sh.ref).length >= 4 ? ['R-' + key(sh.ref)] : []);
   for (const id of ids) { try { await fs.collection('track').doc(id).set(body); } catch (e) {} }
+}
+/* ================= last mile: runsheets (DRS) by scanning only =================
+   Portal: a runsheet is made with its shipments and a rider. SN Pickup › Deliveries:
+   1. Load – the rider scans every box onto the run → Start run (shipments Out for delivery).
+   2. At the door – scan the boxes of that LR → Delivered with the receiver's name, COD and optional photo,
+      or Delivery failed (at least one box scanned at the door) with the reason → NDR / RTO.
+   3. When every shipment has a result the runsheet closes by itself; the portal posts the COD to the books. */
+const DLEAD = ['superadmin', 'director', 'gm', 'admin_head', 'branch_manager', 'lastmile_lead', 'hub_sup'].concat(MGR_UP);
+const dLead = () => has(DLEAD);
+const NDR_R = ['Customer not available', 'Address incomplete / not found', 'Customer refused', 'Cash not ready (COD)', 'Premises closed', 'Rescheduled by customer', 'Out of delivery area', 'Other'];
+const runs = () => { const m = {}; (S.drsL || []).concat(S.drsO || [], S.drsM || []).forEach(r => { if (['Open', 'Out for delivery'].includes(r.stage)) m[r._id] = r; });
+  return Object.values(m).filter(r => dLead() || r.riderUid === S.me).sort((a, b) => (a.stage === b.stage ? (a.no < b.no ? -1 : 1) : a.stage === 'Out for delivery' ? -1 : 1)); };
+S.dship = {}; let dWatch = [];
+function watchRun(id) {
+  dWatch.forEach(f => f()); dWatch = []; const r = runs().find(x => x._id === id); if (!r) return;
+  (r.awbIds || []).forEach(sid => dWatch.push(fs.collection('shipments').doc(sid).onSnapshot(d => { if (d.exists) S.dship[sid] = Object.assign({ _id: d.id }, d.data()); later(); }, () => {})));
+}
+const runShips = r => (r.awbIds || []).map(id => S.dship[id]).filter(Boolean);
+const pcs = x => Math.max(1, num(x.pieces));
+const scanN = (m, awb) => Object.keys((m || {})[awb] || {}).length;
+function runsHtml() {
+  const L = runs();
+  return '<div class="ph"><div><h1>Deliveries</h1><p>' + (dLead() ? 'Open and running runsheets.' : 'Your runsheets.') + ' Scan every box onto the run, then scan the boxes again at each door.</p></div></div>' +
+    (L.length ? L.map(r => '<button type="button" class="pk" data-run="' + esc(r._id) + '"><div class="t"><b>' + esc(r.no || 'Runsheet') + '</b><span class="st" style="--c:' + (r.stage === 'Open' ? '#2563eb' : '#f26a1b') + '">' + esc(r.stage === 'Open' ? 'Load' : 'Out for delivery') + '</span></div>' +
+      '<div class="m">' + esc([r.hub, r.area, fd(r.date)].filter(Boolean).join(' · ')) + '</div><div class="m">' + esc((r.awbIds || []).length + ' shipments · ' + (r.rider || 'no rider yet') + (r.vehicle ? ' · ' + r.vehicle : '')) + (r.stage === 'Out for delivery' ? ' · ' + Object.keys(r.results || {}).length + ' done' : '') + '</div></button>').join('')
+      : '<div class="card mute">No runsheets for you right now. They are made in the portal (Last mile › Runsheets) with the rider chosen.</div>');
+}
+function runHtml(r) {
+  const L = runShips(r), miss = (r.awbIds || []).length - L.length, can = r.riderUid === S.me || dLead(), open = r.stage === 'Open';
+  let h = '<button class="btn sm" type="button" data-act="back">← Deliveries</button><div class="ph" style="margin-top:12px"><div><h1>' + esc(r.no || 'Runsheet') + '</h1><p>' + esc([r.hub, r.area, fd(r.date)].filter(Boolean).join(' · ')) + '</p></div><span class="st" style="--c:' + (open ? '#2563eb' : '#f26a1b') + '">' + esc(r.stage) + '</span></div>' +
+    '<div class="card"><div class="kv">' + [['Rider', r.rider || 'Not chosen'], ['Vehicle', r.vehicle], ['Shipments', (r.awbIds || []).length], ['COD to collect', inr(L.filter(x => x.mode === 'COD').reduce((a, x) => a + num(x.cod), 0))]].filter(x => x[1] !== '' && x[1] != null).map(x => '<span>' + x[0] + '</span><b>' + esc(x[1]) + '</b>').join('') + '</div></div>';
+  if (open) {
+    const N = L.reduce((a, x) => a + pcs(x), 0), n = L.reduce((a, x) => a + Math.min(pcs(x), scanN(r.loadScan, x.awb)), 0), all = N > 0 && n >= N && !miss;
+    h += '<div class="card"><h2>Load – scan every box onto the run</h2>' + (r.riderUid ? '' : '<p class="err">No rider chosen yet. Choose the rider on this runsheet in the portal.</p>') + '<div class="big">' + n + ' / ' + N + ' <span class="mute small">boxes</span></div>' + (can ? scanBox() : '') + '<p class="err" id="se"></p>' +
+      L.map(x => { const g = scanN(r.loadScan, x.awb); return '<div class="pk" style="cursor:default"><div class="t"><b>LR ' + esc(x.awb) + '</b><span class="st" style="--c:' + (g >= pcs(x) ? '#16a34a' : '#6b7280') + '">' + g + '/' + pcs(x) + '</span></div><div class="m">' + esc((x.consignee || '') + ' · ' + (x.destCity || '') + (x.mode === 'COD' ? ' · COD ' + inr(x.cod) : '')) + '</div></div>'; }).join('') +
+      (miss > 0 ? '<p class="mute small">Loading ' + miss + ' more…</p>' : '') +
+      (can ? '<button class="btn p full" type="button" data-act="runstart" style="margin-top:12px"' + (all && r.riderUid ? '' : ' disabled') + '>' + (all ? 'Start run – out for delivery' : 'Scan all ' + N + ' boxes first') + '</button>' : '') + '</div>';
+    return h;
+  }
+  const R = r.results || {};
+  return h + '<div class="card"><h2>Stops (' + Object.keys(R).length + ' of ' + (r.awbIds || []).length + ' done)</h2><p class="mute small">Open a stop at the door and scan its boxes.</p></div>' +
+    L.map(x => { const res = R[x._id]; return '<button type="button" class="pk" data-dv="' + esc(x._id) + '"><div class="t"><b>' + esc(x.consignee || 'Consignee') + '</b><span class="st" style="--c:' + (!res ? '#2563eb' : res === 'Delivered' ? '#16a34a' : '#d92d20') + '">' + esc(res || 'To deliver') + '</span></div>' +
+      '<div class="m">LR ' + esc(x.awb) + ' · ' + pcs(x) + ' box' + (pcs(x) > 1 ? 'es' : '') + (x.mode === 'COD' ? ' · <b>COD ' + esc(inr(x.cod)) + '</b>' : '') + '</div><div class="m">' + esc([x.address, x.destCity, x.pincode].filter(Boolean).join(', ')) + '</div></button>'; }).join('') +
+    (miss > 0 ? '<p class="mute small">Loading ' + miss + ' more…</p>' : '');
+}
+function doorHtml(r, x) {
+  const N = pcs(x), n = scanN(r.delScan, x.awb), all = n >= N, res = (r.results || {})[x._id], can = (r.riderUid === S.me || dLead()) && r.stage === 'Out for delivery' && !res, ad = [x.address, x.destCity, x.pincode].filter(Boolean).join(', ');
+  let h = '<button class="btn sm" type="button" data-act="back">← ' + esc(r.no || 'Runsheet') + '</button><div class="ph" style="margin-top:12px"><div><h1>' + esc(x.consignee || 'Consignee') + '</h1><p>LR ' + esc(x.awb) + ' · ' + N + ' box' + (N > 1 ? 'es' : '') + '</p></div>' + (res ? '<span class="st" style="--c:' + (res === 'Delivered' ? '#16a34a' : '#d92d20') + '">' + esc(res) + '</span>' : '') + '</div>' +
+    '<div class="card"><div class="kv">' + [['Address', ad], ['Phone', x.phone], ['Payment', x.mode === 'COD' ? 'COD ' + inr(x.cod) : (x.mode || 'Prepaid')], ['Attempt', (num(x.attempts) + 1) + ' of ' + (num((S.settings || {}).maxAttempts) || 3)]].filter(y => y[1]).map(y => '<span>' + y[0] + '</span><b>' + esc(y[1]) + '</b>').join('') + '</div>' +
+    '<div class="row" style="margin-top:10px">' + (x.phone ? '<button class="btn sm" type="button" data-act="call" data-v="' + esc(x.phone) + '">📞 Call</button>' : '') + (ad ? '<button class="btn sm" type="button" data-act="nav" data-v="' + esc(ad) + '">🧭 Navigate</button>' : '') + '</div></div>';
+  if (!can) return h + (res ? '<div class="card ' + (res === 'Delivered' ? 'ok' : '') + '">' + (res === 'Delivered' ? '✓ Delivered' + (x.pod ? ' to ' + esc(x.pod) : '') : 'Failed: ' + esc(res)) + '</div>' : '');
+  h += '<div class="card"><h2>At the door – scan the boxes</h2><div class="big">' + n + ' / ' + N + ' <span class="mute small">scanned</span></div>' + scanBox() + '<p class="err" id="se"></p><div class="grid">' + tiles(N, (r.delScan || {})[x.awb] || {}) + '</div></div>';
+  if (all) h += '<div class="card"><h2>Delivered</h2><label class="f">Received by *<input id="podName" value="' + esc(x.consignee || '') + '" autocomplete="off"></label>' +
+    (x.mode === 'COD' ? '<label class="f">COD collected (₹) *<input id="podCod" type="number" min="0" step="0.01" inputmode="decimal" value="' + esc(x.cod || 0) + '"></label>' : '') +
+    '<div class="row"><button class="btn" type="button" data-act="podphoto">📸 ' + (S.podPic && S.podPic.s === x._id ? 'Retake photo' : 'Photo (optional)') + '</button>' + (S.podPic && S.podPic.s === x._id ? '<span class="ok small" style="flex:0 0 auto">Photo ready ✓</span>' : '') + '</div>' +
+    '<p class="err" id="pe"></p><button class="btn p full" type="button" data-act="dlvok" style="margin-top:10px">Delivered</button></div>';
+  else h += '<div class="card mute small">Scan all ' + N + ' boxes to mark it delivered.</div>';
+  h += '<div class="card"><h2>Could not deliver?</h2>' + (n ? '<label class="f">Reason<select id="ndrWhy">' + NDR_R.map(y => '<option>' + esc(y) + '</option>').join('') + '</select></label><label class="f">Next attempt<input id="ndrDate" type="date" value="' + addDays(today(), 1) + '"></label><button class="btn d full" type="button" data-act="dlvfail">Delivery failed</button>'
+    : '<p class="mute small" style="margin:0">Scan at least one box at the door first – a failed attempt is recorded only with a scan at the address.</p>') + '</div>';
+  return h;
+}
+async function runScan(r, lr, idx, tot, er) {
+  const L = runShips(r), x = L.find(y => y.awb === lr), ok = r.riderUid === S.me || dLead();
+  if (!ok) { beep(false); er.textContent = 'Only the rider of ' + r.no + ' scans this run.'; return; }
+  if (!x) { beep(false); er.textContent = 'LR ' + lr + ' is not on runsheet ' + (r.no || '') + '.'; return; }
+  if (tot !== pcs(x) || idx < 1 || idx > tot) { beep(false); er.textContent = 'Box number does not match LR ' + lr + '.'; return; }
+  let key;
+  if (r.stage === 'Open') key = 'loadScan';
+  else { if (!(S.open && S.open.k === 'dv' && S.open.s === x._id)) { beep(false); er.textContent = 'Open the stop for LR ' + lr + ' (' + (x.consignee || '') + ') first, then scan at the door.'; return; }
+    if ((r.results || {})[x._id]) { beep(false); er.textContent = 'This stop is already done.'; return; } key = 'delScan'; }
+  if (((r[key] || {})[lr] || {})[idx]) { beep(false); er.textContent = 'Box ' + idx + '/' + tot + ' already scanned.'; return; }
+  beep(true); er.textContent = ''; try { await fs.collection('drs').doc(r._id).update({ [key + '.' + lr + '.' + idx]: Date.now(), updatedAt: Date.now() }); } catch (y) { toast('Could not save (' + (y.code || 'error') + ').', true); }
+}
+async function startRun(r) {
+  const L = runShips(r); if (!L.length || L.length < (r.awbIds || []).length) { toast('Still loading the shipments. Try again in a moment.', true); return; }
+  if (L.some(x => scanN(r.loadScan, x.awb) < pcs(x))) { toast('Scan every box onto the run first.', true); return; }
+  const now = Date.now(), gps = await where();
+  try {
+    for (const x of L) { const ev = (x.events || []).concat([{ s: 'Out for delivery', t: now, n: 'DRS ' + r.no + ' · ' + (r.rider || S.name) + ' – all ' + pcs(x) + ' boxes scanned onto the run' }]).slice(-60);
+      const patch = { stage: 'Out for delivery', drsNo: r.no || '', drsId: r._id, outAt: now, events: ev, updatedAt: now }; if (x.inbound === 'Pending') patch.inbound = 'Direct';
+      await fs.collection('shipments').doc(x._id).update(patch); writeTrack(Object.assign({}, x, patch)); }
+    await fs.collection('drs').doc(r._id).update({ stage: 'Out for delivery', startedAt: now, startGps: gps || null, results: {}, cod: {}, events: (r.events || []).concat([{ s: 'Out for delivery', t: now, n: 'Run started in SN Pickup – ' + L.length + ' shipments scanned on by ' + S.name }]).slice(-60), updatedAt: now });
+    beep(true); toast(L.length + ' shipments out for delivery.');
+  } catch (y) { toast('Could not start the run (' + (y.code || 'error') + ').', true); }
+}
+function podPhoto() {
+  const sid = S.open && S.open.s, i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.setAttribute('capture', 'environment');
+  i.onchange = () => { const f = i.files && i.files[0]; if (!f) return; const img = new Image(), u = URL.createObjectURL(f);
+    img.onload = () => { const m = 800, sc = Math.min(1, m / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
+      const d = c.toDataURL('image/jpeg', .55); if (d.length > 400000) { toast('Photo is too large. Try again.', true); return; } S.podPic = { s: sid, d }; S.force = true; render(); };
+    img.src = u; };
+  i.click();
+}
+async function deliverAt(r, x) {
+  const pe = $('#pe'), who = ($('#podName') || {}).value || '', cod = x.mode === 'COD' ? num(($('#podCod') || {}).value) : 0;
+  if (scanN(r.delScan, x.awb) < pcs(x)) { toast('Scan every box at the door first.', true); return; }
+  if (who.trim().length < 2) { pe.textContent = 'Enter who received it.'; return; }
+  if (x.mode === 'COD' && cod < num(x.cod) && !(await ask('COD collected ' + inr(cod) + ' is less than ' + inr(x.cod) + '. Save with ' + inr(num(x.cod) - cod) + ' short?', { ok: 'Save short', danger: 1 }))) return;
+  const now = Date.now(), gps = await where(), pic = S.podPic && S.podPic.s === x._id ? S.podPic.d : '';
+  const ev = (x.events || []).concat([{ s: 'Delivered', t: now, n: 'Received by ' + who.trim() + ' · ' + pcs(x) + ' boxes scanned at the door by ' + S.name + (x.mode === 'COD' ? ' · COD ' + inr(cod) : '') }]).slice(-60);
+  const patch = Object.assign({ stage: 'Delivered', pod: who.trim().slice(0, 80), codCollected: x.mode === 'COD' ? cod : 0, deliveredAt: now, deliveredBy: S.name, podGps: gps || null, events: ev, updatedAt: now }, pic ? { podPhoto: pic } : {});
+  try { await fs.collection('shipments').doc(x._id).update(patch); writeTrack(Object.assign({}, x, patch)); S.podPic = null;
+    await fs.collection('drs').doc(r._id).update({ ['results.' + x._id]: 'Delivered', ['cod.' + x._id]: x.mode === 'COD' ? cod : 0, updatedAt: now });
+    if (x.pickupId && x.inbound === 'Direct') upd('pickups', x.pickupId, { stage: 'Delivered', deliveredAt: now }).catch(() => {});
+    beep(true); toast('Delivered ✓ ' + x.awb); await closeRunIfDone(r._id); go({ k: 'd', id: r._id });
+  } catch (y) { toast('Could not save (' + (y.code || 'error') + ').', true); }
+}
+async function failAt(r, x) {
+  if (!scanN(r.delScan, x.awb)) { toast('Scan a box at the door first.', true); return; }
+  const why = ($('#ndrWhy') || {}).value || 'Other', next = ($('#ndrDate') || {}).value || addDays(today(), 1), now = Date.now(), gps = await where();
+  const att = num(x.attempts) + 1, max = num((S.settings || {}).maxAttempts) || 3, to = att >= max ? 'RTO' : 'NDR';
+  const ev = (x.events || []).concat([{ s: to, t: now, n: why + ' (attempt ' + att + ')' + (to === 'RTO' ? ' · returning to origin after ' + att + ' failed attempts' : ' · next attempt ' + fd(next)) + ' – scanned at the door by ' + S.name }]).slice(-60);
+  const patch = { stage: to, attempts: att, ndrReason: why, nextAttempt: to === 'NDR' ? next : '', podGps: gps || null, events: ev, updatedAt: now };
+  try { await fs.collection('shipments').doc(x._id).update(patch); writeTrack(Object.assign({}, x, patch));
+    await fs.collection('drs').doc(r._id).update({ ['results.' + x._id]: why, ['cod.' + x._id]: 0, updatedAt: now });
+    beep(true); toast(x.awb + ' – ' + (to === 'RTO' ? 'return to origin' : 'NDR, next attempt ' + fd(next))); await closeRunIfDone(r._id); go({ k: 'd', id: r._id });
+  } catch (y) { toast('Could not save (' + (y.code || 'error') + ').', true); }
+}
+/* every stop has a result → the runsheet closes; the portal books the COD (codPosted:false) */
+async function closeRunIfDone(id) {
+  try { const d = await fs.collection('drs').doc(id).get(); if (!d.exists) return; const r = Object.assign({ _id: d.id }, d.data()), ids = r.awbIds || [], R = r.results || {};
+    if (r.stage !== 'Out for delivery' || !ids.every(i => R[i])) return;
+    const del = ids.filter(i => R[i] === 'Delivered'), got = ids.reduce((a, i) => a + num((r.cod || {})[i]), 0), exp = del.reduce((a, i) => { const x = S.dship[i]; return a + (x && x.mode === 'COD' ? num(x.cod) : 0); }, 0), now = Date.now();
+    await fs.collection('drs').doc(id).update({ stage: 'Closed', closedAt: now, deliveredCount: del.length, codCollected: r2(got), codShort: r2(Math.max(0, exp - got)), codPosted: false,
+      events: (r.events || []).concat([{ s: 'Closed', t: now, n: del.length + ' of ' + ids.length + ' delivered · COD ' + inr(got) + ' – closed in SN Pickup by ' + S.name }]).slice(-60), updatedAt: now });
+    S.runDone = Object.assign({}, r, { stage: 'Closed' }); toast('Runsheet ' + (r.no || '') + ' closed: ' + del.length + ' of ' + ids.length + ' delivered' + (got ? ' · COD ' + inr(got) + ' to hand over' : '') + '.');
+  } catch (y) {}
 }
 /* ---- pickup complete: create the LR as a shipment ("Picked up", inbound pending) ---- */
 /* where the pickup happened (for proof); never blocks completion */

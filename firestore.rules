@@ -202,12 +202,29 @@ service cloud.firestore {
       allow get: if true;
       allow list: if false;
       allow write: if (canWrite() && !isEmpOnly())
-        || (isMember() && exists(/databases/$(db)/documents/shipments/$('LR-' + id)) && get(/databases/$(db)/documents/shipments/$('LR-' + id)).data.get('pickedBy', '') == request.auth.uid);
+        || (isMember() && exists(/databases/$(db)/documents/shipments/$('LR-' + id)) && get(/databases/$(db)/documents/shipments/$('LR-' + id)).data.get('pickedBy', '') == request.auth.uid)
+        || (exists(/databases/$(db)/documents/shipments/$('LR-' + id)) && myRun(get(/databases/$(db)/documents/shipments/$('LR-' + id)).data, 'LR-' + id));
     }
     // a pickup executive creates the LR (shipment) for a pickup assigned to them, when the pickup is complete
     match /shipments/{id} {
       allow create: if isMember() && id.matches('LR-SN[0-9]+') && request.resource.data.pickedBy == request.auth.uid
         && get(/databases/$(db)/documents/pickups/$(request.resource.data.pickupId)).data.get('exec', '') == request.auth.uid;
+      // last mile: the rider named on the runsheet the shipment is on reads it and records the scans at the door
+      allow read: if myRun(resource.data, id);
+      allow update: if myRun(resource.data, id) && request.resource.data.get('drsId', '') == resource.data.drsId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stage', 'events', 'drsNo', 'drsId', 'inbound', 'outAt', 'pod', 'podPhoto', 'podGps', 'codCollected', 'deliveredAt', 'deliveredBy', 'attempts', 'ndrReason', 'nextAttempt', 'updatedAt'])
+        && request.resource.data.stage in ['Out for delivery', 'Delivered', 'NDR', 'RTO'];
+    }
+    // ----- Last mile runsheets (DRS): the rider chosen in the portal (any login, including Employee / Punch logins) -----
+    // sees their runsheets and records only the scans and results; planning stays in the portal.
+    function runDoc(d) { return get(/databases/$(db)/documents/drs/$(d)).data; }
+    function myRun(s, sid) { return isMember() && s.get('drsId', '') is string && s.get('drsId', '') != ''
+      && runDoc(s.drsId).get('riderUid', '') == request.auth.uid && sid in runDoc(s.drsId).get('awbIds', []); }
+    match /drs/{id} {
+      allow read: if signedIn() && resource.data.get('riderUid', '') == request.auth.uid;
+      allow update: if isMember() && resource.data.get('riderUid', '') == request.auth.uid && request.resource.data.get('riderUid', '') == request.auth.uid
+        && request.resource.data.awbIds == resource.data.awbIds && resource.data.stage in ['Open', 'Out for delivery']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stage', 'loadScan', 'delScan', 'results', 'cod', 'events', 'startedAt', 'startGps', 'closedAt', 'deliveredCount', 'codCollected', 'codShort', 'codPosted', 'updatedAt']);
     }
 
     // "Is the portal set up yet?" – readable before login so the first screen knows what to show.

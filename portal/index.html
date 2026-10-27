@@ -962,7 +962,7 @@ const SCHEMA = {
       F('vtype', 'Vehicle type needed', 'ref', { src: 'vtypes' }), F('vehicle', 'Assign vehicle', 'ref', { src: 'vehicles' }), F('driver', 'Driver', 'text', { list: 'staff' }), F('driverPhone', 'Driver phone'),
       F('km', 'Distance km (auto)', 'number'), F('vendor', 'Transporter (who gets paid)', 'ref', { src: 'customers' }), F('vendorRate', 'Transporter payout ₹ (auto)', 'money'), F('clientRate', 'Client freight ₹ (auto)', 'money'), F('notes', 'Notes', 'textarea')],
     cols: ['no', 'lr', 'date', 'customer', 'route', 'pieces', 'hht', 'vehicle', 'clientRate', 'chain', 'stage'] },
-  trips: { label: 'Trips', noun: 'trip', code: 'no', prefix: 'TR', stages: ['Planned', 'Dispatched', 'Arrived', 'Closed'], doneStages: ['Arrived', 'Closed'],
+  trips: { label: 'Trips', noun: 'trip', code: 'no', prefix: 'TR', stages: ['Planned', 'Dispatched', 'Arrived', 'Closed'], extraStages: ['Cancelled'], doneStages: ['Arrived', 'Closed', 'Cancelled'],
     fields: [F('no', 'Trip / manifest no', 'code'), F('kind', 'Operation', 'select', { req: 1, opts: TRIP_KINDS }), F('from', 'From warehouse / area', 'ref', { src: 'hubs' }), F('to', 'To warehouse / area', 'ref', { src: 'hubs' }),
       F('vehicle', 'Vehicle', 'ref', { src: 'vehicles', req: 1 }), F('driver', 'Driver', 'text', { list: 'staff' }), F('vendor', 'Transporter (if hired)', 'text', { list: 'vendors' }),
       F('seal', 'Seal no'), F('planned', 'Planned departure', 'date'), F('km', 'Distance (km)', 'number'), F('cost', 'Trip cost', 'money'), F('notes', 'Notes', 'textarea')],
@@ -1149,7 +1149,7 @@ function listView(k, opts) {
   [...sel].forEach(id => { if (!rows.some(r => r._id === id)) sel.delete(id); });
   const bulk = writable(k) && sc.stages && !sc.noBulk && opts.bulk !== false;
   if (bulk && sel.size) {
-    h += '<div class="bulk"><b>' + sel.size + ' selected</b>' + (k === 'shipments' ? '' : '<select id="bulkStage" aria-label="Move selected to"><option value="">Move to status…</option>' + sc.stages.concat(sc.extraStages || []).map(s => '<option>' + esc(s) + '</option>').join('') + '</select>') +
+    h += '<div class="bulk"><b>' + sel.size + ' selected</b>' + (SCAN_ONLY.includes(k) ? '' : '<select id="bulkStage" aria-label="Move selected to"><option value="">Move to status…</option>' + sc.stages.concat(sc.extraStages || []).map(s => '<option>' + esc(s) + '</option>').join('') + '</select>') +
       '<button class="btn small" type="button" data-act="bulk-clear">Clear selection</button>' + (canDelete(k) ? '<button class="btn small danger" type="button" data-act="bulk-delete">Delete selected</button>' : '') + '</div>';
   }
   const cols = opts.cols || sc.cols;
@@ -1331,8 +1331,13 @@ function ownerActions(k, r) {
   if (!myReq(k, r)) return '<p class="help">Only the person who raised this request can revoke it.</p>';
   return '<div class="actions"><button class="btn small danger" type="button" data-act="req-revoke">Revoke request</button><span class="help">Status is updated by the team handling it.</span></div>';
 }
+/* Pickups, shipments, trips and runsheets move only by scanning in SN Pickup – never by a status button, list or bulk change */
+const SCAN_ONLY = ['pickups', 'shipments', 'trips', 'drs'];
+/* the only statuses still set by hand: planning (vehicle confirmed), closing paperwork and cancelling before anything moved */
+const HAND_OK = { pickups: ['Vehicle assigned', 'Closed', 'Cancelled'], trips: ['Closed', 'Cancelled'], drs: [] };
 function defaultActions(k, r) {
   const sc = SCHEMA[k]; if (sc.noStage || !sc.stages) return '';
+  if (SCAN_ONLY.includes(k)) return '<p class="help">Status moves only by scanning in SN Pickup.</p>';
   const s = stageOf(k, r);
   let h = '<div class="actions">';
   if (sc.freeStage) h += sc.stages.filter(x => x !== s).map(x => '<button class="btn small" type="button" data-stage-to="' + esc(x) + '">' + esc(x) + '</button>').join('');
@@ -1543,25 +1548,25 @@ HOOK.actions.shipments = r => {
   /* Shipment status moves only through the real operation – never picked by hand */
   const NEXT_OP = { Booked: 'Moves to Picked up when the executive scans every box in SN Pickup.', 'Picked up': 'Moves to Pickup in transit when the pickup is completed in SN Pickup.',
     'Pickup in transit': 'Moves to At origin hub when hub staff receive it in SN Pickup › Inbound.', 'At origin hub': 'Moves to In transit when it is dispatched on a Linehaul trip.',
-    'In transit': 'Moves to At destination hub when its trip arrives.', 'At destination hub': 'Moves to Out for delivery when it is put on a runsheet (DRS) and the run starts.' };
+    'In transit': 'Moves to At destination hub when its trip arrives and the boxes are scanned off.', 'At destination hub': 'Put it on a runsheet (DRS); it moves to Out for delivery when the rider scans every box onto the run in SN Pickup › Deliveries.',
+    'Out for delivery': 'Delivered or failed only when the rider scans the boxes at the door in SN Pickup › Deliveries.', NDR: 'Goes on the next runsheet automatically on its next-attempt date.' };
   if (NEXT_OP[s]) h += '<p class="help" style="margin:0;flex-basis:100%">' + esc(NEXT_OP[s]) + '</p>';
   const W = writable('shipments'), trip = r.tripNo && S.data.trips.find(t => t.no === r.tripNo), drs = r.drsNo && S.data.drs.find(d => d.no === r.drsNo);
-  if (W && s === 'Booked') h += (r.pickupNo ? '' : '<button class="btn primary small" type="button" data-act="ship-pickup">Create pickup request</button>') + '<button class="btn small" type="button" data-act="ship-trip" data-kind="First mile">Add to pickup trip</button><button class="btn small" type="button" data-act="ship-receive" data-how="drop">Customer dropped at hub</button>';
-  if (W && ['Picked up', 'Pickup in transit'].includes(s)) h += '<button class="btn primary small" type="button" data-act="ship-receive">Receive at hub</button>';
-  if (W && s === 'At origin hub') h += '<button class="btn primary small" type="button" data-act="ship-trip" data-kind="Mid mile">Load on linehaul trip</button><button class="btn small" type="button" data-act="ship-local">Same-city delivery (no linehaul)</button>';
-  if (W && (s === 'At destination hub' || (s === 'NDR' && !drs))) h += '<button class="btn primary small" type="button" data-act="ship-trip" data-kind="Last mile">Put on delivery trip</button><button class="btn small" type="button" data-act="ship-drs">Put on runsheet (DRS)</button>';
+  if (W && s === 'Booked') h += (r.pickupNo ? '' : '<button class="btn primary small" type="button" data-act="ship-pickup">Create pickup request</button>') + '<button class="btn small" type="button" data-act="ship-trip" data-kind="First mile">Add to pickup trip</button>';
+  if (['Picked up', 'Pickup in transit'].includes(s)) h += '<p class="help" style="margin:0;flex-basis:100%">Received at the hub only by scanning every box in SN Pickup › Inbound (or off a pickup trip).</p>';
+  if (W && s === 'At origin hub') h += '<button class="btn primary small" type="button" data-act="ship-trip" data-kind="Mid mile">Load on linehaul trip</button>' + (r.local ? '<span class="pill good">Same-city – goes on a runsheet from this hub</span>' : '<button class="btn small" type="button" data-act="ship-local">Same-city delivery (no linehaul)</button>');
+  if (W && (s === 'At destination hub' || (s === 'At origin hub' && r.local) || (s === 'NDR' && (!drs || stageOf('drs', drs) === 'Closed')) || drsDirect(r))) h += '<button class="btn primary small" type="button" data-act="ship-drs">Put on runsheet (DRS)</button>';
   if (trip) h += '<button class="btn small" type="button" data-open="trips|' + trip._id + '">Trip ' + esc(trip.no) + ' · ' + esc(stageOf('trips', trip)) + '</button>';
   if (drs) h += '<button class="btn small" type="button" data-open="drs|' + drs._id + '">Runsheet ' + esc(drs.no) + ' · ' + esc(stageOf('drs', drs)) + '</button>';
   if (s === 'Delivered' && !r.invoiceNo && lvl('billing') >= 2) h += '<button class="btn primary small" type="button" data-act="ship-invoice">Raise client invoice</button>';
   if (r.invoiceNo) { const inv = S.data.invoices.find(x => x.no === r.invoiceNo); if (inv) h += '<button class="btn small" type="button" data-open="invoices|' + inv._id + '">Invoice ' + esc(inv.no) + ' · ' + esc(stageOf('invoices', inv)) + '</button>'; }
   if (s === 'RTO') { const ret = S.data.returns.find(x => x.awb === r.awb); if (ret) h += '<button class="btn small" type="button" data-open="returns|' + ret._id + '">Return ' + esc(ret.rma) + ' · ' + esc(stageOf('returns', ret)) + '</button>'; }
   if (W && !SCHEMA.shipments.doneStages.includes(s)) h += '<button class="btn small danger" type="button" data-act="ship-lost">Report lost / damaged</button>';
-  if (s === 'Out for delivery') h += '<button class="btn primary small" type="button" data-act="deliver">Delivered</button><button class="btn small" type="button" data-act="ndr">Delivery failed</button>';
-  if (s === 'NDR') h += '<button class="btn primary small" type="button" data-act="reattempt">Re-attempt</button><button class="btn small danger" type="button" data-act="rto">Return to origin</button>';
+  if (s === 'NDR') h += '<button class="btn small danger" type="button" data-act="rto">Return to origin</button>';
   if (!SCHEMA.shipments.doneStages.includes(s) && s !== 'NDR') h += '<button class="btn small danger" type="button" data-act="rto">Start RTO</button>';
   h += '</div>';
-  if (D && D.sub === 'deliver') h += '<div class="form" style="align-items:end"><label>Received by<input id="podName" type="text" value="' + esc(r.consignee || '') + '"></label>' + (r.mode === 'COD' ? '<label>COD collected (₹)<input id="podCod" type="number" step="any" value="' + esc(r.cod) + '"></label>' : '') + '<button class="btn primary" type="button" data-act="deliver-save">Save delivery</button></div>';
-  if (D && D.sub === 'ndr') h += '<div class="form" style="align-items:end"><label>Why did delivery fail?<select id="ndrReason">' + NDR_REASONS.map(x => '<option>' + esc(x) + '</option>').join('') + '</select></label><label>Next attempt<input id="ndrDate" type="date" value="' + addDays(today(), 1) + '"></label><button class="btn primary" type="button" data-act="ndr-save">Save failed attempt</button></div>';
+  if (false) h += '<div class="form" style="align-items:end"><label>Received by<input id="podName" type="text" value="' + esc(r.consignee || '') + '"></label>' + (r.mode === 'COD' ? '<label>COD collected (₹)<input id="podCod" type="number" step="any" value="' + esc(r.cod) + '"></label>' : '') + '<button class="btn primary" type="button" data-act="deliver-save">Save delivery</button></div>';
+  if (false) h += '<div class="form" style="align-items:end"><label>Why did delivery fail?<select id="ndrReason">' + NDR_REASONS.map(x => '<option>' + esc(x) + '</option>').join('') + '</select></label><label>Next attempt<input id="ndrDate" type="date" value="' + addDays(today(), 1) + '"></label><button class="btn primary" type="button" data-act="ndr-save">Save failed attempt</button></div>';
   return h;
 };
 const NDR_REASONS = ['Customer not available', 'Address incomplete / not found', 'Customer refused', 'Cash not ready (COD)', 'Premises closed', 'Rescheduled by customer', 'Out of delivery area', 'Other'];
@@ -1739,10 +1744,9 @@ HOOK.actions.pickups = r => {
   const c = chainOf(r);
   let h = '<div class="actions">';
   if (st === 'Requested') h += r.vehicle ? '<button class="btn primary small" type="button" data-stage-to="Vehicle assigned">Confirm vehicle ' + esc(r.vehicle) + '</button>' : '<button class="btn primary small" type="button" data-act="edit">Assign vehicle</button>';
-  if (st === 'Vehicle assigned') h += '<button class="btn primary small" type="button" data-stage-to="Picked up">Picked up · create shipment</button>';
+  if (['Requested', 'Assigned', 'Vehicle assigned'].includes(st)) h += '<p class="help" style="margin:0;flex-basis:100%">Picked up only when the executive scans every box label in SN Pickup.</p>';
   if (isDirect(r)) {
-    if (st === 'Picked up') h += '<button class="btn primary small" type="button" data-stage-to="In transit">Dispatch · create trip</button>';
-    if (st === 'In transit') h += '<button class="btn primary small" type="button" data-act="pu-deliver">Delivered</button>';
+    if (['Picked up', 'In transit'].includes(st)) h += '<p class="help" style="margin:0;flex-basis:100%">Direct (FTL): put its shipment on a runsheet; the driver scans the boxes onto the run and again at the consignee in SN Pickup › Deliveries.</p>';
   } else if (['Picked up', 'In transit'].includes(st)) h += '<p class="help" style="margin:0;flex-basis:100%">Via hub: the shipment is received at the hub, goes on a linehaul trip, then a delivery runsheet. This pickup closes by itself when all its shipments are delivered.</p>';
   if (['Delivered', 'Closed'].includes(st) || c.delivered) {
     if (!c.invs.length && c.ships.length && lvl('billing') >= 2) h += '<button class="btn primary small" type="button" data-act="pu-invoice">Raise client invoice</button>';
@@ -1752,7 +1756,7 @@ HOOK.actions.pickups = r => {
   }
   if (!['Delivered', 'Closed', 'Cancelled'].includes(st)) h += '<button class="btn small danger" type="button" data-stage-to="Cancelled">Cancel</button>';
   h += '</div>';
-  if (D && D.sub === 'pu-deliver') h += '<div class="form" style="align-items:end"><label>Received by (POD)<input id="pu-pod" type="text"></label><button class="btn primary" type="button" data-act="pu-deliver-save">Save delivery</button></div>';
+  if (false && D && D.sub === 'pu-deliver') h += '<div class="form" style="align-items:end"><label>Received by (POD)<input id="pu-pod" type="text"></label><button class="btn primary" type="button" data-act="pu-deliver-save">Save delivery</button></div>';
   return h;
 };
 /* SN Pickup (HHT) progress for this pickup, live: executive, accept, vendor, invoice, LR, boxes scanned, proof */
@@ -1936,6 +1940,13 @@ const TRIP_HELP = { 'First mile': 'Pickup run: collect boxes from shippers and b
   'Mid mile': 'Linehaul: hub to hub. Only shipments received at the origin hub can be loaded. Dispatch → In transit; Arrived → At destination hub.',
   'Last mile': 'Delivery run from the destination hub. Dispatch makes a runsheet (DRS) and puts the shipments out for delivery; close the runsheet with each result.',
   'Direct (FTL)': 'Full truck straight from the pickup to the consignee, made from the pickup.' };
+HOOK.actions.trips = r => {
+  const st = stageOf('trips', r), k = tripKind(r);
+  let h = '<div class="actions"><p class="help" style="margin:0;flex-basis:100%">' + (k === 'Last mile' ? 'Last mile runs go on a runsheet (DRS): the rider scans every box onto the run and at the door in SN Pickup › Deliveries.' : st === 'Planned' ? 'Dispatch only by scanning every box onto the vehicle in SN Pickup › Trips.' : st === 'Dispatched' ? 'Arrives only by scanning the boxes off the vehicle in SN Pickup › Trips.' : 'Done by scanning in SN Pickup.') + '</p>';
+  if (st === 'Arrived') h += '<button class="btn small" type="button" data-stage-to="Closed">Close trip</button>';
+  if (st === 'Planned' && (SCHEMA.trips.extraStages || []).includes('Cancelled')) h += '<button class="btn small danger" type="button" data-stage-to="Cancelled">Cancel trip</button>';
+  return h + '</div>';
+};
 HOOK.onStage.trips = async (r, to, from, extra) => {
   const ids = r.awbIds || [], kind = tripKind(r);
   if (kind === 'First mile' && to === 'Dispatched') {
@@ -1996,29 +2007,32 @@ HOOK.detail.drs = r => {
   const codExp = sum(on.filter(s => s.mode === 'COD'), s => s.cod);
   let h = '<div class="kv"><div><span class="mini">Shipments</span><div><b>' + on.length + '</b></div></div><div><span class="mini">COD to collect</span><div><b>' + money(codExp) + '</b></div></div>' +
     (st === 'Closed' ? '<div><span class="mini">Delivered</span><div><b>' + (r.deliveredCount || 0) + '</b> (' + pct(r.deliveredCount || 0, on.length) + ')</div></div><div><span class="mini">COD collected</span><div><b>' + money(r.codCollected) + '</b>' + (num(r.codShort) ? ' <span class="bad-t">short ' + money(r.codShort) + '</span>' : '') + '</div></div>' : '') + '</div>';
-  if (st === 'Out for delivery' && writable()) {
-    h += '<h4 class="section-title">Close the runsheet</h4><p class="help">Mark each shipment and enter the cash collected. Closing updates every shipment, records failed attempts and posts the COD collection.</p>' +
-      on.map(s => '<div class="pickrow"><span class="code">' + esc(s.awb) + '</span><span class="grow">' + esc((s.consignee || '') + ' · ' + (s.destCity || '')) + (s.mode === 'COD' ? ' · <b>COD ' + money(s.cod) + '</b>' : '') + '</span>' +
-        '<select id="res-' + s._id + '" aria-label="Result"><option>Delivered</option>' + NDR_REASONS.map(x => '<option value="NDR:' + esc(x) + '">Failed – ' + esc(x) + '</option>').join('') + '</select>' +
-        (s.mode === 'COD' ? '<input id="cod-' + s._id + '" type="number" step="any" aria-label="COD collected" value="' + esc(s.cod) + '">' : '') + '</div>').join('') +
-      '<div class="actions" style="margin-top:8px"><button class="btn primary" type="button" data-act="drs-close">Close runsheet</button></div>';
+  if (st === 'Out for delivery') {
+    const R = r.results || {};
+    h += '<h4 class="section-title">On the run (' + on.length + ')</h4>' + on.map(s => { const st2 = stageOf('shipments', s), res = R[s._id] || (st2 === 'Out for delivery' ? 'Pending' : st2);
+      return '<div class="pickrow"><span class="code">' + esc(s.awb) + '</span><span class="grow">' + esc((s.consignee || '') + ' · ' + (s.destCity || '') + (s.mode === 'COD' ? ' · COD ' + money(s.cod) : '')) + '</span><span class="pill ' + (res === 'Delivered' ? 'good' : res === 'Pending' ? '' : 'warn') + '">' + esc(res) + (s.codCollected && res === 'Delivered' && s.mode === 'COD' ? ' · ' + money(s.codCollected) : '') + '</span></div>'; }).join('');
   } else {
     h += '<h4 class="section-title">Shipments (' + on.length + ')</h4>' + (on.length ? on.map(s => '<div class="pickrow"><span class="code">' + esc(s.awb) + '</span><span class="grow">' + esc((s.consignee || '') + ' · ' + (s.destCity || '') + (s.mode === 'COD' ? ' · COD ' + money(s.cod) : '')) + '</span>' + pill(stageOf('shipments', s)) + (writable() && st === 'Open' ? '<button class="btn small" type="button" data-drs-remove="' + s._id + '">Remove</button>' : '') + '</div>').join('') : '<p class="mini">No shipments yet.</p>');
   }
   if (writable() && st === 'Open') {
     const busy = new Set(S.data.drs.filter(d => d._id !== r._id && stageOf('drs', d) !== 'Closed').flatMap(d => d.awbIds || []));
-    const cands = S.data.shipments.filter(s => (stageOf('shipments', s) === 'At destination hub' || (stageOf('shipments', s) === 'NDR' && (!s.nextAttempt || s.nextAttempt <= r.date))) && !ids.includes(s._id) && !busy.has(s._id));
+    const cands = S.data.shipments.filter(s => (stageOf('shipments', s) === 'At destination hub' || (stageOf('shipments', s) === 'At origin hub' && s.local) || drsDirect(s) || (stageOf('shipments', s) === 'NDR' && (!s.nextAttempt || s.nextAttempt <= r.date))) && !ids.includes(s._id) && !busy.has(s._id));
+    const ops = (S.data.members || []).filter(m => m.status !== 'Suspended' && [m.role].concat(m.roles || []).some(x => /^(ops_|pickup_coord|hub_sup|rider|booking_exec|lastmile_lead|employee$)/.test(x)));
+    try { wantNames(ops.map(m => m._id)); } catch (e) {}
+    h += '<h4 class="section-title">Rider (SN Pickup login)</h4><select id="drsRider" aria-label="Rider"><option value="">' + (r.riderUid ? 'Rider: ' + esc(r.rider || '') : 'Choose the rider…') + '</option>' + ops.map(m => '<option value="' + esc(m._id) + '"' + (m._id === r.riderUid ? ' selected' : '') + '>' + esc(pkLabel(m)) + '</option>').join('') + '</select>';
     h += '<h4 class="section-title">Ready for delivery (' + cands.length + ')</h4>' + (cands.length ? '<div>' + cands.slice(0, 300).map(s => '<label class="pickrow"><input type="checkbox" class="cand" value="' + s._id + '"><span class="code">' + esc(s.awb) + '</span><span class="grow">' + esc((s.consignee || '') + ' · ' + (s.destCity || '') + (s.pincode ? ' ' + s.pincode : '')) + '</span>' + pill(stageOf('shipments', s)) + '</label>').join('') + '</div><div class="actions"><button class="btn small" type="button" data-act="cand-all">Tick all</button><button class="btn small primary" type="button" data-act="drs-load">Add ticked</button></div>' : '<p class="mini">Shipments appear here when they reach the destination hub, or failed ones due for re-attempt.</p>');
   }
   return h;
 };
 HOOK.actions.drs = r => {
   const st = stageOf('drs', r);
-  if (st === 'Open') return '<div class="actions"><button class="btn primary small" type="button" data-stage-to="Out for delivery">Start run (out for delivery)</button></div>';
+  if (st === 'Open') return '<div class="actions"><p class="help" style="margin:0">' + (r.riderUid ? 'The run starts when ' + esc(r.rider || 'the rider') + ' scans every box onto it in SN Pickup › Deliveries.' : 'Choose the rider below. The run starts when the rider scans every box onto it in SN Pickup › Deliveries.') + '</p></div>';
+  if (st === 'Out for delivery') return '<div class="actions"><p class="help" style="margin:0">Each shipment is delivered or failed only when the rider scans its boxes at the door. The runsheet closes by itself after the last one.</p></div>';
   return '';
 };
 HOOK.onStage.drs = async (r, to, from, extra) => {
   const ids = r.awbIds || [];
+  if (to === 'Out for delivery' && !(extra && extra.scan)) { toast('The run starts when the rider scans every box onto it in SN Pickup › Deliveries.', true); return false; }
   if (to === 'Out for delivery') {
     if (!ids.length) { toast('Add shipments first.'); return false; }
     for (const id of ids) await setStage('shipments', id, 'Out for delivery', 'DRS ' + r.no + ' · ' + (r.rider || ''), { drsNo: r.no }, true);
@@ -2026,6 +2040,19 @@ HOOK.onStage.drs = async (r, to, from, extra) => {
   }
   return true;
 };
+/* Direct (full truck) pickups: the shipment goes straight to the consignee on a runsheet, no hub */
+function drsDirect(s) { const p = s.pickupNo && S.data.pickups.find(x => x.no === s.pickupNo); return !!(p && isDirect(p)) && ['Picked up', 'Pickup in transit'].includes(stageOf('shipments', s)); }
+/* Runsheets closed by the rider in SN Pickup: post the COD collected to the books once (by the first portal login that can) */
+async function postDrsCod() {
+  if (S.codBusy || !writable('payments')) return; const L = (S.data.drs || []).filter(d => d.codPosted === false && stageOf('drs', d) === 'Closed'); if (!L.length) return;
+  S.codBusy = true;
+  try { for (const r of L) { await save('drs', r._id, { codPosted: true });
+    const got = num(r.codCollected); if (got > 0) {
+      await postJournal(today(), 'COD collected · DRS ' + r.no + ' · ' + (r.rider || ''), [{ a: 'COD cash with riders', dr: got }, { a: 'COD payable to clients', cr: got }], 'COD', r.no);
+      await save('payments', null, { ref: nextCode('PAY', 'payments', 'ref'), type: 'COD collection', party: r.rider || 'Rider', amount: r2(got), mode: 'Cash', due: today(), link: r.no, stage: 'Pending', notes: 'Cash to deposit from DRS ' + r.no + ' (closed in SN Pickup)', events: [{ s: 'Pending', t: Date.now(), n: 'From DRS close' }] }); } }
+  } finally { S.codBusy = false; }
+}
+setInterval(() => { try { postDrsCod(); } catch (e) {} }, 20000);
 async function closeDRS(r) {
   const ids = r.awbIds || [];
   let delivered = 0, codGot = 0, codExp = 0;
@@ -3874,7 +3901,7 @@ document.addEventListener('click', async e => {
   if (ds.import) { IMPORT = null; openDrawer({ mode: 'import', k: ds.import }); return; }
   if (ds.export) { exportCSV(ds.export); return; }
   if (ds.chip) { const i = ds.chip.indexOf('|'); const k = ds.chip.slice(0, i); S.filt[k] = ds.chip.slice(i + 1); S.sel[k].clear(); render(); return; }
-  if (ds.stageTo && D) { if (D.k === 'shipments') { toast('Shipment status changes only through its operation (scan, hub receive, trip, runsheet).', true); return; } await setStage(D.k, D.id, ds.stageTo); return; }
+  if (ds.stageTo && D) { if (SCAN_ONLY.includes(D.k) && !(HAND_OK[D.k] || []).includes(ds.stageTo)) { toast('Status changes only by scanning in SN Pickup (pickup, hub receive, trips, delivery).', true); return; } await setStage(D.k, D.id, ds.stageTo); return; }
   if (ds.raise) { t.disabled = true; await raiseInvoice(ds.raise); return; }
   if (ds.remit) { const [c, amt] = ds.remit.split('|'); const id = await save('payments', null, { ref: nextCode('PAY', 'payments', 'ref'), type: 'COD remittance to client', party: c, amount: num(amt), mode: 'NEFT', due: addDays(today(), 2), stage: 'Pending', events: [{ s: 'Pending', t: Date.now(), n: 'From COD reconciliation' }] }, 'COD remittance queued for ' + c); if (id) { toast('Remittance of ' + money(amt) + ' queued'); openDrawer({ mode: 'view', k: 'payments', id }); } return; }
   if (ds.period) { const d = new Date(); if (ds.period === 'month') { S.from = today().slice(0, 8) + '01'; S.to = today(); } else if (ds.period === 'last') { const f = new Date(d.getFullYear(), d.getMonth() - 1, 1); S.from = iso(f); S.to = iso(new Date(d.getFullYear(), d.getMonth(), 0)); } else { const y = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1; S.from = y + '-04-01'; S.to = today(); } render(); return; }
@@ -3902,17 +3929,8 @@ document.addEventListener('click', async e => {
     case 'import-go': runImport(); return;
     case 'bulk-clear': { const k = curTabKey(); if (k) S.sel[k].clear(); render(); return; }
     case 'bulk-delete': { const k = curTabKey(); if (!k) return; if (!S.bulkConfirm) { S.bulkConfirm = true; t.textContent = 'Tap again to delete ' + S.sel[k].size; setTimeout(() => { S.bulkConfirm = false; }, 4000); return; } S.bulkConfirm = false; let n = 0; for (const id of [...S.sel[k]]) { if (await remove(k, id)) n++; } audit(k, 'Deleted ' + n + ' records'); S.sel[k].clear(); toast('Deleted ' + n); return; }
-    case 'deliver': D.sub = 'deliver'; drawDrawer(true); return;
-    case 'deliver-save': D.sub = null; await markDelivered(D.id, $('#podName').value.trim(), $('#podCod') ? $('#podCod').value : 0); return;
-    case 'ndr': D.sub = 'ndr'; drawDrawer(true); return;
-    case 'ndr-save': D.sub = null; await failAttempt(D.id, $('#ndrReason').value, $('#ndrDate').value); return;
-    case 'reattempt': await setStage('shipments', D.id, 'At destination hub', 'Re-attempt' + (r.nextAttempt ? ' on ' + fmtDate(r.nextAttempt) : '')); return;
     case 'rto': await setStage('shipments', D.id, 'RTO', 'Return to origin'); return;
-    case 'ship-receive': { const N = num(r.pieces) || 1, drop = ds.how === 'drop';
-      const ok = await ask((drop ? 'Customer dropped ' : 'Receive ') + r.awb + ' at ' + (r.origin || 'the hub') + '. Count the boxes: did all ' + N + ' arrive?', { ok: 'All ' + N + ' received', cancel: 'Not now' });
-      if (!ok) return;
-      await setStage('shipments', D.id, 'At origin hub', (drop ? 'Dropped at hub by customer' : 'Received at hub') + ' · ' + N + '/' + N + ' boxes · ' + ((S.me && S.me.name) || ''), { inbound: 'Received', receivedAt: Date.now(), receivedBy: (S.me && S.me.name) || '', pickedAt: r.pickedAt || Date.now() }); if (r.pickupId) save('pickups', r.pickupId, { inbound: 'Received', hubAt: Date.now() }); return; }
-    case 'ship-local': if (!(await ask('Deliver ' + r.awb + ' from this hub without a linehaul trip?', { ok: 'Yes, same city' }))) return; await setStage('shipments', D.id, 'At destination hub', 'Same-city delivery from ' + (r.origin || 'origin hub')); return;
+    case 'ship-local': if (!(await ask('Deliver ' + r.awb + ' from this hub without a linehaul trip? It can then go on a runsheet here.', { ok: 'Yes, same city' }))) return; await save('shipments', D.id, { local: true, destHub: r.destHub || r.origin || '' }, r.awb + ' – same-city delivery'); return;
     case 'ship-lost': { const why = await ask('What happened to ' + r.awb + '?', { input: 'e.g. 2 boxes damaged at hub, lost in transit', ok: 'Report', danger: 1 }); if (!why) return; await setStage('shipments', D.id, 'Lost / damaged', why); return; }
     case 'ship-invoice': t.disabled = true; await invoiceShipments(r.customer, [r], 'Shipment ' + r.awb); return;
     case 'ship-trip': { const kind = ds.kind, hub = kind === 'First mile' ? r.origin : kind === 'Last mile' ? (r.destHub || r.origin) : r.origin;
@@ -3924,9 +3942,9 @@ document.addEventListener('click', async e => {
       toast('Trip ' + no + ' made – choose the vehicle and driver'); openDrawer({ mode: 'edit', k: 'trips', id }); return; }
     case 'ship-drs': { let d = S.data.drs.find(x => stageOf('drs', x) === 'Open' && x.date === today() && (!r.destHub || !x.hub || lc(x.hub) === lc(r.destHub)));
       if (d && !(await ask('Add ' + r.awb + ' to today\'s open runsheet ' + d.no + ' (' + (d.rider || '') + ')?', { ok: 'Add to ' + d.no, cancel: 'New runsheet' }))) d = null;
-      if (d) { await save('drs', d._id, { awbIds: uniq((d.awbIds || []).concat([r._id])) }, 'Added ' + r.awb + ' to ' + d.no); openDrawer({ mode: 'view', k: 'drs', id: d._id }); return; }
+      if (d) { await save('drs', d._id, { awbIds: uniq((d.awbIds || []).concat([r._id])) }, 'Added ' + r.awb + ' to ' + d.no); await save('shipments', r._id, { drsId: d._id, drsNo: d.no }); openDrawer({ mode: 'view', k: 'drs', id: d._id }); return; }
       const no = nextCode('DRS', 'drs', 'no'), id = await save('drs', null, { no, hub: r.destHub || '', rider: '', date: today(), area: r.destCity || '', awbIds: [r._id], stage: 'Open', events: [{ s: 'Open', t: Date.now(), n: 'Made from shipment ' + r.awb }] }, 'Runsheet ' + no + ' for ' + r.awb);
-      if (!id) return; await waitRec('drs', id); toast('Runsheet ' + no + ' made – choose the rider'); openDrawer({ mode: 'edit', k: 'drs', id }); return; }
+      if (!id) return; await save('shipments', r._id, { drsId: id, drsNo: no }); await waitRec('drs', id); toast('Runsheet ' + no + ' made – choose the rider'); openDrawer({ mode: 'edit', k: 'drs', id }); return; }
     case 'ship-pickup': { const no = await nextPickupNo(), body = { no, customer: r.customer || '', date: today(), ref: r.ref || '', fromPin: r.originPin || '', fromCity: r.originCity || '', fromState: r.originState || '', to: r.origin || '', pieces: num(r.pieces) || 1, weight: num(r.weight) || '', l: num(r.l) || '', b: num(r.w) || '', h: num(r.h) || '', flow: 'Via hub (part load)', stage: 'Requested', events: [{ s: 'Requested', t: Date.now(), n: 'For shipment ' + r.awb }] };
       const id = await save('pickups', null, body, 'Pickup ' + no + ' for ' + r.awb); if (!id) return; await save('shipments', r._id, { pickupNo: no }); await waitRec('pickups', id);
       toast('Pickup ' + no + ' made – assign an executive or vehicle'); openDrawer({ mode: 'view', k: 'pickups', id }); return; }
@@ -3937,7 +3955,7 @@ document.addEventListener('click', async e => {
     case 'inv-print': printDoc(invoiceHtml(r, await logoData()), 'Invoice ' + r.no); return;
     case 'trip-load': { const ok = new Set(tripCands(r).map(s => s._id)), ids = ticked().filter(id => ok.has(id)); if (!ids.length) return; await save('trips', r._id, { awbIds: uniq((r.awbIds || []).concat(ids)) }, 'Loaded ' + ids.length + ' on trip ' + r.no); toast(ids.length + ' loaded on ' + r.no); return; }
     case 'trip-bill': { const id = await save('vendorbills', null, { no: nextCode('VB', 'vendorbills', 'no'), vendor: r.vendor, billNo: 'Trip ' + r.no, billDate: today(), account: 'Vendor freight', amount: num(r.cost), gstPct: '0', tds: '1', due: addDays(today(), num((partyOf(r.vendor) || {}).creditDays) || 30), trip: r.no, stage: 'Received', events: [{ s: 'Received', t: Date.now(), n: 'From trip ' + r.no }] }, 'Vendor bill for trip ' + r.no); if (id) { await save('trips', r._id, { billNo: 'Trip ' + r.no }); toast('Vendor bill created'); } return; }
-    case 'drs-load': { const ids = ticked(); if (!ids.length) return; await save('drs', r._id, { awbIds: uniq((r.awbIds || []).concat(ids)) }, 'Added ' + ids.length + ' to ' + r.no); toast(ids.length + ' added to ' + r.no); return; }
+    case 'drs-load': { const ids = ticked(); if (!ids.length) return; await save('drs', r._id, { awbIds: uniq((r.awbIds || []).concat(ids)) }, 'Added ' + ids.length + ' to ' + r.no); for (const id of ids) await save('shipments', id, { drsId: r._id, drsNo: r.no }); toast(ids.length + ' added to ' + r.no); return; }
     case 'drs-close': t.disabled = true; await closeDRS(r); return;
     case 'inv-pay': D.sub = 'pay'; drawDrawer(true); return;
     case 'inv-pay-save': t.disabled = true; await invoicePayment(r); return;
@@ -3962,7 +3980,6 @@ document.addEventListener('click', async e => {
     case 'nav-open': document.body.classList.add('navopen'); return;
     case 'nav-close': document.body.classList.remove('navopen'); return;
     case 'pu-deliver': D.sub = 'pu-deliver'; drawDrawer(true); return;
-    case 'pu-deliver-save': { t.disabled = true; D.sub = null; await pickupDeliver(r, $('#pu-pod').value.trim()); return; }
     case 'pu-invoice': t.disabled = true; await pickupInvoice(r); return;
     case 'pu-vbill': t.disabled = true; await pickupVendorBill(r); return;
     case 'apply-cost': applyCost(); return;
@@ -4000,8 +4017,10 @@ document.addEventListener('change', async e => {
     if (D.k === 'pickups') liveCost();
     return;
   }
-  if (id === 'stageJump' && e.target.value && D && D.k !== 'shipments') { await setStage(D.k, D.id, e.target.value, 'Set manually'); return; }
-  if (id === 'bulkStage' && e.target.value && curTabKey() !== 'shipments') { const k = curTabKey(); const to = e.target.value; let n = 0; for (const rid of [...S.sel[k]]) { if (await setStage(k, rid, to, 'Bulk update', {}, true)) n++; } S.sel[k].clear(); toast(n + ' moved to ' + to); return; }
+  if (id === 'drsRider' && D && D.k === 'drs') { const uid = e.target.value; if (!uid) return; const nm = String((e.target.selectedOptions[0] || {}).textContent || '').replace(/^\(\d+\) /, '').replace(/ · .*$/, '').trim();
+    await save('drs', D.id, { riderUid: uid, rider: nm }, 'Rider ' + nm + ' on ' + (rec('drs', D.id) || {}).no); toast('Rider set – the runsheet shows in their SN Pickup › Deliveries'); return; }
+  if (id === 'stageJump' && e.target.value && D && !SCAN_ONLY.includes(D.k)) { await setStage(D.k, D.id, e.target.value, 'Set manually'); return; }
+  if (id === 'bulkStage' && e.target.value && !SCAN_ONLY.includes(curTabKey())) { const k = curTabKey(); const to = e.target.value; let n = 0; for (const rid of [...S.sel[k]]) { if (await setStage(k, rid, to, 'Bulk update', {}, true)) n++; } S.sel[k].clear(); toast(n + ' moved to ' + to); return; }
   if (id === 'csvFile') { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => previewImport(String(rd.result)); rd.readAsText(f); return; }
   if (id.startsWith('bill-')) { S.bill[id.slice(5)] = e.target.value; render(); return; }
   if (id === 'p-from') { S.from = e.target.value; render(); return; }
