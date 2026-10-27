@@ -120,7 +120,9 @@ document.addEventListener('submit', async e => {
   e.preventDefault(); const f = e.target, v = V.v; if (!v) return;
   if (f.id === 'rf') { const d = Object.fromEntries(new FormData(f)), er = $('#re');
     if (!/^\d{6}$/.test(d.toPin)) { er.textContent = 'Pincode must be 6 digits.'; return; }
-    const now = Date.now(), dt = new Date(), no = 'PU' + String(dt.getFullYear()).slice(2) + pad(dt.getMonth() + 1, 2) + pad(dt.getDate(), 2) + (Math.floor(Math.random() * 90000) + 10000);
+    const now = Date.now(); let no;
+    try { const ref = fs.doc('counters/pickup'); const n = await fs.runTransaction(async t => { const c = await t.get(ref), v = (c.exists ? +c.data().n || 0 : 0) + 1; t.set(ref, { n: v, at: now }); return v; }); no = 'PU' + String(n).padStart(5, '0'); }
+    catch (x) { er.textContent = 'Could not get a pickup number (' + (x.code || 'error') + '). Try again.'; return; }
     let to = null; try { const r = await fetch('https://api.postalpincode.in/pincode/' + d.toPin), j = await r.json(), po = j && j[0] && j[0].PostOffice && j[0].PostOffice[0]; if (po) to = { city: po.District, state: po.State }; } catch (x) {}
     const doc = { no, source: 'vendor', vendorId: v._id, vendorUid: V.me, customer: v.name, shipper: { id: v._id, name: v.name, code: v.code, gstin: v.gstin, phone: v.phone, address: v.address, pin: v.pin, city: v.city, state: v.state, uid: V.me },
       date: d.date, slot: d.slot, pieces: +d.pieces || '', ref: d.ref, fromPin: v.pin, fromCity: v.city, fromState: v.state, fromAddress: v.address, toPin: d.toPin, toCity: to ? to.city : '', toState: to ? to.state : '',

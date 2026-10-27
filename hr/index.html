@@ -551,7 +551,7 @@ const GRADES = ['Executive', 'Sr Executive', 'Team Lead', 'Assistant Manager', '
 const DEPTS_HR = ['Operations', 'Transport', 'First mile', 'Mid mile', 'Last mile', 'Warehouse', 'Finance', 'Accounts', 'HR', 'Admin', 'IT', 'Sales', 'Other'];
 function empForm() {
   const id = S.edit, e = id === 'new' ? { eid: nextEmpId() } : empOf(id) || {}, opt = (L, v) => '<option value=""></option>' + L.concat(v && !L.includes(v) ? [v] : []).map(o => '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>').join('');
-  return '<section class="card" style="margin-bottom:14px"><h2>' + (id === 'new' ? 'New employee' : 'Edit ' + esc(e.name)) + '</h2><div class="form">' + fld('em-name', 'Full name', 'text', e.name) + fld('em-eid', 'Employee ID', 'text', e.eid) + fld('em-desg', 'Designation', 'text', e.desg) +
+  return '<section class="card" style="margin-bottom:14px"><h2>' + (id === 'new' ? 'New employee' : 'Edit ' + esc(e.name)) + '</h2><div class="form">' + fld('em-name', 'Full name', 'text', e.name) + fld('em-eid', 'Employee ID (automatic)', 'text', e.eid, ' readonly tabindex="-1" style="opacity:.75"') + fld('em-desg', 'Designation', 'text', e.desg) +
     '<label>Grade<select id="em-grade">' + opt(GRADES, e.grade) + '</select></label><label>Department<select id="em-cat">' + opt(DEPTS_HR, e.cat) + '</select></label>' + fld('em-hub', 'Workplace', 'text', (e.wp || {}).name) + fld('em-join', 'Date of joining', 'date', e.join) +
     '<label>Reporting manager<select id="em-mgr">' + opt(D.emp.filter(o => o._id !== id).map(o => o.name).sort(), e.mgr) + '</select></label>' + fld('em-phone', 'Mobile', 'tel', e.phone) + '</div>' +
     (id !== 'new' && !e.noPunch ? '<h3 class="mt">Punch app settings</h3><div class="form">' + fld('em-lat', 'Workplace latitude', 'number', (e.wp || {}).lat) + fld('em-lng', 'Workplace longitude', 'number', (e.wp || {}).lng) + fld('em-radius', 'Check-in radius (m)', 'number', e.radius || 150) + '</div><p class="mute small mt">Weekly off</p><div class="row" style="flex-wrap:wrap">' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => '<label class="row" style="gap:4px"><input type="checkbox" data-wo="' + i + '"' + ((e.wo || [0]).includes(i) ? ' checked' : '') + '>' + d + '</label>').join('') + '</div><p class="mute small">Latitude and longitude: open the workplace in Google Maps, long-press the spot and copy the numbers.</p>' : '') +
@@ -870,7 +870,8 @@ async function act(a, x, t) {
     case 'em-cancel': S.edit = null; render(); return;
     case 'em-save': {
       if (!isHR()) return; const id = S.edit, p = id && id !== 'new' ? empOf(id) : null;
-      const f = { name: val('em-name'), eid: val('em-eid'), desg: val('em-desg'), grade: val('em-grade'), cat: val('em-cat'), hub: val('em-hub'), join: val('em-join'), mgr: val('em-mgr'), phone: val('em-phone') };
+      /* Employee ID is automatic: a new employee gets the next free number when saved, an existing one keeps theirs */
+      const f = { name: val('em-name'), eid: id === 'new' ? nextEmpId() : String((p && p.eid) || val('em-eid')), desg: val('em-desg'), grade: val('em-grade'), cat: val('em-cat'), hub: val('em-hub'), join: val('em-join'), mgr: val('em-mgr'), phone: val('em-phone') };
       if (!f.name) { toast('Enter the name.'); return; }
       if (!(p && isSuperP(p._id))) { const miss = [['desg', 'Designation'], ['grade', 'Grade'], ['cat', 'Department'], ['hub', 'Workplace'], ['join', 'Date of joining'], ['mgr', 'Reporting manager'], ['phone', 'Mobile']].filter(([k]) => !f[k]).map(x => x[1]);
         if (miss.length) { toast('Fill in: ' + miss.join(', ')); const el = document.getElementById('em-' + ['desg', 'grade', 'cat', 'hub', 'join', 'mgr', 'phone'].find(k => !f[k])); if (el) el.focus(); return; }

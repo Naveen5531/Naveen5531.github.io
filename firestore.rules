@@ -185,6 +185,14 @@ service cloud.firestore {
         && !('exec' in request.resource.data) && myVendor(request.resource.data.vendorId) && get(/databases/$(db)/documents/pvendors/$(request.resource.data.vendorId)).data.status == 'Verified';
     }
 
+    // ----- Running numbers (pickup PU00001 …): anyone signed in may take the next number, only ever +1 -----
+    match /counters/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.n == 1;
+      allow update: if signedIn() && request.resource.data.n == resource.data.n + 1;
+      allow delete: if false;
+    }
+
     // ----- Public tracking (website "Track", no login) -----
     // Anyone may look up ONE consignment by its exact AWB / reference (get); nobody can list them. Staff who can edit keep them current.
     match /track/{id} {
@@ -259,7 +267,7 @@ service cloud.firestore {
     match /{coll}/{id} {
       allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*') && !(coll in ['mail', 'queries', 'pvendors', 'pvdocs']);
       allow write: if canWrite() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*')
-        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'queries', 'pvendors', 'pvdocs']);
+        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'queries', 'pvendors', 'pvdocs', 'counters']);
     }
   }
 }

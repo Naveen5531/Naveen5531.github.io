@@ -697,6 +697,12 @@ function nextEmpId() {
   const ids = (S.data.staff || []).map(r => r.empId).concat((S.data.punch_emp || []).map(e => e.eid)).map(x => String(x || '').trim()).filter(x => /^\d{8}$/.test(x)).map(Number);
   const used = new Set(ids); let n = 10000000; while (used.has(n)) n++; return String(n);
 }
+/* Pickup numbers PU00001, PU00002 … from one shared counter (counters/pickup), same as SN Pickup and the vendor portal */
+async function nextPickupNo() {
+  const fsx = firebase.firestore(), ref = fsx.doc('counters/pickup');
+  const n = await fsx.runTransaction(async t => { const s0 = await t.get(ref), v = (s0.exists ? +s0.data().n || 0 : 0) + 1; t.set(ref, { n: v, at: Date.now() }); return v; });
+  return 'PU' + String(n).padStart(5, '0');
+}
 function nextCode(prefix, k, field) {
   if (k === 'staff' && field === 'empId') return nextEmpId();
   const d = new Date(); const y = String(d.getFullYear()).slice(2) + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
@@ -1273,7 +1279,8 @@ function fieldHtml(f, r) {
   if (f.type === 'textarea') return '<label' + wide + '>' + lab + '<textarea id="' + id + '">' + esc(v) + '</textarea></label>';
   const t = f.type === 'number' || f.type === 'money' ? 'number' : f.type === 'date' ? 'date' : 'text';
   const ph = f.type === 'code' && !f.manual ? ' placeholder="Auto"' : f.pin ? ' placeholder="6-digit pincode" inputmode="numeric" maxlength="6"' : '';
-  return '<label' + wide + '>' + lab + '<input id="' + id + '" type="' + t + '"' + (t === 'number' ? ' step="any" inputmode="decimal"' : '') + ph + (f.list ? ' list="dl-' + f.list + '"' : '') + ' value="' + esc(v) + '"></label>';
+  const ro = f.type === 'code' && !f.manual ? ' readonly tabindex="-1" style="opacity:.75"' : '';   // automatic numbers (pickup no, employee id …) are never typed by hand
+  return '<label' + wide + '>' + lab + '<input id="' + id + '" type="' + t + '"' + (t === 'number' ? ' step="any" inputmode="decimal"' : '') + ph + ro + (f.list ? ' list="dl-' + f.list + '"' : '') + ' value="' + esc(v) + '"></label>';
 }
 function quickAddHtml(f) {
   const sc = SCHEMA[f.src];
@@ -1363,6 +1370,8 @@ async function submitForm() {
   const missing = sc.fields.filter(f => f.req && (body[f.k] === '' || body[f.k] == null)).map(f => f.label);
   if (missing.length) { const fk = sc.fields.find(f => f.req && (body[f.k] === '' || body[f.k] == null)).k; const sec = sectionsOf(k).find(x => x[1].includes(fk)); if (sec) showSection(sec[0]); $('#formErr').textContent = 'Fill in: ' + missing.join(', '); return; }
   const codeF = sc.fields.find(f => f.k === sc.code);
+  if (k === 'pickups' && D.mode === 'new') { try { body.no = await nextPickupNo(); } catch (e) { $('#formErr').textContent = 'Could not get a pickup number. Check the connection and try again.'; return; } }
+  else if (codeF && !codeF.manual && codeF.type === 'code' && D.mode === 'new') body[sc.code] = nextCode(sc.prefix, k, sc.code);
   if (codeF && !codeF.manual && codeF.type === 'code' && !body[sc.code] && sc.prefix) body[sc.code] = nextCode(sc.prefix, k, sc.code);
   if (codeF && codeF.manual && D.mode === 'new' && S.data[k].some(r => lc(r[sc.code]) === lc(body[sc.code]))) { $('#formErr').textContent = codeF.label + ' ' + body[sc.code] + ' already exists.'; return; }
   const old = D.mode === 'edit' ? rec(k, D.id) : null;
@@ -1733,6 +1742,8 @@ function hhtHtml(r) {
     ['Picked up', r.pickedAt ? fmtTime(r.pickedAt) : ''], ['Pickup location', r.gps ? '<a href="https://maps.google.com/?q=' + r.gps.lat + ',' + r.gps.lng + '" target="_blank" rel="noopener">Map (±' + Math.round(r.gps.acc || 0) + ' m)</a>' : ''], ['Hub', r.inbound === 'Received' ? 'Received – reached inbound' : r.inbound === 'Pending' ? 'Pickup in transit' : '']].filter(x => x[1]);
   h += kv.map(x => '<div><span class="mini">' + x[0] + '</span><div>' + (x[0] === 'Pickup location' ? x[1] : esc(x[1])) + '</div></div>').join('') + '</div>';
   if (r.photo) h += '<p><img src="' + esc(r.photo) + '" alt="Pickup photo" style="max-width:260px;border-radius:12px;border:1px solid var(--line)"></p>';
+  const vv = (S.data.pvendors || []).filter(v => v.status === 'Verified').sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  if (writable() && !r.lr) h += '<div class="actions"><label class="mini">Vendor (pickup from) <select data-pkvend="' + esc(r._id) + '" style="width:auto"><option value="">' + (r.shipper ? esc(r.shipper.name) + ' – change…' : 'Choose verified vendor…') + '</option>' + vv.map(v => '<option value="' + esc(v._id) + '">' + esc(v.name + (v.code ? ' (' + v.code + ')' : '') + (v.city ? ' · ' + v.city : '')) + '</option>').join('') + '</select></label></div>';
   if (can) h += '<div class="actions"><label class="mini">Assign to <select data-pkexec="' + esc(r._id) + '" style="width:auto"><option value="">' + (r.execName ? esc(r.execName) : 'Choose executive…') + '</option>' + ops.map(m => '<option value="' + esc(m._id) + '">' + esc(pkLabel(m)) + '</option>').join('') + '</select></label></div>';
   return h;
 }
@@ -3005,6 +3016,8 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('change', async e => {
   const el = e.target, ds = el.dataset || {};
+  if (ds.pkvend && el.value) { const v = (S.data.pvendors || []).find(x => x._id === el.value); if (!v) return;
+    await save('pickups', ds.pkvend, { shipper: { id: v._id, name: v.name, code: v.code || '', gstin: v.gstin || '', phone: v.phone || '', address: v.address || '', pin: v.pin || '', city: v.city || '', state: v.state || '', uid: v.uid || '' }, vendorId: v._id, vendorUid: v.uid || '', fromPin: v.pin || '', fromCity: v.city || '', fromState: v.state || '', fromAddress: v.address || '' }, 'Pickup vendor: ' + v.name); toast('Vendor ' + v.name + ' set'); return; }
   if (ds.pkexec && el.value) { const nm = pkLabel((S.data.members || []).find(x => x._id === el.value) || { _id: el.value }); await save('pickups', ds.pkexec, { exec: el.value, execName: nm, hht: 'Assigned', assignedBy: (S.me && S.me.name) || '', assignedAt: Date.now(), rejectWhy: '' }, 'Pickup assigned to ' + nm); toast('Assigned to ' + nm + ' – it is on their SN Pickup now.'); return; }
   if (ds.pmod && S.roleDraft) { readRoleHead(); S.roleDraft.perms[ds.pmod] = +el.value; render(); return; }
   if (ds.ptab && S.roleDraft) { readRoleHead(); if (el.value === '') delete S.roleDraft.perms[ds.ptab]; else S.roleDraft.perms[ds.ptab] = +el.value; render(); return; }

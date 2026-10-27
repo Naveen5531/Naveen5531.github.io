@@ -280,20 +280,34 @@ function assignHtml() {
   return '<div class="ph"><div><h1>Assign pickups</h1><p>' + open.length + ' open · ' + S.people.length + ' executives</p></div><button class="btn p sm" type="button" data-act="new">+ New pickup</button></div>' +
     (open.length ? open.map(p => '<div class="card"><div class="t" style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(p.customer || (p.shipper && p.shipper.name) || 'Pickup') + '</b><span class="st" style="--c:' + (ST_C[p.hht || (p.exec ? 'Assigned' : 'Requested')] || '#6b7280') + '">' + esc(p.hht || (p.exec ? 'Assigned' : 'Requested')) + '</span></div>' +
       '<div class="mute small" style="margin:4px 0 10px">' + esc(p.no || '') + ' · ' + esc(fd(p.date)) + ' · ' + esc((p.fromCity || p.fromPin || '—') + ' → ' + (p.toCity || p.toPin || '—')) + (p.pieces ? ' · ' + esc(p.pieces) + ' boxes' : '') + (p.rejectWhy ? '<br><span style="color:var(--bad)">Rejected: ' + esc(p.rejectWhy) + '</span>' : '') + '</div>' +
+      (p.shipper ? '<div class="small" style="margin:-4px 0 8px">Vendor: <b>' + esc(p.shipper.name) + '</b>' + (p.shipper.code ? ' (' + esc(p.shipper.code) + ')' : '') + '</div>' : '') +
+      (p.lr ? '' : '<select class="in" data-pvend="' + esc(p._id) + '" style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--soft);margin-bottom:8px"><option value="">' + (p.shipper ? 'Change vendor…' : 'Assign vendor…') + '</option>' + S.vendors.filter(v => v.status === 'Verified').map(v => '<option value="' + esc(v._id) + '">' + esc(v.name + (v.code ? ' (' + v.code + ')' : '')) + '</option>').join('') + '</select>') +
       '<div class="scanbox"><select class="in" data-assign="' + esc(p._id) + '" style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--soft)"><option value="">' + (p.execName ? 'Assigned: ' + esc(p.execName) : 'Choose executive…') + '</option>' + ppl + '</select><button class="btn sm" type="button" data-open="' + esc(p._id) + '">Open</button></div></div>').join('')
       : '<div class="card mute">No open pickups. Tap + New pickup, or add pickups in the portal.</div>');
 }
 function newHtml() {
   return '<div class="ph"><div><h1>New pickup</h1><p>Create and assign to an executive</p></div></div><form class="card" id="nf">' +
+    '<label class="f">Vendor (pickup from) *<select name="vend" required><option value="">Choose verified vendor…</option>' + S.vendors.filter(v => v.status === 'Verified').map(v => '<option value="' + esc(v._id) + '">' + esc(v.name + (v.code ? ' (' + v.code + ')' : '') + (v.city ? ' · ' + v.city : '')) + '</option>').join('') + '</select></label>' +
+    '<p class="mute small" style="margin:-4px 0 10px">Pickup number is given automatically (PU00001 …).</p>' +
     '<label class="f">Client<input name="customer" required list="cl"></label><datalist id="cl">' + [...new Set(S.pickups.map(p => p.customer).filter(Boolean))].map(c => '<option value="' + esc(c) + '">').join('') + '</datalist>' +
     '<div class="row"><label class="f">Pickup date<input name="date" type="date" value="' + today() + '" required></label><label class="f">Time slot<select name="slot"><option>06–09</option><option selected>09–12</option><option>12–15</option><option>15–18</option><option>18–21</option></select></label></div>' +
-    '<div class="row"><label class="f">From pincode<input name="fromPin" inputmode="numeric" maxlength="6"></label><label class="f">To pincode<input name="toPin" inputmode="numeric" maxlength="6"></label></div>' +
-    '<label class="f">Pickup address / contact<textarea name="fromAddress"></textarea></label>' +
+    '<div class="row"><label class="f">To pincode<input name="toPin" inputmode="numeric" maxlength="6"></label></div>' +
+    '<label class="f">Pickup contact / notes for the executive<textarea name="fromAddress" placeholder="Vendor address fills in automatically; add the contact person, gate no …"></textarea></label>' +
     '<div class="row"><label class="f">Expected boxes<input name="pieces" type="number" min="1" inputmode="numeric"></label><label class="f">Client ref / delivery no<input name="ref"></label></div>' +
     '<label class="f">Assign to<select name="exec"><option value="">Assign later</option>' + S.people.map(x => '<option value="' + esc(x.uid) + '">' + esc(x.label || x.name) + '</option>').join('') + '</select></label>' +
     '<label class="f">Notes<textarea name="notes"></textarea></label><p class="err" id="ne"></p><div class="row"><button class="btn" type="button" data-act="back">Cancel</button><button class="btn p">Create pickup</button></div></form>';
 }
 
+/* Pickup numbers PU00001, PU00002 … – one shared counter (counters/pickup), taken in a transaction so two people can never get the same number */
+async function nextPickupNo(fsx) {
+  const ref = fsx.doc('counters/pickup');
+  const n = await fsx.runTransaction(async t => { const s = await t.get(ref), v = (s.exists ? +s.data().n || 0 : 0) + 1; t.set(ref, { n: v, at: Date.now() }); return v; });
+  return 'PU' + String(n).padStart(5, '0');
+}
+
+/* vendor (shipper) chosen when the pickup is created or assigned: its pickup address fills in, the executive cannot change the vendor */
+const shipperOf = v => ({ id: v._id, name: v.name, code: v.code || '', gstin: v.gstin || '', phone: v.phone || '', address: v.address || '', pin: v.pin || '', city: v.city || '', state: v.state || '', uid: v.uid || '' });
+const vendorPatch = v => ({ shipper: shipperOf(v), vendorId: v._id, vendorUid: v.uid || '', fromPin: v.pin || '', fromCity: v.city || '', fromState: v.state || '', fromAddress: v.address || '' });
 /* ---- one pickup: Accept → Vendor & invoice → Boxes → LR & labels → Scan → Complete ---- */
 function pickupHtml(p) {
   const st = p.hht || (p.exec ? 'Assigned' : 'Requested'), step = STEP(p), me = p.exec === S.me, done = st === 'Completed';
@@ -313,7 +327,7 @@ function vendorHtml(p) {
   const VV = S.vendors.filter(x => x.status === 'Verified');
   return '<form class="card" id="vf"><h2>1 · Vendor &amp; invoice</h2><p class="mute small">Only verified vendors can be picked. A new vendor must be onboarded with all documents and verified first (Vendors).</p>' +
     (VV.length ? '' : '<p class="err">No verified vendors yet. Ask your manager to onboard and verify the vendor.</p>') +
-    '<label class="f">Vendor *<select name="vid" required><option value="">Choose vendor…</option>' + VV.map(x => '<option value="' + esc(x._id) + '"' + (v.id === x._id ? ' selected' : '') + '>' + esc(x.name) + (x.city ? ' · ' + esc(x.city) : '') + '</option>').join('') + '</select></label>' +
+    '<label class="f">Vendor *<select name="vid" required' + (p.vendorId ? ' disabled' : '') + '><option value="">Choose vendor…</option>' + VV.map(x => '<option value="' + esc(x._id) + '"' + (v.id === x._id ? ' selected' : '') + '>' + esc(x.name) + (x.city ? ' · ' + esc(x.city) : '') + '</option>').join('') + '</select></label>' +
     '<input type="hidden" name="vname" value="' + esc(v.name || '') + '"><input type="hidden" name="vgst" value="' + esc(v.gstin || '') + '"><input type="hidden" name="vphone" value="' + esc(v.phone || '') + '">' +
     '<p class="small mute" id="vsum">' + (v.name ? esc(v.name + ' · ' + (v.gstin || '') + ' · ' + (v.phone || '')) : '') + '</p>' +
     '<label class="f">Shipping (pickup) address<textarea name="vaddr" required>' + esc(v.address || p.fromAddress || '') + '</textarea></label>' +
@@ -440,6 +454,8 @@ document.addEventListener('click', async e => {
   if (act === 'receive') { await receive(a); return; }
 });
 document.addEventListener('change', async e => {
+  const pv = e.target.closest('[data-pvend]'); if (pv && pv.value) { const p = S.pickups.find(x => x._id === pv.dataset.pvend), vv = S.vendors.find(v => v._id === pv.value); if (!p || !vv) return;
+    try { await upd('pickups', p._id, vendorPatch(vv)); toast('Vendor ' + vv.name + ' set on ' + (p.no || 'the pickup')); } catch (x) { toast('Could not save (' + (x.code || 'error') + ').', true); } return; }
   const s = e.target.closest('[data-assign]'); if (s && s.value) { const p = S.pickups.find(x => x._id === s.dataset.assign), who = S.people.find(x => x.uid === s.value); if (!p || !who) return;
     try { await upd('pickups', p._id, { exec: who.uid, execName: who.label || who.name, hht: 'Assigned', assignedBy: S.name, assignedAt: Date.now(), rejectWhy: '' }); toast('Assigned to ' + who.name); } catch (x) { toast('Could not assign (' + (x.code || 'error') + ').', true); } return; }
   if (e.target.name === 'vid') { const v = S.vendors.find(x => x._id === e.target.value) || {}, f = e.target.form;
@@ -451,11 +467,14 @@ document.addEventListener('input', e => { if (e.target.dataset && e.target.datas
 document.addEventListener('submit', async e => {
   const f = e.target; e.preventDefault();
   if (f.id === 'nf') {
-    const d = Object.fromEntries(new FormData(f)), who = S.people.find(x => x.uid === d.exec);
-    if (d.fromPin && !/^\d{6}$/.test(d.fromPin) || d.toPin && !/^\d{6}$/.test(d.toPin)) { $('#ne').textContent = 'Pincodes are 6 digits.'; return; }
-    const [fi, ti] = await Promise.all([pinInfo(d.fromPin), pinInfo(d.toPin)]), dd = new Date(), now = Date.now();
-    const doc = { no: 'PU' + String(dd.getFullYear()).slice(2) + pad(dd.getMonth() + 1, 2) + pad(dd.getDate(), 2) + (Math.floor(Math.random() * 90000) + 10000), customer: d.customer.trim(), date: d.date, slot: d.slot, ref: d.ref, fromPin: d.fromPin, fromCity: fi ? fi.city : '', fromState: fi ? fi.state : '', fromAddress: d.fromAddress, toPin: d.toPin, toCity: ti ? ti.city : '', toState: ti ? ti.state : '', pieces: num(d.pieces) || '', notes: d.notes,
-      stage: 'Requested', events: [{ s: 'Requested', t: now, n: 'Created in SN Pickup' }], createdAt: now, updatedAt: now, createdBy: S.me };
+    const d = Object.fromEntries(new FormData(f)), who = S.people.find(x => x.uid === d.exec), vv = S.vendors.find(v => v._id === d.vend && v.status === 'Verified');
+    if (!vv) { $('#ne').textContent = 'Choose a verified vendor.'; return; }
+    if (d.toPin && !/^\d{6}$/.test(d.toPin)) { $('#ne').textContent = 'Pincode is 6 digits.'; return; }
+    const ti = await pinInfo(d.toPin), now = Date.now(); let no;
+    try { no = await nextPickupNo(fs); } catch (x) { $('#ne').textContent = 'Could not get a pickup number (' + (x.code || 'error') + '). Check the internet.'; return; }
+    const doc = Object.assign({ no, customer: d.customer.trim(), date: d.date, slot: d.slot, ref: d.ref, toPin: d.toPin, toCity: ti ? ti.city : '', toState: ti ? ti.state : '', pieces: num(d.pieces) || '', notes: d.notes,
+      stage: 'Requested', events: [{ s: 'Requested', t: now, n: 'Created in SN Pickup' }], createdAt: now, updatedAt: now, createdBy: S.me }, vendorPatch(vv));
+    if (d.fromAddress) doc.fromAddress = (vv.address || '') + (vv.address ? '\n' : '') + d.fromAddress;
     if (who) Object.assign(doc, { exec: who.uid, execName: who.label || who.name, hht: 'Assigned', assignedBy: S.name, assignedAt: now });
     try { await fs.collection('pickups').doc().set(doc); toast('Pickup ' + doc.no + ' created' + (who ? ' and assigned to ' + who.name : '')); S.tab = 'assign'; go(null); } catch (x) { $('#ne').textContent = 'Could not save (' + (x.code || 'error') + ').'; }
     return;
@@ -467,7 +486,7 @@ document.addEventListener('submit', async e => {
     if (d.vgst && !/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/i.test(d.vgst)) { er.textContent = 'GSTIN looks wrong (15 characters, like 36ABCDE1234F1Z5).'; return; }
     if (!(num(d.ival) > 0)) { er.textContent = 'Enter the invoice value.'; return; }
     if (num(d.ival) >= 50000 && !d.iewb) { if (!confirm('Invoice is ₹50,000 or more – an e-way bill is usually needed. Continue without it?')) return; }
-    const vid = d.vid, vv = S.vendors.find(x => x._id === vid && x.status === 'Verified'); if (!vv) { er.textContent = 'Choose a verified vendor.'; return; }
+    const vid = p.vendorId || d.vid, vv = S.vendors.find(x => x._id === vid && x.status === 'Verified') || (p.vendorId && p.shipper ? Object.assign({ _id: p.vendorId, status: 'Verified' }, p.shipper) : null); if (!vv) { er.textContent = 'Choose a verified vendor.'; return; }
     const vend = { name: vv.name, code: vv.code || '', gstin: vv.gstin || '', phone: vv.phone || '', address: d.vaddr, pin: d.fromPin, city: d.fromCity, state: d.fromState, uid: vv.uid || '' };
     S.edit = null;
     await save(p, { shipper: Object.assign({ id: vid }, vend), vendorId: vid, vendorUid: vv.uid || '', consignee: { name: d.cname, phone: d.cphone, address: d.caddr }, fromPin: d.fromPin, fromCity: d.fromCity, fromState: d.fromState, fromAddress: d.vaddr, toPin: d.toPin, toCity: d.toCity, toState: d.toState, toAddress: d.caddr,
