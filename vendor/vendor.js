@@ -113,7 +113,7 @@ document.addEventListener('submit', async e => {
     if (!/^\d{6}$/.test(d.toPin)) { er.textContent = 'Pincode must be 6 digits.'; return; }
     const now = Date.now(), dt = new Date(), no = 'PU' + String(dt.getFullYear()).slice(2) + pad(dt.getMonth() + 1, 2) + pad(dt.getDate(), 2) + (Math.floor(Math.random() * 90000) + 10000);
     let to = null; try { const r = await fetch('https://api.postalpincode.in/pincode/' + d.toPin), j = await r.json(), po = j && j[0] && j[0].PostOffice && j[0].PostOffice[0]; if (po) to = { city: po.District, state: po.State }; } catch (x) {}
-    const doc = { no, source: 'vendor', vendorId: v._id, vendorUid: V.me, customer: v.name, vendor: { id: v._id, name: v.name, code: v.code, gstin: v.gstin, phone: v.phone, address: v.address, pin: v.pin, city: v.city, state: v.state, uid: V.me },
+    const doc = { no, source: 'vendor', vendorId: v._id, vendorUid: V.me, customer: v.name, shipper: { id: v._id, name: v.name, code: v.code, gstin: v.gstin, phone: v.phone, address: v.address, pin: v.pin, city: v.city, state: v.state, uid: V.me },
       date: d.date, slot: d.slot, pieces: +d.pieces || '', ref: d.ref, fromPin: v.pin, fromCity: v.city, fromState: v.state, fromAddress: v.address, toPin: d.toPin, toCity: to ? to.city : '', toState: to ? to.state : '',
       consigneeHint: { name: d.cname, address: d.caddr }, toAddress: d.caddr, notes: d.notes, stage: 'Requested', events: [{ s: 'Requested', t: now, n: 'Raised by vendor ' + v.code }], createdAt: now, updatedAt: now, createdBy: V.me };
     try { await fs.collection('pickups').doc().set(doc); toast('Pickup requested · ' + no); V.tab = 'list'; render(); } catch (x) { er.textContent = 'Could not send (' + (x.code || 'error') + ').'; }

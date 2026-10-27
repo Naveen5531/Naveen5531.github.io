@@ -171,7 +171,7 @@ const onUser = async u => {
     S.me = u.uid; S.roles = md ? [md.role].concat(md.roles || []) : []; S.name = (p && p.exists && p.data().name) || String(u.email || '').split('@')[0];
   } catch (x) { showLogin('Could not check your access (' + (x.code || 'error') + ').'); return; }
   $('#login').hidden = true; $('#app').hidden = false; $('#who').textContent = S.name; net();
-  S.tab = 'mine'; listen(); render();
+  S.tab = location.hash === '#vendors' && SNP.canVendors && SNP.canVendors() ? 'vendors' : location.hash === '#inbound' && canInbound() ? 'inbound' : 'mine'; listen(); render();
 };
 auth.onAuthStateChanged(u => { if (!S.gpend) onUser(u); });
 
@@ -246,7 +246,7 @@ function navHtml() {
 }
 function pkCard(p, extra) {
   const st = p.hht || (p.exec ? 'Assigned' : 'Requested');
-  return '<button type="button" class="pk" data-open="' + esc(p._id) + '"><div class="t"><b>' + esc(p.vendor ? p.vendor.name : (p.customer || 'Pickup')) + '</b><span class="st" style="--c:' + (ST_C[st] || '#6b7280') + '">' + esc(st) + '</span></div>' +
+  return '<button type="button" class="pk" data-open="' + esc(p._id) + '"><div class="t"><b>' + esc(p.shipper ? p.shipper.name : (p.customer || 'Pickup')) + '</b><span class="st" style="--c:' + (ST_C[st] || '#6b7280') + '">' + esc(st) + '</span></div>' +
     '<div class="m">' + esc(p.no || '') + (p.lr ? ' · LR ' + esc(p.lr) : '') + ' · ' + esc(fd(p.date) || '') + (p.slot ? ' ' + esc(p.slot) : '') + '</div>' +
     '<div class="m">' + esc((p.fromCity || p.fromPin || '—') + ' → ' + (p.toCity || p.toPin || '—')) + (p.pieces ? ' · ' + esc(p.pieces) + ' boxes' : '') + (p.execName && canAssign() ? ' · ' + esc(p.execName) : '') + '</div>' + (extra || '') + '</button>';
 }
@@ -263,7 +263,7 @@ function assignHtml() {
   const open = S.pickups.filter(p => !['Completed', 'Cancelled'].includes(p.hht || '') && !['Picked up', 'Delivered', 'Closed', 'Cancelled'].includes(p.stage || ''));
   const ppl = S.people.map(x => '<option value="' + esc(x.uid) + '">' + esc(x.name) + '</option>').join('');
   return '<div class="ph"><div><h1>Assign pickups</h1><p>' + open.length + ' open · ' + S.people.length + ' executives</p></div><button class="btn p sm" type="button" data-act="new">+ New pickup</button></div>' +
-    (open.length ? open.map(p => '<div class="card"><div class="t" style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(p.customer || (p.vendor && p.vendor.name) || 'Pickup') + '</b><span class="st" style="--c:' + (ST_C[p.hht || (p.exec ? 'Assigned' : 'Requested')] || '#6b7280') + '">' + esc(p.hht || (p.exec ? 'Assigned' : 'Requested')) + '</span></div>' +
+    (open.length ? open.map(p => '<div class="card"><div class="t" style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(p.customer || (p.shipper && p.shipper.name) || 'Pickup') + '</b><span class="st" style="--c:' + (ST_C[p.hht || (p.exec ? 'Assigned' : 'Requested')] || '#6b7280') + '">' + esc(p.hht || (p.exec ? 'Assigned' : 'Requested')) + '</span></div>' +
       '<div class="mute small" style="margin:4px 0 10px">' + esc(p.no || '') + ' · ' + esc(fd(p.date)) + ' · ' + esc((p.fromCity || p.fromPin || '—') + ' → ' + (p.toCity || p.toPin || '—')) + (p.pieces ? ' · ' + esc(p.pieces) + ' boxes' : '') + (p.rejectWhy ? '<br><span style="color:var(--bad)">Rejected: ' + esc(p.rejectWhy) + '</span>' : '') + '</div>' +
       '<div class="scanbox"><select class="in" data-assign="' + esc(p._id) + '" style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--soft)"><option value="">' + (p.execName ? 'Assigned: ' + esc(p.execName) : 'Choose executive…') + '</option>' + ppl + '</select><button class="btn sm" type="button" data-open="' + esc(p._id) + '">Open</button></div></div>').join('')
       : '<div class="card mute">No open pickups. Tap + New pickup, or add pickups in the portal.</div>');
@@ -282,7 +282,7 @@ function newHtml() {
 /* ---- one pickup: Accept → Vendor & invoice → Boxes → LR & labels → Scan → Complete ---- */
 function pickupHtml(p) {
   const st = p.hht || (p.exec ? 'Assigned' : 'Requested'), step = STEP(p), me = p.exec === S.me, done = st === 'Completed';
-  let h = '<button class="btn sm" type="button" data-act="back">← Back</button><div class="ph" style="margin-top:12px"><div><h1>' + esc(p.vendor ? p.vendor.name : (p.customer || 'Pickup')) + '</h1><p>' + esc(p.no || '') + (p.lr ? ' · LR <b>' + esc(p.lr) + '</b>' : '') + '</p></div><span class="st" style="--c:' + (ST_C[st] || '#6b7280') + '">' + esc(st) + '</span></div>' +
+  let h = '<button class="btn sm" type="button" data-act="back">← Back</button><div class="ph" style="margin-top:12px"><div><h1>' + esc(p.shipper ? p.shipper.name : (p.customer || 'Pickup')) + '</h1><p>' + esc(p.no || '') + (p.lr ? ' · LR <b>' + esc(p.lr) + '</b>' : '') + '</p></div><span class="st" style="--c:' + (ST_C[st] || '#6b7280') + '">' + esc(st) + '</span></div>' +
     '<div class="steps" aria-hidden="true">' + [1, 2, 3, 4, 5].map(i => '<i class="' + (step >= i ? 'on' : '') + '"></i>').join('') + '</div>' +
     '<div class="card"><div class="kv">' + [['Client', p.customer], ['Date', fd(p.date) + (p.slot ? ' · ' + p.slot : '')], ['From', [p.fromPin, p.fromCity].filter(Boolean).join(' · ')], ['To', [p.toPin, p.toCity].filter(Boolean).join(' · ')], ['Expected boxes', p.pieces], ['Client ref', p.ref], ['Executive', p.execName], ['Notes', p.notes]].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' + (p.fromAddress ? '<p class="small mute" style="margin:8px 0 0;white-space:pre-wrap">' + esc(p.fromAddress) + '</p>' : '') + '</div>';
   if (!me && !done) return h + (canAssign() ? '<div class="card mute">Assigned to ' + esc(p.execName || 'nobody yet') + '. Only the assigned executive works on this pickup.</div>' : '') + costHtml(p);
@@ -294,7 +294,7 @@ function pickupHtml(p) {
   return h + scanHtml(p) + costHtml(p);
 }
 function vendorHtml(p) {
-  const v = p.vendor || {}, c = p.consignee || p.consigneeHint || {}, inv = p.invoice || {};
+  const v = p.shipper || {}, c = p.consignee || p.consigneeHint || {}, inv = p.invoice || {};
   const VV = S.vendors.filter(x => x.status === 'Verified');
   return '<form class="card" id="vf"><h2>1 · Vendor &amp; invoice</h2><p class="mute small">Only verified vendors can be picked. A new vendor must be onboarded with all documents and verified first (Vendors).</p>' +
     (VV.length ? '' : '<p class="err">No verified vendors yet. Ask your manager to onboard and verify the vendor.</p>') +
@@ -323,7 +323,7 @@ function boxesHtml(p) {
 function boxRows(n, B, f) { let h = ''; for (let i = 0; i < n; i++) { const b = B[i] || {}; h += '<tr><td>' + (i + 1) + '</td>' + ['l', 'b', 'h', 'kg'].map(k => '<td><input data-b="' + i + '" data-k="' + k + '" type="number" min="0" step="' + (k === 'kg' ? '0.01' : '0.1') + '" inputmode="decimal" value="' + esc(b[k] != null ? b[k] : '') + '"></td>').join('') + '</tr>'; } return h; }
 function reviewHtml(p) {
   const B = p.boxes || [], kg = B.reduce((s, b) => s + num(b.kg), 0), cbm = B.reduce((s, b) => s + num(b.l) * num(b.b) * num(b.h), 0) / 1e6;
-  return '<div class="card"><h2>3 · Check and create LR</h2><div class="kv" style="margin-top:8px">' + [['Vendor', p.vendor.name], ['Invoice', p.invoice.no + ' · ' + fd(p.invoice.date)], ['Invoice value', inr(p.invoice.value)], ['From', p.fromPin + ' ' + p.fromCity], ['To', p.toPin + ' ' + p.toCity + ' · ' + p.consignee.name], ['Boxes', B.length], ['Total weight', r2(kg) + ' kg'], ['Volume', cbm.toFixed(3) + ' CBM']].map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' +
+  return '<div class="card"><h2>3 · Check and create LR</h2><div class="kv" style="margin-top:8px">' + [['Vendor', p.shipper.name], ['Invoice', p.invoice.no + ' · ' + fd(p.invoice.date)], ['Invoice value', inr(p.invoice.value)], ['From', p.fromPin + ' ' + p.fromCity], ['To', p.toPin + ' ' + p.toCity + ' · ' + p.consignee.name], ['Boxes', B.length], ['Total weight', r2(kg) + ' kg'], ['Volume', cbm.toFixed(3) + ' CBM']].map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' +
     '<div class="row" style="margin-top:14px"><button class="btn" type="button" data-act="editBoxes">← Boxes</button><button class="btn p" type="button" data-act="lr">Create LR &amp; labels</button></div><p class="small mute" style="margin:10px 0 0">The LR number is created automatically. One 4×6 label prints for each box: 1/' + B.length + ', 2/' + B.length + ' …</p></div>';
 }
 function scanHtml(p) {
@@ -339,7 +339,7 @@ function scanHtml(p) {
 }
 function summaryHtml(p) {
   const B = p.boxes || [];
-  return '<div class="card"><h2 class="ok">✓ Pickup complete</h2><div class="kv" style="margin-top:8px">' + [['LR', p.lr], ['Picked at', fdt(p.pickedAt)], ['Vendor', p.vendor && p.vendor.name], ['Invoice', p.invoice && (p.invoice.no + ' · ' + inr(p.invoice.value))], ['Boxes', B.length + ' · ' + r2(B.reduce((s, b) => s + num(b.kg), 0)) + ' kg'], ['Destination', p.consignee && (p.consignee.name + ', ' + p.toCity + ' ' + p.toPin)], ['Status', p.inbound === 'Received' ? 'Reached inbound (hub)' : 'Pickup in transit – waiting for hub receive']].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' +
+  return '<div class="card"><h2 class="ok">✓ Pickup complete</h2><div class="kv" style="margin-top:8px">' + [['LR', p.lr], ['Picked at', fdt(p.pickedAt)], ['Vendor', p.shipper && p.shipper.name], ['Invoice', p.invoice && (p.invoice.no + ' · ' + inr(p.invoice.value))], ['Boxes', B.length + ' · ' + r2(B.reduce((s, b) => s + num(b.kg), 0)) + ' kg'], ['Destination', p.consignee && (p.consignee.name + ', ' + p.toCity + ' ' + p.toPin)], ['Status', p.inbound === 'Received' ? 'Reached inbound (hub)' : 'Pickup in transit – waiting for hub receive']].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' +
     '<div class="row" style="margin-top:12px"><button class="btn" type="button" data-act="print">🖨 Reprint labels</button></div></div>';
 }
 
@@ -433,7 +433,7 @@ document.addEventListener('submit', async e => {
     const vid = d.vid, vv = S.vendors.find(x => x._id === vid && x.status === 'Verified'); if (!vv) { er.textContent = 'Choose a verified vendor.'; return; }
     const vend = { name: vv.name, code: vv.code || '', gstin: vv.gstin || '', phone: vv.phone || '', address: d.vaddr, pin: d.fromPin, city: d.fromCity, state: d.fromState, uid: vv.uid || '' };
     S.edit = null;
-    await save(p, { vendor: Object.assign({ id: vid }, vend), vendorId: vid, vendorUid: vv.uid || '', consignee: { name: d.cname, phone: d.cphone, address: d.caddr }, fromPin: d.fromPin, fromCity: d.fromCity, fromState: d.fromState, fromAddress: d.vaddr, toPin: d.toPin, toCity: d.toCity, toState: d.toState, toAddress: d.caddr,
+    await save(p, { shipper: Object.assign({ id: vid }, vend), vendorId: vid, vendorUid: vv.uid || '', consignee: { name: d.cname, phone: d.cphone, address: d.caddr }, fromPin: d.fromPin, fromCity: d.fromCity, fromState: d.fromState, fromAddress: d.vaddr, toPin: d.toPin, toCity: d.toCity, toState: d.toState, toAddress: d.caddr,
       invoice: { no: d.ino.trim(), date: d.idate, value: r2(num(d.ival)), ewb: d.iewb.trim() }, material: d.material }, 'Saved. Now the boxes.');
     return;
   }
@@ -478,7 +478,7 @@ function printLabels(p) {
   const B = p.boxes || [], N = B.length, el = $('#labels'); if (!N || !p.lr) return;
   el.innerHTML = B.map((b, i) => '<div class="lbl"><div class="h"><img src="../brand/sn-logo-full.png" alt=""><div class="bxn">' + (i + 1) + '/' + N + '<small>BOX</small></div></div>' +
     '<div><b style="font-size:8pt">LR / AWB</b><div class="lr">' + esc(p.lr) + '</div></div><div class="bc">' + code128(code(p.lr, i + 1, N), 60) + '</div>' +
-    '<div class="ad"><div><b>From</b>' + esc(p.vendor ? p.vendor.name : '') + '<br>' + esc(p.fromCity || '') + '<div class="pin">' + esc(p.fromPin || '') + '</div></div><div><b>To</b>' + esc(p.consignee ? p.consignee.name : '') + '<br>' + esc(p.toCity || '') + (p.toState ? ', ' + esc(p.toState) : '') + '<div class="pin">' + esc(p.toPin || '') + '</div></div></div>' +
+    '<div class="ad"><div><b>From</b>' + esc(p.shipper ? p.shipper.name : '') + '<br>' + esc(p.fromCity || '') + '<div class="pin">' + esc(p.fromPin || '') + '</div></div><div><b>To</b>' + esc(p.consignee ? p.consignee.name : '') + '<br>' + esc(p.toCity || '') + (p.toState ? ', ' + esc(p.toState) : '') + '<div class="pin">' + esc(p.toPin || '') + '</div></div></div>' +
     '<div class="ad"><div><b>Box size</b>' + esc(b.l + '×' + b.b + '×' + b.h + ' cm') + '</div><div><b>Weight</b>' + esc(b.kg + ' kg') + ' (total ' + esc(r2(B.reduce((s, x) => s + num(x.kg), 0))) + ')</div></div>' +
     '<div class="ad"><div><b>Invoice</b>' + esc(p.invoice ? p.invoice.no : '') + '</div><div><b>E-way bill</b>' + esc(p.invoice && p.invoice.ewb || '—') + '</div></div>' +
     '<div class="ft"><span>' + esc(new Date().toLocaleDateString('en-IN')) + '</span><span>' + esc(p.no || '') + '</span><span>SN Logistics</span></div></div>').join('');
@@ -546,9 +546,9 @@ function takePhoto(p) {
 async function complete(p, btn) {
   const B = p.boxes || [], N = B.length; if (Object.keys(p.scanned || {}).length < N) { toast('Scan all labels first.', true); return; }
   btn.disabled = true; btn.textContent = 'Saving…'; const gps = await where(), now = Date.now(), kg = r2(B.reduce((s, b) => s + num(b.kg), 0)), price = costOf(p);
-  const ship = { awb: p.lr, ref: p.ref || p.invoice.no, customer: p.customer || p.vendor.name, origin: p.vendor.name, originPin: p.fromPin, originCity: p.fromCity, originState: p.fromState || '',
+  const ship = { awb: p.lr, ref: p.ref || p.invoice.no, customer: p.customer || p.shipper.name, origin: p.shipper.name, originPin: p.fromPin, originCity: p.fromCity, originState: p.fromState || '',
     consignee: p.consignee.name, phone: p.consignee.phone || '', address: p.consignee.address, pincode: p.toPin, destCity: p.toCity, destState: p.toState || '',
-    pieces: N, weight: kg, l: B[0].l, w: B[0].b, h: B[0].h, boxes: B, material: p.material || '', value: p.invoice.value, invoice: p.invoice, vendor: p.vendor, mode: 'Prepaid', priority: 'Standard',
+    pieces: N, weight: kg, l: B[0].l, w: B[0].b, h: B[0].h, boxes: B, material: p.material || '', value: p.invoice.value, invoice: p.invoice, shipper: p.shipper, mode: 'Prepaid', priority: 'Standard',
     promised: addDays(today(), price.tat), price, stage: 'Pickup in transit', inbound: 'Pending', inScan: {}, pickupId: p._id, pickupNo: p.no || '', pickedAt: now, gps: gps || null, pickedBy: S.me, pickedByName: S.name,
     events: [{ s: 'Booked', t: num(p.labelledAt) || now, n: 'LR created in SN Pickup' }, { s: 'Picked up', t: now, n: N + ' boxes scanned by ' + S.name }, { s: 'Pickup in transit', t: now + 1, n: 'On the way to the hub' }], createdAt: now, updatedAt: now, createdBy: S.me };
   try {
@@ -570,5 +570,5 @@ async function receive(btn, short) {
 }
 })();
 </script>
-<script src="vendors.js?v=2"></script>
+<script src="vendors.js?v=3"></script>
 </body></html>
