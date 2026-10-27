@@ -1,8 +1,8 @@
 {
-  "versionCode": 4,
-  "versionName": "1.3",
+  "versionCode": 5,
+  "versionName": "1.4",
   "date": "27 Oct 2026",
-  "size": 96428,
+  "size": 96588,
   "url": "https://naveen5531.github.io/SNPickup.apk",
-  "list": ["Update SN Pickup from inside the app.", "Google sign-in button opens Chrome."]
+  "list": ["Always opens the newest screens when online.", "Employee logins can do their assigned pickups."]
 }
