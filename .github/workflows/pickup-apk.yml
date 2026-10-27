@@ -1,0 +1,44 @@
+# Builds the SN Pickup Android app when pickup-app/ changes and publishes SNPickup.apk next to the website.
+name: SN Pickup build
+on:
+  push:
+    branches: [main]
+    paths: ['pickup-app/**', '.github/workflows/pickup-apk.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: "8.9" }
+      - name: Signing key from secret (optional)
+        env:
+          KS: ${{ secrets.SNP_KEYSTORE }}
+        shell: bash
+        run: |
+          if [ -n "$KS" ]; then echo "$KS" | base64 -d > pickup-app/app/sign.jks; fi
+      - name: Build
+        id: build
+        working-directory: pickup-app
+        shell: bash
+        env:
+          SNP_PASS: ${{ secrets.SNP_PASS }}
+          SNP_ALIAS: ${{ secrets.SNP_ALIAS }}
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon 2>&1 | tee build.log
+      - name: Publish APK and status
+        if: always()
+        shell: bash
+        run: |
+          { echo "commit: ${GITHUB_SHA::7}"; echo "result: ${{ steps.build.outcome }}"; grep -E "error:|FAILED|What went wrong" pickup-app/build.log | head -40 || true; } > pickup-app-status.txt
+          [ -f pickup-app/app/build/outputs/apk/debug/app-debug.apk ] && cp pickup-app/app/build/outputs/apk/debug/app-debug.apk SNPickup.apk
+          git config user.name github-actions; git config user.email actions@github.com
+          rm -f pickup-app/app/sign.jks; git add pickup-app-status.txt; [ -f SNPickup.apk ] && git add SNPickup.apk
+          git commit -qm "SN Pickup build ${GITHUB_SHA::7}: ${{ steps.build.outcome }}" || exit 0
+          git pull -q --rebase origin main && git push -q origin HEAD:main

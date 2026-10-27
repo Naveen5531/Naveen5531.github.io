@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c9b76"><meta name="robots" content="noindex"><title>SN Pickup</title>
+<link rel="icon" href="../brand/sn-icon-64.png"><link rel="apple-touch-icon" href="../brand/sn-apple-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&display=swap">
+<style>
+/* SN Pickup – first-mile app for pickup executives (HHT / phone). Same look as Punch and the portal. */
+:root{--bg:#f2f3f7;--card:#fff;--ink:#101828;--ink2:#344054;--mute:#6b7280;--line:#e9ebf1;--soft:#f3f4f8;--in:#0c9b76;--in2:#25cf9f;--out:#f26a1b;--bad:#d92d20;--warn:#b54708;--info:#3557b5;
+  --disp:"Bricolage Grotesque",-apple-system,system-ui,sans-serif;--body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#090b0f;--card:#15181e;--ink:#f3f4f6;--ink2:#d0d5dd;--mute:#9aa1ad;--line:#252a33;--soft:#1d2129;--in:#2fd1a0;--in2:#6ff0c8;--out:#ff8a4c}}
+:root[data-theme="dark"]{--bg:#090b0f;--card:#15181e;--ink:#f3f4f6;--ink2:#d0d5dd;--mute:#9aa1ad;--line:#252a33;--soft:#1d2129;--in:#2fd1a0;--in2:#6ff0c8;--out:#ff8a4c}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--body);-webkit-font-smoothing:antialiased;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+[hidden]{display:none!important}button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
+h1,h2,h3{font-family:var(--disp);font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.15}h1{font-size:1.5rem}h2{font-size:1.1rem}h3{font-size:1rem}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top img{width:34px;height:34px;border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}.top b{font:800 1.1rem var(--disp)}.top small{display:block;color:var(--mute);font-size:.72rem}
+.top .sp{flex:1}.pill{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:99px;background:var(--soft);color:var(--ink2);white-space:nowrap}
+.ib{border:0;background:var(--soft);width:36px;height:36px;border-radius:50%;display:grid;place-items:center}.ib svg{width:18px;height:18px}
+main{max-width:640px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:4px 2px 12px}.ph p{margin:2px 0 0;color:var(--mute);font-size:.85rem}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1 1 140px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:700;color:var(--ink2);margin-bottom:10px}
+.f input,.f select,.f textarea,input.in{width:100%;padding:12px 13px;border-radius:13px;border:1px solid var(--line);background:var(--soft);font-size:16px;font-weight:500;color:var(--ink)}
+.f textarea{min-height:64px;resize:vertical}
+.btn{border:0;border-radius:999px;padding:12px 18px;font-weight:800;background:var(--soft);color:var(--ink);font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn.p{background:linear-gradient(145deg,var(--in2),var(--in));color:#fff}.btn.o{background:var(--out);color:#fff}.btn.d{background:color-mix(in srgb,var(--bad) 12%,var(--card));color:var(--bad)}
+.btn:disabled{opacity:.5}.btn.full{width:100%}.btn.sm{padding:8px 14px;font-size:13px}
+.pk{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:18px;padding:14px;margin-bottom:10px}
+.pk .t{display:flex;justify-content:space-between;gap:8px;align-items:center}.pk b{font-size:1rem}.pk .m{color:var(--mute);font-size:.84rem;margin-top:4px}
+.st{font-size:.72rem;font-weight:800;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,var(--c,#6b7280) 14%,transparent);color:var(--c,#6b7280);white-space:nowrap}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:4px 0 14px}.steps i{height:5px;border-radius:5px;background:var(--line)}.steps i.on{background:var(--in)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.88rem}.kv span{color:var(--mute)}.kv b{font-weight:600;text-align:right}
+.mute{color:var(--mute)}.small{font-size:.8rem}.err{color:var(--bad);font-weight:600;font-size:.85rem;min-height:1em}.ok{color:var(--in);font-weight:700}
+table.bx{width:100%;border-collapse:collapse;font-size:.85rem}table.bx th{font-size:.7rem;color:var(--mute);text-align:left;font-weight:700;padding:4px}table.bx td{padding:3px}table.bx input{width:100%;padding:9px 6px;border-radius:10px;border:1px solid var(--line);background:var(--soft);font-size:15px;text-align:center}
+table.bx td:first-child{font-weight:800;text-align:center;width:44px}
+.scanbox{display:flex;gap:8px}.scanbox input{flex:1;font-size:18px;letter-spacing:.04em;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin-top:12px}.grid span{text-align:center;padding:8px 0;border-radius:10px;background:var(--soft);font-weight:800;font-size:.85rem;color:var(--mute)}.grid span.on{background:var(--in);color:#fff}
+.big{font:800 2rem var(--disp)}.cost{border:1px dashed color-mix(in srgb,var(--info) 50%,transparent);background:color-mix(in srgb,var(--info) 6%,var(--card))}
+nav.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--card);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+nav.bar button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.72rem;font-weight:700;color:var(--mute);padding:6px 0;position:relative}
+nav.bar button svg{width:22px;height:22px}nav.bar button[aria-current="page"]{color:var(--in)}nav.bar .n{position:absolute;top:0;right:calc(50% - 22px);min-width:17px;height:17px;border-radius:9px;background:var(--out);color:#fff;font-size:.65rem;display:grid;place-items:center;padding:0 4px}
+svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#101828;color:#fff;padding:11px 16px;border-radius:14px;font-weight:600;z-index:90;max-width:92vw;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)}
+.toast.bad{background:var(--bad)}
+#login{min-height:100vh;display:grid;place-items:center;padding:20px}#login .card{width:100%;max-width:380px;padding:24px}#login img{height:56px;display:block;margin:0 auto 10px}
+.cam{position:fixed;inset:0;z-index:80;background:#000;display:flex;flex-direction:column}.cam video{flex:1;width:100%;object-fit:cover}.cam .ov{position:absolute;left:10%;right:10%;top:35%;height:22%;border:3px solid var(--in2);border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+.cam .cb{position:absolute;left:0;right:0;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:10px}.cam .ct{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;color:#fff;font-weight:700}
+/* 4 × 6 inch labels: one label per page for thermal label printers */
+#labels{display:none}
+@media print{
+  @page{size:4in 6in;margin:0}
+  body{background:#fff!important;padding:0!important;margin:0}
+  body>*:not(#labels){display:none!important}
+  #labels{display:block!important}
+  .lbl{width:4in;height:6in;page-break-after:always;break-after:page;overflow:hidden}
+  .lbl:last-child{page-break-after:auto;break-after:auto}
+}
+.lbl{box-sizing:border-box;width:4in;height:6in;padding:.14in;font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;display:flex;flex-direction:column;gap:.06in;border:1px solid #000}
+.lbl .h{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:.05in}.lbl .h img{height:.42in}.lbl .h b{font-size:15pt}
+.lbl .bxn{font-size:34pt;font-weight:900;text-align:right;line-height:1}.lbl .bxn small{font-size:10pt;display:block;font-weight:700}
+.lbl .lr{font-size:20pt;font-weight:900;letter-spacing:.02em}.lbl .bc{height:1.25in}
+.lbl .ad{display:grid;grid-template-columns:1fr 1fr;gap:.08in;font-size:8.5pt;border-top:1px solid #000;padding-top:.05in}.lbl .ad b{display:block;font-size:7pt;text-transform:uppercase}
+.lbl .pin{font-size:18pt;font-weight:900}.lbl .ft{margin-top:auto;display:flex;justify-content:space-between;font-size:8.5pt;border-top:1px solid #000;padding-top:.05in}
+</style>
+</head><body>
+
+<div id="login" hidden>
+  <div class="card">
+    <img src="../brand/sn-logo-full.png" alt="SN Logistics – Speed &amp; Trust">
+    <h1 style="text-align:center">SN Pickup</h1><p class="mute" style="text-align:center;margin:4px 0 18px">Sign in with your staff login</p>
+    <form id="lf"><label class="f">Username<input id="lu" autocomplete="username" autocapitalize="none" required></label>
+    <label class="f">Password<input id="lp" type="password" autocomplete="current-password" required></label>
+    <p class="err" id="le"></p><button class="btn p full" id="lb">Sign in</button></form>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header class="top"><img src="../brand/sn-icon-64.png" alt=""><div><b>SN Pickup</b><small id="who"></small></div><span class="sp"></span><span class="pill" id="net">● Online</span>
+    <button class="ib" id="out" aria-label="Sign out"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg></button></header>
+  <main id="main"></main>
+  <nav class="bar" id="bar" aria-label="Main"></nav>
+</div>
+<div id="labels" aria-hidden="true"></div>
+
+<script src="../portal/firebase-config.js?v=1"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function () {
+'use strict';
+/* ================= basics ================= */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^\d.-]/g, '')); return isNaN(n) ? 0 : n; };
+const r2 = n => Math.round(n * 100) / 100, lc = s => String(s || '').trim().toLowerCase();
+const inr = n => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pad = (n, w) => String(n).padStart(w, '0');
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1, 2) + '-' + pad(d.getDate(), 2); };
+const addDays = (k, n) => { const d = new Date(k + 'T00:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1, 2) + '-' + pad(d.getDate(), 2); };
+const fdt = t => t ? new Date(+t).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+const fd = k => k ? new Date(k + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+let tt; const toast = (m, bad) => { let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; t.classList.toggle('bad', !!bad); clearTimeout(tt); tt = setTimeout(() => t.remove(), 3200); };
+const beep = ok => { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = ok ? 1200 : 300; g.gain.value = .15; o.connect(g); g.connect(a.destination); o.start(); setTimeout(() => { o.stop(); a.close(); }, ok ? 120 : 400); } catch (e) {} try { navigator.vibrate && navigator.vibrate(ok ? 40 : [80, 60, 80]); } catch (e) {} };
+const I = {
+  list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  assign: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.6 3-5.5 6-5.5s5.4 1.9 6 5.5M17 8v6M14 11h6"/>',
+  inbound: '<path d="M3 9l9-6 9 6v11H3z"/><path d="M12 11v6M9 14l3 3 3-3"/>',
+  done: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>'
+};
+const svg = k => '<svg viewBox="0 0 24 24" aria-hidden="true">' + I[k] + '</svg>';
+const ST_C = { Assigned: '#3557b5', Accepted: '#b54708', Labelled: '#f26a1b', Completed: '#0c9b76', Rejected: '#d92d20', Requested: '#6b7280' };
+
+/* ================= Firebase ================= */
+const DOMAIN = 'staff.movana.app';
+const toEmail = u => { u = String(u || '').trim().toLowerCase(); return u.includes('@') ? u : u.replace(/[^a-z0-9._-]/g, '') + '@' + DOMAIN; };
+const cfg = window.MOVANA_FIREBASE_CONFIG;
+if (!cfg || !window.firebase) { document.body.innerHTML = '<p style="padding:30px;font:16px system-ui">SN Pickup could not load. Check the internet connection and open again.</p>'; return; }
+const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(cfg), auth = app.auth(), fs = app.firestore();
+try { fs.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) {}
+const S = { me: null, name: '', roles: [], owner: false, tab: 'mine', open: null, pickups: [], ships: [], people: [], vendors: [], settings: {}, rates: [], unsub: [] };
+/* update an existing record; dotted keys like "scanned.3" change one box only */
+const upd = (k, id, patch) => fs.collection(k).doc(id).update(Object.assign({}, patch, { updatedAt: Date.now() }));
+
+/* roles: who can do what */
+const MGR_UP = ['ops_mgr', 'ops_manager', 'ops_srm', 'ops_gm', 'ops_sgm', 'ops_avp', 'ops_vp', 'ops_svp'];
+const MGMT = ['superadmin', 'director', 'gm'];
+const ACCOUNTS = ['fin_head', 'fin_manager', 'accountant', 'billing_exec', 'ar_exec', 'ap_exec', 'cashier', 'tax_exec', 'fin_exec', 'fin_sr', 'fin_tl', 'fin_am', 'fin_mgr', 'fin_srm', 'fin_gm', 'fin_sgm', 'fin_avp', 'fin_vp', 'fin_svp'];
+const has = list => S.owner || S.roles.some(r => list.includes(r));
+const canAssign = () => has(MGMT.concat(MGR_UP, ['admin_head', 'branch_manager', 'pickup_coord', 'ops_tl', 'ops_am']));
+const canInbound = () => canAssign() || has(['hub_sup']);
+const canCost = () => has(MGMT.concat(MGR_UP, ACCOUNTS));        // accounts, or operations manager and above
+const isExecRole = r => /^(ops_|pickup_coord|hub_sup|rider|booking_exec|vendor_coord|lastmile_lead)/.test(r);
+
+/* ================= login ================= */
+function showLogin(msg) { $('#app').hidden = true; $('#login').hidden = false; $('#le').textContent = msg || ''; }
+$('#lf').addEventListener('submit', async e => { e.preventDefault(); const b = $('#lb'); b.disabled = true; $('#le').textContent = 'Signing in…';
+  try { await auth.signInWithEmailAndPassword(toEmail($('#lu').value), $('#lp').value); $('#lp').value = ''; }
+  catch (x) { $('#le').textContent = ({ 'auth/invalid-credential': 'Wrong username or password.', 'auth/wrong-password': 'Wrong username or password.', 'auth/user-not-found': 'Wrong username or password.', 'auth/too-many-requests': 'Too many tries. Wait a few minutes.', 'auth/network-request-failed': 'No internet connection.' })[x.code] || ('Could not sign in (' + (x.code || 'error') + ').'); }
+  finally { b.disabled = false; } });
+$('#out').addEventListener('click', async () => { if (!confirm('Sign out of SN Pickup?')) return; S.unsub.forEach(f => f()); S.unsub = []; await auth.signOut(); });
+const net = () => { const n = $('#net'); n.textContent = navigator.onLine ? '● Online' : '● Offline – saving on phone'; n.style.color = navigator.onLine ? 'var(--in)' : 'var(--warn)'; };
+addEventListener('online', net); addEventListener('offline', net);
+
+auth.onAuthStateChanged(async u => {
+  S.unsub.forEach(f => f()); S.unsub = [];
+  if (!u) { showLogin(); return; }
+  try {
+    const [m, o, p] = await Promise.all([fs.doc('members/' + u.uid).get(), fs.doc('settings/owner').get().catch(() => null), fs.doc('users/' + u.uid).get().catch(() => null)]);
+    const md = m.exists ? m.data() : null;
+    S.owner = !!(o && o.exists && o.data().uid === u.uid);
+    if (!S.owner && (!md || md.status === 'Suspended' || md.role === 'none' || md.role === 'employee' && !(md.roles || []).length)) { await auth.signOut(); showLogin('This login has no access to SN Pickup. Ask your manager.'); return; }
+    S.me = u.uid; S.roles = md ? [md.role].concat(md.roles || []) : []; S.name = (p && p.exists && p.data().name) || String(u.email || '').split('@')[0];
+  } catch (x) { showLogin('Could not check your access (' + (x.code || 'error') + ').'); return; }
+  $('#login').hidden = true; $('#app').hidden = false; $('#who').textContent = S.name; net();
+  S.tab = 'mine'; listen(); render();
+});
+
+/* ================= live data ================= */
+function listen() {
+  const L = (q, k, sort) => S.unsub.push(q.onSnapshot(s => { S[k] = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); if (sort) S[k].sort(sort); later(); }, e => { if (e && e.code === 'permission-denied') toast('No permission to read ' + k + '.', true); }));
+  const byNew = (a, b) => num(b.createdAt) - num(a.createdAt);
+  if (canAssign()) L(fs.collection('pickups').orderBy('createdAt', 'desc').limit(300), 'pickups');
+  else L(fs.collection('pickups').where('exec', '==', S.me), 'pickups', byNew);
+  if (canInbound()) L(fs.collection('shipments').where('inbound', '==', 'Pending'), 'ships', (a, b) => num(b.pickedAt) - num(a.pickedAt));
+  L(fs.collection('pvendors'), 'vendors', (a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
+  if (canAssign()) {
+    S.unsub.push(fs.collection('members').onSnapshot(async s => {
+      const ms = s.docs.map(d => Object.assign({ _id: d.id }, d.data())).filter(x => x.status !== 'Suspended' && [x.role].concat(x.roles || []).some(isExecRole));
+      const us = await fs.collection('users').get().catch(() => null), nm = {}; if (us) us.docs.forEach(d => { nm[d.id] = d.data().name || d.data().username || ''; });
+      S.people = ms.map(x => ({ uid: x._id, name: nm[x._id] || x._id, role: x.role })).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1); later();
+    }, () => {}));
+  }
+  if (canCost()) {
+    fs.doc('settings/main').get().then(d => { S.settings = d.exists ? d.data() : {}; }).catch(() => {});
+    fs.collection('rates').get().then(s => { S.rates = s.docs.map(d => d.data()); }).catch(() => {});
+  }
+}
+let rq = false; const later = () => { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); }); };
+
+/* ================= cost (same rules as the portal's price calculation) ================= */
+const DEF = { volDivisor: 5000, fuelPct: 12, docket: 50, gstPct: 18, minCharge: 150, roundTo: 0.5, rLocal: 18, rRegional: 24, rMetro: 30, rNational: 38, rSpecial: 55, tLocal: 1, tRegional: 2, tMetro: 3, tNational: 5, tSpecial: 7, state: 'Telangana' };
+const METROS = ['mumbai', 'delhi', 'new delhi', 'bengaluru', 'bangalore', 'chennai', 'kolkata', 'hyderabad', 'pune', 'ahmedabad'];
+const SPECIAL = ['jammu and kashmir', 'ladakh', 'arunachal pradesh', 'assam', 'manipur', 'meghalaya', 'mizoram', 'nagaland', 'sikkim', 'tripura', 'andaman and nicobar islands', 'lakshadweep'];
+function costOf(p) {
+  const st = Object.assign({}, DEF, S.settings || {}), card = (S.rates || []).find(r => lc(r.customer) === lc(p.customer)) || null;
+  const oc = lc(p.fromCity), dc = lc(p.toCity), os = lc(p.fromState || st.state), ds = lc(p.toState || p.fromState || st.state);
+  const zone = SPECIAL.includes(ds) ? 'Special' : oc && dc && oc === dc ? 'Local' : os && ds && os === ds ? 'Regional' : METROS.includes(oc) && METROS.includes(dc) ? 'Metro' : 'National';
+  const B = p.boxes || [], div = num(st.volDivisor) || 5000;
+  const vol = B.reduce((s, b) => s + num(b.l) * num(b.b) * num(b.h) / div, 0), actual = B.reduce((s, b) => s + num(b.kg), 0);
+  const step = num(st.roundTo) || .5, chg = Math.ceil(Math.max(actual, vol, .5) / step) * step;
+  const rate = num(card ? card['r' + zone] : 0) || num(st['r' + zone]), minC = num(card && card.minCharge) || num(st.minCharge);
+  const base = Math.max(minC, rate * chg), fuelPct = card && card.fuelPct !== '' && card.fuelPct != null ? num(card.fuelPct) : num(st.fuelPct);
+  const fuel = base * fuelPct / 100, docket = num(st.docket), sub = base + fuel + docket, gst = sub * num(st.gstPct) / 100;
+  const tat = num(card && card['t' + zone]) || num(st['t' + zone]) || 3;
+  return { zone, vol: r2(vol), actual: r2(actual), chg, rate, base: r2(base), fuel: r2(fuel), fuelPct, docket, codFee: 0, sub: r2(sub), gst: r2(gst), total: r2(sub + gst), tat, card: !!card };
+}
+function costHtml(p) {
+  if (!canCost()) return '';
+  const c = p.price && p.price.total != null ? p.price : costOf(p);
+  return '<div class="card cost"><h3>LR cost <span class="mute small">(accounts &amp; ops manager+)</span></h3><div class="kv" style="margin-top:8px">' +
+    [['Zone', c.zone], ['Actual weight', c.actual + ' kg'], ['Volumetric weight', c.vol + ' kg'], ['Chargeable', c.chg + ' kg @ ₹' + c.rate + '/kg'], ['Freight', inr(c.base)], ['Fuel ' + c.fuelPct + '%', inr(c.fuel)], ['Docket', inr(c.docket)], ['GST', inr(c.gst)], ['Total', '<b style="font-size:1.1rem">' + inr(c.total) + '</b>']]
+      .map(r => '<span>' + r[0] + '</span><b>' + (String(r[1]).startsWith('<b') ? r[1] : esc(r[1])) + '</b>').join('') + '</div>' + (c.card ? '' : '<p class="mute small" style="margin:8px 0 0">Standard rates (no rate card for this client).</p>') + '</div>';
+}
+
+/* ================= pincode lookup ================= */
+const pinCache = {};
+async function pinInfo(pin) {
+  if (!/^\d{6}$/.test(pin)) return null; if (pinCache[pin]) return pinCache[pin];
+  try { const r = await fetch('https://api.postalpincode.in/pincode/' + pin), j = await r.json(), po = j && j[0] && j[0].PostOffice && j[0].PostOffice[0];
+    if (po) return (pinCache[pin] = { city: po.District, state: po.State }); } catch (e) {}
+  return null;
+}
+
+/* ================= screens ================= */
+const STEP = p => p.hht === 'Completed' ? 5 : p.scanned && Object.keys(p.scanned).length ? 4 : p.lr ? 4 : (p.boxes || []).length ? 3 : p.vendor ? 2 : p.hht === 'Accepted' ? 1 : 0;
+const mine = () => S.pickups.filter(p => p.exec === S.me);
+function navHtml() {
+  const open = mine().filter(p => ['Assigned', 'Accepted', 'Labelled'].includes(p.hht)).length;
+  const T = [['mine', 'My pickups', 'list', open]].concat(canAssign() ? [['assign', 'Assign', 'assign', S.pickups.filter(p => !p.exec && !['Completed', 'Cancelled'].includes(p.hht || '') && !['Picked up', 'Delivered', 'Closed', 'Cancelled'].includes(p.stage || '')).length]] : [])
+    .concat(canInbound() ? [['inbound', 'Inbound', 'inbound', S.ships.length]] : []).concat([['done', 'Done', 'done', 0]]);
+  return T.map(([id, l, ic, n]) => '<button type="button" data-tab="' + id + '"' + (S.tab === id && !S.open ? ' aria-current="page"' : '') + '>' + svg(ic) + l + (n ? '<span class="n">' + n + '</span>' : '') + '</button>').join('');
+}
+function pkCard(p, extra) {
+  const st = p.hht || (p.exec ? 'Assigned' : 'Requested');
+  return '<button type="button" class="pk" data-open="' + esc(p._id) + '"><div class="t"><b>' + esc(p.vendor ? p.vendor.name : (p.customer || 'Pickup')) + '</b><span class="st" style="--c:' + (ST_C[st] || '#6b7280') + '">' + esc(st) + '</span></div>' +
+    '<div class="m">' + esc(p.no || '') + (p.lr ? ' · LR ' + esc(p.lr) : '') + ' · ' + esc(fd(p.date) || '') + (p.slot ? ' ' + esc(p.slot) : '') + '</div>' +
+    '<div class="m">' + esc((p.fromCity || p.fromPin || '—') + ' → ' + (p.toCity || p.toPin || '—')) + (p.pieces ? ' · ' + esc(p.pieces) + ' boxes' : '') + (p.execName && canAssign() ? ' · ' + esc(p.execName) : '') + '</div>' + (extra || '') + '</button>';
+}
+function mineHtml() {
+  const L = mine().filter(p => ['Assigned', 'Accepted', 'Labelled'].includes(p.hht));
+  return '<div class="ph"><div><h1>My pickups</h1><p>' + L.length + ' open · assigned to ' + esc(S.name) + '</p></div></div>' +
+    (L.length ? L.map(p => pkCard(p)).join('') : '<div class="card mute">No pickups assigned to you right now. New ones appear here as soon as they are assigned.</div>');
+}
+function doneHtml() {
+  const L = (canAssign() ? S.pickups : mine()).filter(p => p.hht === 'Completed').slice(0, 60);
+  return '<div class="ph"><div><h1>Completed</h1><p>' + L.length + ' pickups' + (canAssign() ? ' (all executives)' : '') + '</p></div></div>' + (L.length ? L.map(p => pkCard(p, '<div class="m">Picked ' + esc(fdt(p.pickedAt)) + '</div>')).join('') : '<div class="card mute">Nothing completed yet.</div>');
+}
+function assignHtml() {
+  const open = S.pickups.filter(p => !['Completed', 'Cancelled'].includes(p.hht || '') && !['Picked up', 'Delivered', 'Closed', 'Cancelled'].includes(p.stage || ''));
+  const ppl = S.people.map(x => '<option value="' + esc(x.uid) + '">' + esc(x.name) + '</option>').join('');
+  return '<div class="ph"><div><h1>Assign pickups</h1><p>' + open.length + ' open · ' + S.people.length + ' executives</p></div><button class="btn p sm" type="button" data-act="new">+ New pickup</button></div>' +
+    (open.length ? open.map(p => '<div class="card"><div class="t" style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(p.customer || (p.vendor && p.vendor.name) || 'Pickup') + '</b><span class="st" style="--c:' + (ST_C[p.hht || (p.exec ? 'Assigned' : 'Requested')] || '#6b7280') + '">' + esc(p.hht || (p.exec ? 'Assigned' : 'Requested')) + '</span></div>' +
+      '<div class="mute small" style="margin:4px 0 10px">' + esc(p.no || '') + ' · ' + esc(fd(p.date)) + ' · ' + esc((p.fromCity || p.fromPin || '—') + ' → ' + (p.toCity || p.toPin || '—')) + (p.pieces ? ' · ' + esc(p.pieces) + ' boxes' : '') + (p.rejectWhy ? '<br><span style="color:var(--bad)">Rejected: ' + esc(p.rejectWhy) + '</span>' : '') + '</div>' +
+      '<div class="scanbox"><select class="in" data-assign="' + esc(p._id) + '" style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--soft)"><option value="">' + (p.execName ? 'Assigned: ' + esc(p.execName) : 'Choose executive…') + '</option>' + ppl + '</select><button class="btn sm" type="button" data-open="' + esc(p._id) + '">Open</button></div></div>').join('')
+      : '<div class="card mute">No open pickups. Tap + New pickup, or add pickups in the portal.</div>');
+}
+function newHtml() {
+  return '<div class="ph"><div><h1>New pickup</h1><p>Create and assign to an executive</p></div></div><form class="card" id="nf">' +
+    '<label class="f">Client<input name="customer" required list="cl"></label><datalist id="cl">' + [...new Set(S.pickups.map(p => p.customer).filter(Boolean))].map(c => '<option value="' + esc(c) + '">').join('') + '</datalist>' +
+    '<div class="row"><label class="f">Pickup date<input name="date" type="date" value="' + today() + '" required></label><label class="f">Time slot<select name="slot"><option>06–09</option><option selected>09–12</option><option>12–15</option><option>15–18</option><option>18–21</option></select></label></div>' +
+    '<div class="row"><label class="f">From pincode<input name="fromPin" inputmode="numeric" maxlength="6"></label><label class="f">To pincode<input name="toPin" inputmode="numeric" maxlength="6"></label></div>' +
+    '<label class="f">Pickup address / contact<textarea name="fromAddress"></textarea></label>' +
+    '<div class="row"><label class="f">Expected boxes<input name="pieces" type="number" min="1" inputmode="numeric"></label><label class="f">Client ref / delivery no<input name="ref"></label></div>' +
+    '<label class="f">Assign to<select name="exec"><option value="">Assign later</option>' + S.people.map(x => '<option value="' + esc(x.uid) + '">' + esc(x.name) + '</option>').join('') + '</select></label>' +
+    '<label class="f">Notes<textarea name="notes"></textarea></label><p class="err" id="ne"></p><div class="row"><button class="btn" type="button" data-act="back">Cancel</button><button class="btn p">Create pickup</button></div></form>';
+}
+
+/* ---- one pickup: Accept → Vendor & invoice → Boxes → LR & labels → Scan → Complete ---- */
+function pickupHtml(p) {
+  const st = p.hht || (p.exec ? 'Assigned' : 'Requested'), step = STEP(p), me = p.exec === S.me, done = st === 'Completed';
+  let h = '<button class="btn sm" type="button" data-act="back">← Back</button><div class="ph" style="margin-top:12px"><div><h1>' + esc(p.vendor ? p.vendor.name : (p.customer || 'Pickup')) + '</h1><p>' + esc(p.no || '') + (p.lr ? ' · LR <b>' + esc(p.lr) + '</b>' : '') + '</p></div><span class="st" style="--c:' + (ST_C[st] || '#6b7280') + '">' + esc(st) + '</span></div>' +
+    '<div class="steps" aria-hidden="true">' + [1, 2, 3, 4, 5].map(i => '<i class="' + (step >= i ? 'on' : '') + '"></i>').join('') + '</div>' +
+    '<div class="card"><div class="kv">' + [['Client', p.customer], ['Date', fd(p.date) + (p.slot ? ' · ' + p.slot : '')], ['From', [p.fromPin, p.fromCity].filter(Boolean).join(' · ')], ['To', [p.toPin, p.toCity].filter(Boolean).join(' · ')], ['Expected boxes', p.pieces], ['Client ref', p.ref], ['Executive', p.execName], ['Notes', p.notes]].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' + (p.fromAddress ? '<p class="small mute" style="margin:8px 0 0;white-space:pre-wrap">' + esc(p.fromAddress) + '</p>' : '') + '</div>';
+  if (!me && !done) return h + (canAssign() ? '<div class="card mute">Assigned to ' + esc(p.execName || 'nobody yet') + '. Only the assigned executive works on this pickup.</div>' : '') + costHtml(p);
+  if (done) return h + summaryHtml(p) + costHtml(p);
+  if (st === 'Assigned' || st === 'Rejected') return h + '<div class="card"><h2>New pickup for you</h2><p class="mute">Accept to start. Reject if you cannot do it, with a reason for your manager.</p><div class="row"><button class="btn d" type="button" data-act="reject">Reject</button><button class="btn p" type="button" data-act="accept">Accept pickup</button></div></div>';
+  if (step === 1 || S.edit === 'vendor') return h + vendorHtml(p);
+  if (step === 2 || S.edit === 'boxes') return h + boxesHtml(p);
+  if (!p.lr) return h + reviewHtml(p) + costHtml(p);
+  return h + scanHtml(p) + costHtml(p);
+}
+function vendorHtml(p) {
+  const v = p.vendor || {}, c = p.consignee || {}, inv = p.invoice || {};
+  return '<form class="card" id="vf"><h2>1 · Vendor &amp; invoice</h2><p class="mute small">Pick the vendor (shipper) or add a new one. Their details fill in by themselves.</p>' +
+    '<label class="f">Vendor<select name="vid"><option value="">+ New vendor</option>' + S.vendors.map(x => '<option value="' + esc(x._id) + '"' + (v.id === x._id ? ' selected' : '') + '>' + esc(x.name) + (x.city ? ' · ' + esc(x.city) : '') + '</option>').join('') + '</select></label>' +
+    '<label class="f">Vendor name<input name="vname" required value="' + esc(v.name || '') + '"></label>' +
+    '<div class="row"><label class="f">Vendor GSTIN<input name="vgst" maxlength="15" value="' + esc(v.gstin || '') + '" autocapitalize="characters"></label><label class="f">Vendor phone<input name="vphone" type="tel" value="' + esc(v.phone || '') + '"></label></div>' +
+    '<label class="f">Shipping (pickup) address<textarea name="vaddr" required>' + esc(v.address || p.fromAddress || '') + '</textarea></label>' +
+    '<div class="row"><label class="f">From pincode<input name="fromPin" required inputmode="numeric" maxlength="6" value="' + esc(p.fromPin || v.pin || '') + '"></label><label class="f">From city<input name="fromCity" required value="' + esc(p.fromCity || v.city || '') + '"></label><label class="f">From state<input name="fromState" value="' + esc(p.fromState || v.state || '') + '"></label></div>' +
+    '<h3 style="margin:8px 0 8px">Destination (consignee)</h3>' +
+    '<div class="row"><label class="f">Consignee name<input name="cname" required value="' + esc(c.name || '') + '"></label><label class="f">Consignee phone<input name="cphone" type="tel" value="' + esc(c.phone || '') + '"></label></div>' +
+    '<label class="f">Destination address<textarea name="caddr" required>' + esc(c.address || p.toAddress || '') + '</textarea></label>' +
+    '<div class="row"><label class="f">To pincode<input name="toPin" required inputmode="numeric" maxlength="6" value="' + esc(p.toPin || '') + '"></label><label class="f">To city<input name="toCity" required value="' + esc(p.toCity || '') + '"></label><label class="f">To state<input name="toState" value="' + esc(p.toState || '') + '"></label></div>' +
+    '<h3 style="margin:8px 0 8px">Invoice</h3>' +
+    '<div class="row"><label class="f">Invoice no<input name="ino" required value="' + esc(inv.no || '') + '"></label><label class="f">Invoice date<input name="idate" type="date" required value="' + esc(inv.date || today()) + '"></label></div>' +
+    '<div class="row"><label class="f">Invoice value (₹)<input name="ival" type="number" min="0" step="0.01" inputmode="decimal" required value="' + esc(inv.value || '') + '"></label><label class="f">E-way bill no<input name="iewb" inputmode="numeric" value="' + esc(inv.ewb || '') + '"></label></div>' +
+    '<label class="f">Material<input name="material" value="' + esc(p.material || '') + '" placeholder="e.g. FMCG cartons"></label>' +
+    '<p class="err" id="ve"></p><button class="btn p full">Save and continue</button></form>';
+}
+function boxesHtml(p) {
+  const B = (p.boxes && p.boxes.length ? p.boxes : []), n = B.length || num(p.pieces) || 1, f = B[0] || {};
+  return '<form class="card" id="bf"><h2>2 · Boxes</h2><p class="mute small">Enter the number of boxes, then L × B × H (cm) and weight (kg) of each box. "Same for all" copies box 1 to every box.</p>' +
+    '<div class="row"><label class="f">Number of boxes<input id="bn" type="number" min="1" max="999" inputmode="numeric" value="' + n + '"></label><button class="btn sm" type="button" data-act="same" style="flex:0 0 auto;margin-top:8px">Same for all</button></div>' +
+    '<div style="overflow:auto"><table class="bx"><thead><tr><th>#</th><th>L cm</th><th>B cm</th><th>H cm</th><th>Kg</th></tr></thead><tbody id="bt">' + boxRows(n, B, f) + '</tbody></table></div>' +
+    '<p class="small mute" id="btot"></p><p class="err" id="be"></p><div class="row"><button class="btn" type="button" data-act="editVendor">← Vendor</button><button class="btn p">Save boxes</button></div></form>';
+}
+function boxRows(n, B, f) { let h = ''; for (let i = 0; i < n; i++) { const b = B[i] || {}; h += '<tr><td>' + (i + 1) + '</td>' + ['l', 'b', 'h', 'kg'].map(k => '<td><input data-b="' + i + '" data-k="' + k + '" type="number" min="0" step="' + (k === 'kg' ? '0.01' : '0.1') + '" inputmode="decimal" value="' + esc(b[k] != null ? b[k] : '') + '"></td>').join('') + '</tr>'; } return h; }
+function reviewHtml(p) {
+  const B = p.boxes || [], kg = B.reduce((s, b) => s + num(b.kg), 0), cbm = B.reduce((s, b) => s + num(b.l) * num(b.b) * num(b.h), 0) / 1e6;
+  return '<div class="card"><h2>3 · Check and create LR</h2><div class="kv" style="margin-top:8px">' + [['Vendor', p.vendor.name], ['Invoice', p.invoice.no + ' · ' + fd(p.invoice.date)], ['Invoice value', inr(p.invoice.value)], ['From', p.fromPin + ' ' + p.fromCity], ['To', p.toPin + ' ' + p.toCity + ' · ' + p.consignee.name], ['Boxes', B.length], ['Total weight', r2(kg) + ' kg'], ['Volume', cbm.toFixed(3) + ' CBM']].map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' +
+    '<div class="row" style="margin-top:14px"><button class="btn" type="button" data-act="editBoxes">← Boxes</button><button class="btn p" type="button" data-act="lr">Create LR &amp; labels</button></div><p class="small mute" style="margin:10px 0 0">The LR number is created automatically. One 4×6 label prints for each box: 1/' + B.length + ', 2/' + B.length + ' …</p></div>';
+}
+function scanHtml(p) {
+  const N = (p.boxes || []).length, sc = p.scanned || {}, n = Object.keys(sc).length, all = n >= N && N > 0;
+  return '<div class="card"><h2>4 · Print &amp; scan labels</h2><p class="mute small">LR <b>' + esc(p.lr) + '</b> · ' + N + ' labels. Print, stick one on each box, then scan every label.</p>' +
+    '<div class="row" style="margin:10px 0"><button class="btn" type="button" data-act="print">🖨 Print ' + N + ' labels (4×6)</button></div>' +
+    '<div class="big">' + n + ' / ' + N + ' <span class="mute small">scanned</span></div>' +
+    '<div class="scanbox" style="margin-top:10px"><input class="in" id="scan" placeholder="Scan label (HHT trigger)" autocomplete="off" autocapitalize="characters" enterkeyhint="go" aria-label="Scan label"><button class="btn" type="button" data-act="cam" aria-label="Scan with camera">📷</button></div>' +
+    '<p class="err" id="se"></p><div class="grid">' + Array.from({ length: N }, (_, i) => '<span class="' + (sc[i + 1] ? 'on' : '') + '">' + (i + 1) + '/' + N + '</span>').join('') + '</div>' +
+    '<button class="btn p full" type="button" data-act="complete" style="margin-top:14px"' + (all ? '' : ' disabled') + '>' + (all ? 'Pickup complete' : 'Scan all ' + N + ' labels to complete') + '</button></div>';
+}
+function summaryHtml(p) {
+  const B = p.boxes || [];
+  return '<div class="card"><h2 class="ok">✓ Pickup complete</h2><div class="kv" style="margin-top:8px">' + [['LR', p.lr], ['Picked at', fdt(p.pickedAt)], ['Vendor', p.vendor && p.vendor.name], ['Invoice', p.invoice && (p.invoice.no + ' · ' + inr(p.invoice.value))], ['Boxes', B.length + ' · ' + r2(B.reduce((s, b) => s + num(b.kg), 0)) + ' kg'], ['Destination', p.consignee && (p.consignee.name + ', ' + p.toCity + ' ' + p.toPin)], ['Inbound', p.inbound || 'Pending at hub']].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' +
+    '<div class="row" style="margin-top:12px"><button class="btn" type="button" data-act="print">🖨 Reprint labels</button></div></div>';
+}
+
+/* ---- inbound at the hub: LRs picked up and on the way in; receive by scanning every box ---- */
+function inboundHtml() {
+  const L = S.ships;
+  return '<div class="ph"><div><h1>Inbound</h1><p>' + L.length + ' LRs picked up, waiting at the hub</p></div></div>' +
+    (L.length ? L.map(s => '<button type="button" class="pk" data-ship="' + esc(s._id) + '"><div class="t"><b>LR ' + esc(s.awb) + '</b><span class="st" style="--c:#f26a1b">' + esc(Object.keys(s.inScan || {}).length + '/' + s.pieces) + '</span></div><div class="m">' + esc((s.origin || '') + ' · ' + (s.originCity || '') + ' → ' + (s.destCity || '')) + '</div><div class="m">' + esc(s.pieces + ' boxes · ' + s.weight + ' kg · picked ' + fdt(s.pickedAt) + ' by ' + (s.pickedByName || '')) + '</div></button>').join('')
+      : '<div class="card mute">No LRs waiting. Completed pickups show here with their LR number.</div>');
+}
+function shipHtml(s) {
+  const N = num(s.pieces), sc = s.inScan || {}, n = Object.keys(sc).length;
+  return '<button class="btn sm" type="button" data-act="back">← Back</button><div class="ph" style="margin-top:12px"><div><h1>LR ' + esc(s.awb) + '</h1><p>' + esc(s.origin || '') + ' → ' + esc(s.consignee || '') + '</p></div><span class="st" style="--c:#f26a1b">Inbound</span></div>' +
+    '<div class="card"><div class="kv">' + [['From', s.originPin + ' ' + s.originCity], ['To', s.pincode + ' ' + s.destCity], ['Boxes', N], ['Weight', s.weight + ' kg'], ['Invoice', s.invoice && (s.invoice.no + ' · ' + inr(s.invoice.value))], ['Picked', fdt(s.pickedAt) + ' · ' + (s.pickedByName || '')], ['Pickup no', s.pickupNo]].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div></div>' +
+    '<div class="card"><h2>Receive at hub</h2><p class="mute small">Scan each box label to check all ' + N + ' arrived.</p><div class="big">' + n + ' / ' + N + '</div>' +
+    '<div class="scanbox" style="margin-top:10px"><input class="in" id="scan" placeholder="Scan label (HHT trigger)" autocomplete="off" autocapitalize="characters" enterkeyhint="go"><button class="btn" type="button" data-act="cam">📷</button></div><p class="err" id="se"></p>' +
+    '<div class="grid">' + Array.from({ length: N }, (_, i) => '<span class="' + (sc[i + 1] ? 'on' : '') + '">' + (i + 1) + '/' + N + '</span>').join('') + '</div>' +
+    '<button class="btn p full" type="button" data-act="receive" style="margin-top:14px"' + (n >= N ? '' : ' disabled') + '>' + (n >= N ? 'Receive at hub' : 'Scan all boxes to receive') + '</button></div>' + (canCost() ? costHtml(Object.assign({ boxes: s.boxes, customer: s.customer, fromCity: s.originCity, toCity: s.destCity, fromState: s.originState, toState: s.destState, price: s.price }, {})) : '');
+}
+
+/* ================= render ================= */
+function render() {
+  if ($('#app').hidden) return;
+  const keep = document.activeElement && document.activeElement.closest && document.activeElement.closest('form') && !S.force;
+  $('#bar').innerHTML = navHtml();
+  if (keep) return;            // never redraw a form while someone is typing in it
+  S.force = false;
+  let h;
+  if (S.open && S.open.k === 'p') { const p = S.pickups.find(x => x._id === S.open.id); h = p ? pickupHtml(p) : '<div class="card">This pickup is no longer available.</div>'; }
+  else if (S.open && S.open.k === 's') { const s = S.ships.find(x => x._id === S.open.id); h = s ? shipHtml(s) : '<div class="card ok">Received at hub ✓</div><button class="btn" type="button" data-act="back">← Inbound</button>'; }
+  else if (S.open && S.open.k === 'new') h = newHtml();
+  else h = S.tab === 'assign' && canAssign() ? assignHtml() : S.tab === 'inbound' && canInbound() ? inboundHtml() : S.tab === 'done' ? doneHtml() : mineHtml();
+  $('#main').innerHTML = h;
+  const sc = $('#scan'); if (sc) setTimeout(() => sc.focus(), 50);
+  const bn = $('#bn'); if (bn) boxTotals();
+}
+const go = o => { S.open = o; S.edit = null; S.force = true; render(); scrollTo(0, 0); };
+
+/* ================= actions ================= */
+const cur = () => S.open && S.open.k === 'p' ? S.pickups.find(x => x._id === S.open.id) : null;
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-tab]'); if (t) { S.tab = t.dataset.tab; go(null); return; }
+  const o = e.target.closest('[data-open]'); if (o && !e.target.closest('select')) { go({ k: 'p', id: o.dataset.open }); return; }
+  const sh = e.target.closest('[data-ship]'); if (sh) { go({ k: 's', id: sh.dataset.ship }); return; }
+  const a = e.target.closest('[data-act]'); if (!a) return; const act = a.dataset.act, p = cur();
+  if (act === 'back') { go(null); return; }
+  if (act === 'new') { go({ k: 'new' }); return; }
+  if (act === 'editVendor') { S.edit = 'vendor'; S.force = true; render(); return; }
+  if (act === 'editBoxes') { S.edit = 'boxes'; S.force = true; render(); return; }
+  if (act === 'accept' && p) { await save(p, { hht: 'Accepted', acceptedAt: Date.now(), rejectWhy: '' }, 'Accepted. Now choose the vendor.'); return; }
+  if (act === 'reject' && p) { const why = prompt('Why can\'t you do this pickup?'); if (!why) return; await save(p, { hht: 'Rejected', rejectWhy: why.slice(0, 200), exec: '', execName: '', rejectedBy: S.name, rejectedAt: Date.now() }, 'Rejected. Your manager will reassign it.'); go(null); return; }
+  if (act === 'same') { const r = $$('#bt tr'), f = r[0] && [...r[0].querySelectorAll('input')].map(i => i.value); r.forEach((tr, i) => { if (i) [...tr.querySelectorAll('input')].forEach((inp, j) => { inp.value = f[j]; }); }); boxTotals(); return; }
+  if (act === 'lr' && p) { await makeLR(p, a); return; }
+  if (act === 'print') { const x = p || null; if (x) printLabels(x); return; }
+  if (act === 'cam') { camScan(v => onScan(v)); return; }
+  if (act === 'complete' && p) { await complete(p, a); return; }
+  if (act === 'receive') { await receive(a); return; }
+});
+document.addEventListener('change', async e => {
+  const s = e.target.closest('[data-assign]'); if (s && s.value) { const p = S.pickups.find(x => x._id === s.dataset.assign), who = S.people.find(x => x.uid === s.value); if (!p || !who) return;
+    try { await upd('pickups', p._id, { exec: who.uid, execName: who.name, hht: 'Assigned', assignedBy: S.name, assignedAt: Date.now(), rejectWhy: '' }); toast('Assigned to ' + who.name); } catch (x) { toast('Could not assign (' + (x.code || 'error') + ').', true); } return; }
+  if (e.target.name === 'vid') { const v = S.vendors.find(x => x._id === e.target.value) || {}, f = e.target.form;
+    f.vname.value = v.name || ''; f.vgst.value = v.gstin || ''; f.vphone.value = v.phone || ''; f.vaddr.value = v.address || ''; f.fromPin.value = v.pin || f.fromPin.value; f.fromCity.value = v.city || f.fromCity.value; f.fromState.value = v.state || f.fromState.value; return; }
+  if (e.target.name === 'fromPin' || e.target.name === 'toPin') { const k = e.target.name === 'fromPin' ? 'from' : 'to', i = await pinInfo(e.target.value.trim()), f = e.target.form; if (i && f[k + 'City'] && !f[k + 'City'].value) { f[k + 'City'].value = i.city; f[k + 'State'].value = i.state; } return; }
+  if (e.target.id === 'bn') { const n = Math.max(1, Math.min(999, parseInt(e.target.value) || 1)), cur0 = readBoxes(); $('#bt').innerHTML = boxRows(n, cur0, cur0[0] || {}); boxTotals(); return; }
+});
+document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.b != null) boxTotals(); });
+document.addEventListener('submit', async e => {
+  const f = e.target; e.preventDefault();
+  if (f.id === 'nf') {
+    const d = Object.fromEntries(new FormData(f)), who = S.people.find(x => x.uid === d.exec);
+    if (d.fromPin && !/^\d{6}$/.test(d.fromPin) || d.toPin && !/^\d{6}$/.test(d.toPin)) { $('#ne').textContent = 'Pincodes are 6 digits.'; return; }
+    const [fi, ti] = await Promise.all([pinInfo(d.fromPin), pinInfo(d.toPin)]), dd = new Date(), now = Date.now();
+    const doc = { no: 'PU' + String(dd.getFullYear()).slice(2) + pad(dd.getMonth() + 1, 2) + pad(dd.getDate(), 2) + (Math.floor(Math.random() * 90000) + 10000), customer: d.customer.trim(), date: d.date, slot: d.slot, ref: d.ref, fromPin: d.fromPin, fromCity: fi ? fi.city : '', fromState: fi ? fi.state : '', fromAddress: d.fromAddress, toPin: d.toPin, toCity: ti ? ti.city : '', toState: ti ? ti.state : '', pieces: num(d.pieces) || '', notes: d.notes,
+      stage: 'Requested', events: [{ s: 'Requested', t: now, n: 'Created in SN Pickup' }], createdAt: now, updatedAt: now, createdBy: S.me };
+    if (who) Object.assign(doc, { exec: who.uid, execName: who.name, hht: 'Assigned', assignedBy: S.name, assignedAt: now });
+    try { await fs.collection('pickups').doc().set(doc); toast('Pickup ' + doc.no + ' created' + (who ? ' and assigned to ' + who.name : '')); S.tab = 'assign'; go(null); } catch (x) { $('#ne').textContent = 'Could not save (' + (x.code || 'error') + ').'; }
+    return;
+  }
+  const p = cur(); if (!p) return;
+  if (f.id === 'vf') {
+    const d = Object.fromEntries(new FormData(f)), er = $('#ve');
+    if (!/^\d{6}$/.test(d.fromPin) || !/^\d{6}$/.test(d.toPin)) { er.textContent = 'From and To pincodes must be 6 digits.'; return; }
+    if (d.vgst && !/^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/i.test(d.vgst)) { er.textContent = 'GSTIN looks wrong (15 characters, like 36ABCDE1234F1Z5).'; return; }
+    if (!(num(d.ival) > 0)) { er.textContent = 'Enter the invoice value.'; return; }
+    if (num(d.ival) >= 50000 && !d.iewb) { if (!confirm('Invoice is ₹50,000 or more – an e-way bill is usually needed. Continue without it?')) return; }
+    let vid = d.vid; const vend = { name: d.vname.trim(), gstin: d.vgst.toUpperCase(), phone: d.vphone, address: d.vaddr, pin: d.fromPin, city: d.fromCity, state: d.fromState };
+    try { if (!vid) { const r = fs.collection('pvendors').doc(); await r.set(Object.assign({}, vend, { createdAt: Date.now(), createdBy: S.me })); vid = r.id; } else await upd('pvendors', vid, vend); } catch (x) { er.textContent = 'Could not save the vendor (' + (x.code || 'error') + ').'; return; }
+    S.edit = null;
+    await save(p, { vendor: Object.assign({ id: vid }, vend), consignee: { name: d.cname, phone: d.cphone, address: d.caddr }, fromPin: d.fromPin, fromCity: d.fromCity, fromState: d.fromState, fromAddress: d.vaddr, toPin: d.toPin, toCity: d.toCity, toState: d.toState, toAddress: d.caddr,
+      invoice: { no: d.ino.trim(), date: d.idate, value: r2(num(d.ival)), ewb: d.iewb.trim() }, material: d.material }, 'Saved. Now the boxes.');
+    return;
+  }
+  if (f.id === 'bf') {
+    if (p.lr) { $('#be').textContent = 'Labels are already printed for this LR; boxes cannot change now.'; return; }
+    const B = readBoxes(), bad = B.findIndex(b => !(b.l > 0 && b.b > 0 && b.h > 0 && b.kg > 0));
+    if (bad >= 0) { $('#be').textContent = 'Fill L, B, H and weight for box ' + (bad + 1) + '.'; return; }
+    S.edit = null; await save(p, { boxes: B, pieces: B.length, weight: r2(B.reduce((s, b) => s + b.kg, 0)) }, B.length + ' boxes saved.');
+  }
+});
+function readBoxes() { const out = []; $$('#bt tr').forEach(tr => { const g = k => num((tr.querySelector('[data-k="' + k + '"]') || {}).value); out.push({ l: g('l'), b: g('b'), h: g('h'), kg: g('kg') }); }); return out; }
+function boxTotals() { const B = readBoxes(), el = $('#btot'); if (!el) return; const kg = B.reduce((s, b) => s + b.kg, 0), cbm = B.reduce((s, b) => s + b.l * b.b * b.h, 0) / 1e6; el.textContent = B.length + ' boxes · ' + r2(kg) + ' kg · ' + cbm.toFixed(3) + ' CBM'; }
+async function save(p, patch, msg) { try { await upd('pickups', p._id, patch); if (msg) toast(msg); S.force = true; render(); } catch (x) { toast('Could not save (' + (x.code || 'error') + '). It will retry when online.', true); } }
+
+/* ---- LR number: claimed once in "ticketids" so two phones can never get the same number ---- */
+async function makeLR(p, btn) {
+  if (p.lr) return; btn.disabled = true;
+  const d = new Date(), y = String(d.getFullYear()).slice(2) + pad(d.getMonth() + 1, 2) + pad(d.getDate(), 2);
+  for (let i = 0; i < 8; i++) {
+    const lr = 'SN' + y + (Math.floor(Math.random() * 90000) + 10000), ref = fs.doc('ticketids/LR-' + lr);
+    try {
+      const ok = await fs.runTransaction(async t => { const s = await t.get(ref); if (s.exists) return false; t.set(ref, { claimedBy: S.me, at: Date.now(), kind: 'LR', pickup: p._id }); return true; });
+      if (!ok) continue;
+      await upd('pickups', p._id, { lr, hht: 'Labelled', labelledAt: Date.now(), scanned: {} });
+      toast('LR ' + lr + ' created. Print the labels.'); S.force = true; render(); setTimeout(() => printLabels(Object.assign({}, p, { lr })), 300); return;
+    } catch (x) { if (!navigator.onLine) { toast('LR numbers need the internet. Connect and try again.', true); break; } if (x.code === 'permission-denied') { toast('No permission to create an LR. Ask your manager.', true); break; } }
+  }
+  btn.disabled = false;
+}
+
+/* Code 128 (set B) barcode as SVG – built in, so labels print even without internet */
+const C128 = ['212222','222122','222221','121223','121322','131222','122213','122312','132212','221213','221312','231212','112232','122132','122231','113222','123122','123221','223211','221132','221231','213212','223112','312131','311222','321122','321221','312212','322112','322211','212123','212321','232121','111323','131123','131321','112313','132113','132311','211313','231113','231311','112133','112331','132131','113123','113321','133121','313121','211331','231131','213113','213311','213131','311123','311321','331121','312113','312311','332111','314111','221411','431111','111224','111422','121124','121421','141122','141221','112214','112412','122114','122411','142112','142211','241211','221114','413111','241112','134111','111242','121142','121241','114212','124112','124211','411212','421112','421211','212141','214121','412121','111143','111341','131141','114113','114311','411113','411311','113141','114131','311141','411131','211412','211214','211232','2331112'];
+function code128(text, hPx) {
+  const v = [104]; for (const ch of String(text)) { const c = ch.charCodeAt(0); v.push(c >= 32 && c <= 126 ? c - 32 : 0); }
+  let sum = v[0]; for (let i = 1; i < v.length; i++) sum += v[i] * i; v.push(sum % 103); v.push(106);
+  let x = 10, bars = ''; v.forEach(c => { const w = C128[c]; for (let i = 0; i < w.length; i++) { const n = +w[i]; if (i % 2 === 0) bars += '<rect x="' + x + '" y="0" width="' + n + '" height="' + hPx + '"/>'; x += n; } });
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + (x + 10) + ' ' + (hPx + 16) + '" preserveAspectRatio="none" style="width:100%;height:100%"><rect width="100%" height="100%" fill="#fff"/><g fill="#000">' + bars + '</g><text x="' + ((x + 10) / 2) + '" y="' + (hPx + 13) + '" font-family="Arial" font-size="12" text-anchor="middle">' + esc(text) + '</text></svg>';
+}
+/* ---- labels: one 4 × 6 inch label per box, Code 128 barcode "LR-box-total" ---- */
+const code = (lr, i, n) => lr + '-' + pad(i, 3) + '-' + pad(n, 3);
+function printLabels(p) {
+  const B = p.boxes || [], N = B.length, el = $('#labels'); if (!N || !p.lr) return;
+  el.innerHTML = B.map((b, i) => '<div class="lbl"><div class="h"><img src="../brand/sn-logo-full.png" alt=""><div class="bxn">' + (i + 1) + '/' + N + '<small>BOX</small></div></div>' +
+    '<div><b style="font-size:8pt">LR / AWB</b><div class="lr">' + esc(p.lr) + '</div></div><div class="bc">' + code128(code(p.lr, i + 1, N), 60) + '</div>' +
+    '<div class="ad"><div><b>From</b>' + esc(p.vendor ? p.vendor.name : '') + '<br>' + esc(p.fromCity || '') + '<div class="pin">' + esc(p.fromPin || '') + '</div></div><div><b>To</b>' + esc(p.consignee ? p.consignee.name : '') + '<br>' + esc(p.toCity || '') + (p.toState ? ', ' + esc(p.toState) : '') + '<div class="pin">' + esc(p.toPin || '') + '</div></div></div>' +
+    '<div class="ad"><div><b>Box size</b>' + esc(b.l + '×' + b.b + '×' + b.h + ' cm') + '</div><div><b>Weight</b>' + esc(b.kg + ' kg') + ' (total ' + esc(r2(B.reduce((s, x) => s + num(x.kg), 0))) + ')</div></div>' +
+    '<div class="ad"><div><b>Invoice</b>' + esc(p.invoice ? p.invoice.no : '') + '</div><div><b>E-way bill</b>' + esc(p.invoice && p.invoice.ewb || '—') + '</div></div>' +
+    '<div class="ft"><span>' + esc(new Date().toLocaleDateString('en-IN')) + '</span><span>' + esc(p.no || '') + '</span><span>SN Logistics</span></div></div>').join('');
+  const name = 'Labels_' + p.lr;
+  if (window.SNPickup && SNPickup.print) { setTimeout(() => SNPickup.print(name), 250); return; }
+  const t0 = document.title; document.title = name; setTimeout(() => { window.print(); document.title = t0; }, 250);
+}
+
+/* ---- scanning: HHT scanner types into the box and presses Enter; the camera is the backup ---- */
+let scanT;
+document.addEventListener('keydown', e => { if (e.target.id === 'scan' && e.key === 'Enter') { e.preventDefault(); const v = e.target.value; e.target.value = ''; onScan(v); } });
+document.addEventListener('input', e => { if (e.target.id !== 'scan') return; clearTimeout(scanT); scanT = setTimeout(() => { const v = e.target.value; if (/^SN\d{11}-\d{3}-\d{3}$/i.test(v.trim())) { e.target.value = ''; onScan(v); } }, 180); });
+async function onScan(raw) {
+  const v = String(raw || '').trim().toUpperCase(), er = $('#se'), m = /^(SN\d{11})-(\d{3})-(\d{3})$/.exec(v);
+  if (!m) { beep(false); if (er) er.textContent = 'Not an SN box label: ' + v; return; }
+  const [, lr, i, n] = m, idx = +i, tot = +n;
+  if (S.open && S.open.k === 'p') { const p = cur(); if (!p) return;
+    if (lr !== p.lr) { beep(false); er.textContent = 'This label is for LR ' + lr + ', not ' + p.lr + '.'; return; }
+    if (tot !== (p.boxes || []).length || idx < 1 || idx > tot) { beep(false); er.textContent = 'Box number does not match this LR.'; return; }
+    if ((p.scanned || {})[idx]) { beep(false); er.textContent = 'Box ' + idx + '/' + tot + ' is already scanned.'; return; }
+    beep(true); er.textContent = ''; await save(p, { ['scanned.' + idx]: Date.now() }); return; }
+  if (S.open && S.open.k === 's') { const s = S.ships.find(x => x._id === S.open.id); if (!s) return;
+    if (lr !== s.awb) { beep(false); er.textContent = 'This label is for LR ' + lr + ', not ' + s.awb + '.'; return; }
+    if ((s.inScan || {})[idx]) { beep(false); er.textContent = 'Box ' + idx + '/' + tot + ' already received.'; return; }
+    beep(true); er.textContent = ''; try { await fs.collection('shipments').doc(s._id).update({ ['inScan.' + idx]: Date.now(), updatedAt: Date.now() }); } catch (x) { toast('Could not save (' + (x.code || 'error') + ').', true); } return; }
+}
+async function camScan(cb) {
+  if (window.SNPickup && SNPickup.camOk && !SNPickup.camOk()) { try { SNPickup.askCam(); } catch (e) {} toast('Allow the camera, then tap 📷 again.'); return; }
+  const w = document.createElement('div'); w.className = 'cam'; w.innerHTML = '<video playsinline muted autoplay></video><div class="ov"></div><div class="ct">Point at the barcode</div><div class="cb"><button class="btn" type="button">Close</button></div>'; document.body.appendChild(w);
+  const v = w.querySelector('video'); let stream = null, live = true, zx = null;
+  const stop = () => { live = false; try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {} try { zx && zx.reset(); } catch (e) {} w.remove(); setTimeout(() => { const s = $('#scan'); if (s) s.focus(); }, 50); };
+  w.querySelector('button').onclick = stop;
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); v.srcObject = stream; await v.play(); }
+  catch (e) { stop(); toast('Camera not available (' + (e.name || 'error') + ').', true); return; }
+  const hit = val => { if (!live || !val) return; stop(); cb(val); };
+  if ('BarcodeDetector' in window) {
+    try { const d = new BarcodeDetector({ formats: ['code_128', 'qr_code'] }); const loop = async () => { if (!live) return; try { const r = await d.detect(v); if (r && r[0]) return hit(r[0].rawValue); } catch (e) {} setTimeout(loop, 160); }; loop(); return; } catch (e) {}
+  }
+  try { await new Promise((ok, no) => { if (window.ZXing) return ok(); const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js'; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
+    zx = new ZXing.BrowserMultiFormatReader(); zx.decodeFromStream(stream, v, (r) => { if (r) hit(r.getText()); }); }
+  catch (e) { stop(); toast('Camera scanning is not supported here. Use the HHT trigger or type the code.', true); }
+}
+
+/* ---- pickup complete: create the LR as a shipment ("Picked up", inbound pending) ---- */
+async function complete(p, btn) {
+  const B = p.boxes || [], N = B.length; if (Object.keys(p.scanned || {}).length < N) { toast('Scan all labels first.', true); return; }
+  btn.disabled = true; const now = Date.now(), kg = r2(B.reduce((s, b) => s + num(b.kg), 0)), price = costOf(p);
+  const ship = { awb: p.lr, ref: p.ref || p.invoice.no, customer: p.customer || p.vendor.name, origin: p.vendor.name, originPin: p.fromPin, originCity: p.fromCity, originState: p.fromState || '',
+    consignee: p.consignee.name, phone: p.consignee.phone || '', address: p.consignee.address, pincode: p.toPin, destCity: p.toCity, destState: p.toState || '',
+    pieces: N, weight: kg, l: B[0].l, w: B[0].b, h: B[0].h, boxes: B, material: p.material || '', value: p.invoice.value, invoice: p.invoice, vendor: p.vendor, mode: 'Prepaid', priority: 'Standard',
+    promised: addDays(today(), price.tat), price, stage: 'Picked up', inbound: 'Pending', inScan: {}, pickupId: p._id, pickupNo: p.no || '', pickedAt: now, pickedBy: S.me, pickedByName: S.name,
+    events: [{ s: 'Booked', t: num(p.labelledAt) || now, n: 'LR created in SN Pickup' }, { s: 'Picked up', t: now, n: N + ' boxes scanned by ' + S.name }], createdAt: now, updatedAt: now, createdBy: S.me };
+  try {
+    const b = fs.batch(); b.set(fs.collection('shipments').doc('LR-' + p.lr), ship);
+    b.set(fs.collection('pickups').doc(p._id), { hht: 'Completed', stage: 'Picked up', pickedAt: now, shipment: 'LR-' + p.lr, inbound: 'Pending', updatedAt: now, events: (p.events || []).concat([{ s: 'Picked up', t: now, n: 'LR ' + p.lr + ' · ' + N + ' boxes' }]).slice(-60) }, { merge: true });
+    await b.commit(); beep(true); toast('Pickup complete · LR ' + p.lr + ' is in Inbound.'); S.force = true; render();
+  } catch (x) { btn.disabled = false; toast('Could not complete (' + (x.code || 'error') + ').', true); }
+}
+async function receive(btn) {
+  const s = S.ships.find(x => x._id === S.open.id); if (!s) return; btn.disabled = true; const now = Date.now();
+  try { await fs.collection('shipments').doc(s._id).update({ stage: 'At origin hub', inbound: 'Received', receivedAt: now, receivedBy: S.name, updatedAt: now, events: (s.events || []).concat([{ s: 'At origin hub', t: now, n: 'All ' + s.pieces + ' boxes scanned in by ' + S.name }]).slice(-60) });
+    if (s.pickupId) upd('pickups', s.pickupId, { inbound: 'Received' }).catch(() => {});
+    toast('LR ' + s.awb + ' received at hub.'); S.open = null; S.force = true; render(); }
+  catch (x) { btn.disabled = false; toast('Could not receive (' + (x.code || 'error') + ').', true); }
+}
+})();
+</script>
+</body></html>

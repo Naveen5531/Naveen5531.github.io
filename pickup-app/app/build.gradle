@@ -1,0 +1,23 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.snlogistics.pickup'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.snlogistics.pickup'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+    // Signing key comes from the GitHub secret SNP_KEYSTORE (never stored in this public repo).
+    // Without it the build uses a temporary key, and each new APK must be installed fresh.
+    def ks = file('sign.jks')
+    signingConfigs {
+        sn { if (ks.exists()) { storeFile ks; storePassword System.getenv('SNP_PASS') ?: ''; keyAlias System.getenv('SNP_ALIAS') ?: 'snpickup'; keyPassword System.getenv('SNP_PASS') ?: '' } }
+    }
+    buildTypes {
+        debug { if (ks.exists()) signingConfig signingConfigs.sn }
+        release { minifyEnabled false; if (ks.exists()) signingConfig signingConfigs.sn }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
