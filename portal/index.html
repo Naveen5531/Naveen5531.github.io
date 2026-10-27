@@ -3682,7 +3682,7 @@ document.addEventListener('click', async e => {
   if (ds.sel || ds.selall) { e.stopPropagation(); if (ds.sel) { const [k, id] = ds.sel.split('|'); t.checked ? S.sel[k].add(id) : S.sel[k].delete(id); } else { const k = ds.selall; const rows = filtered(k).slice(0, 500); if (t.checked) rows.forEach(r => S.sel[k].add(r._id)); else S.sel[k].clear(); } render(); return; }
   if (ds.vtab && D) { D.vtab = ds.vtab; drawDrawer(); return; }
   if (ds.ftab && D) { showSection(ds.ftab); return; }
-  if (ds.mod) { const m = NAV.find(x => x.id === ds.mod); S.open = S.open || {}; if (tabsOf(m).length > 1 && S.mod === m.id) { S.collapsed = !S.collapsed; renderNav(); return; } S.collapsed = false; go(m.id); document.body.classList.remove('navopen'); return; }
+  if (ds.mod) { const m = NAV.find(x => x.id === ds.mod); S.open = S.open || {}; if (tabsOf(m).length > 1) { const op = (S.mod === m.id && !S.collapsed) || !!S.open[m.id]; S.open[m.id] = !op; if (S.mod === m.id) S.collapsed = op; renderNav(); return; } S.collapsed = false; go(m.id); document.body.classList.remove('navopen'); return; }
   if (ds.pickSkin) { setSkin(ds.pickSkin); return; }
   if (ds.skinDefault) { const cur = S.data.settings.find(d => d._id === 'main') || {}; const body = Object.assign({}, cur, { skin: ds.skinDefault }); delete body._id; if (await setDoc('settings', 'main', body)) toast('Default design set to ' + SKINS.find(x => x.id === ds.skinDefault).name); return; }
   if (ds.template) { templateCSV(ds.template); return; }
