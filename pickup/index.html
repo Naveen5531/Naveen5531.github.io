@@ -161,7 +161,7 @@ auth.onAuthStateChanged(async u => {
 function listen() {
   const L = (q, k, sort) => S.unsub.push(q.onSnapshot(s => { S[k] = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); if (sort) S[k].sort(sort); later(); }, e => { if (e && e.code === 'permission-denied') toast('No permission to read ' + k + '.', true); }));
   const byNew = (a, b) => num(b.createdAt) - num(a.createdAt);
-  if (canAssign()) L(fs.collection('pickups').orderBy('createdAt', 'desc').limit(300), 'pickups');
+  if (canAssign() || canCost()) L(fs.collection('pickups').orderBy('createdAt', 'desc').limit(300), 'pickups');
   else L(fs.collection('pickups').where('exec', '==', S.me), 'pickups', byNew);
   if (canInbound()) L(fs.collection('shipments').where('inbound', '==', 'Pending'), 'ships', (a, b) => num(b.pickedAt) - num(a.pickedAt));
   L(fs.collection('pvendors'), 'vendors', (a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
@@ -234,8 +234,8 @@ function mineHtml() {
     (L.length ? L.map(p => pkCard(p)).join('') : '<div class="card mute">No pickups assigned to you right now. New ones appear here as soon as they are assigned.</div>');
 }
 function doneHtml() {
-  const L = (canAssign() ? S.pickups : mine()).filter(p => p.hht === 'Completed').slice(0, 60);
-  return '<div class="ph"><div><h1>Completed</h1><p>' + L.length + ' pickups' + (canAssign() ? ' (all executives)' : '') + '</p></div></div>' + (L.length ? L.map(p => pkCard(p, '<div class="m">Picked ' + esc(fdt(p.pickedAt)) + '</div>')).join('') : '<div class="card mute">Nothing completed yet.</div>');
+  const all = canAssign() || canCost(), L = (all ? S.pickups : mine()).filter(p => p.hht === 'Completed').slice(0, 60);
+  return '<div class="ph"><div><h1>Completed</h1><p>' + L.length + ' pickups' + (all ? ' (all executives)' + (canCost() ? ' · open one to see its LR cost' : '') : '') + '</p></div></div>' + (L.length ? L.map(p => pkCard(p, '<div class="m">Picked ' + esc(fdt(p.pickedAt)) + '</div>')).join('') : '<div class="card mute">Nothing completed yet.</div>');
 }
 function assignHtml() {
   const open = S.pickups.filter(p => !['Completed', 'Cancelled'].includes(p.hht || '') && !['Picked up', 'Delivered', 'Closed', 'Cancelled'].includes(p.stage || ''));
@@ -313,20 +313,20 @@ function scanHtml(p) {
 }
 function summaryHtml(p) {
   const B = p.boxes || [];
-  return '<div class="card"><h2 class="ok">✓ Pickup complete</h2><div class="kv" style="margin-top:8px">' + [['LR', p.lr], ['Picked at', fdt(p.pickedAt)], ['Vendor', p.vendor && p.vendor.name], ['Invoice', p.invoice && (p.invoice.no + ' · ' + inr(p.invoice.value))], ['Boxes', B.length + ' · ' + r2(B.reduce((s, b) => s + num(b.kg), 0)) + ' kg'], ['Destination', p.consignee && (p.consignee.name + ', ' + p.toCity + ' ' + p.toPin)], ['Inbound', p.inbound || 'Pending at hub']].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' +
+  return '<div class="card"><h2 class="ok">✓ Pickup complete</h2><div class="kv" style="margin-top:8px">' + [['LR', p.lr], ['Picked at', fdt(p.pickedAt)], ['Vendor', p.vendor && p.vendor.name], ['Invoice', p.invoice && (p.invoice.no + ' · ' + inr(p.invoice.value))], ['Boxes', B.length + ' · ' + r2(B.reduce((s, b) => s + num(b.kg), 0)) + ' kg'], ['Destination', p.consignee && (p.consignee.name + ', ' + p.toCity + ' ' + p.toPin)], ['Status', p.inbound === 'Received' ? 'Reached inbound (hub)' : 'Pickup in transit – waiting for hub receive']].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div>' +
     '<div class="row" style="margin-top:12px"><button class="btn" type="button" data-act="print">🖨 Reprint labels</button></div></div>';
 }
 
 /* ---- inbound at the hub: LRs picked up and on the way in; receive by scanning every box ---- */
 function inboundHtml() {
   const L = S.ships;
-  return '<div class="ph"><div><h1>Inbound</h1><p>' + L.length + ' LRs picked up, waiting at the hub</p></div></div>' +
-    (L.length ? L.map(s => '<button type="button" class="pk" data-ship="' + esc(s._id) + '"><div class="t"><b>LR ' + esc(s.awb) + '</b><span class="st" style="--c:#f26a1b">' + esc(Object.keys(s.inScan || {}).length + '/' + s.pieces) + '</span></div><div class="m">' + esc((s.origin || '') + ' · ' + (s.originCity || '') + ' → ' + (s.destCity || '')) + '</div><div class="m">' + esc(s.pieces + ' boxes · ' + s.weight + ' kg · picked ' + fdt(s.pickedAt) + ' by ' + (s.pickedByName || '')) + '</div></button>').join('')
+  return '<div class="ph"><div><h1>Inbound</h1><p>' + L.length + ' LRs in pickup transit. Scan every box when it reaches the hub, then Receive.</p></div></div>' +
+    (L.length ? L.map(s => '<button type="button" class="pk" data-ship="' + esc(s._id) + '"><div class="t"><b>LR ' + esc(s.awb) + '</b><span class="st" style="--c:#f26a1b">Pickup in transit · ' + esc(Object.keys(s.inScan || {}).length + '/' + s.pieces) + '</span></div><div class="m">' + esc((s.origin || '') + ' · ' + (s.originCity || '') + ' → ' + (s.destCity || '')) + '</div><div class="m">' + esc(s.pieces + ' boxes · ' + s.weight + ' kg · picked ' + fdt(s.pickedAt) + ' by ' + (s.pickedByName || '')) + '</div></button>').join('')
       : '<div class="card mute">No LRs waiting. Completed pickups show here with their LR number.</div>');
 }
 function shipHtml(s) {
   const N = num(s.pieces), sc = s.inScan || {}, n = Object.keys(sc).length;
-  return '<button class="btn sm" type="button" data-act="back">← Back</button><div class="ph" style="margin-top:12px"><div><h1>LR ' + esc(s.awb) + '</h1><p>' + esc(s.origin || '') + ' → ' + esc(s.consignee || '') + '</p></div><span class="st" style="--c:#f26a1b">Inbound</span></div>' +
+  return '<button class="btn sm" type="button" data-act="back">← Back</button><div class="ph" style="margin-top:12px"><div><h1>LR ' + esc(s.awb) + '</h1><p>' + esc(s.origin || '') + ' → ' + esc(s.consignee || '') + '</p></div><span class="st" style="--c:#f26a1b">Pickup in transit</span></div>' +
     '<div class="card"><div class="kv">' + [['From', s.originPin + ' ' + s.originCity], ['To', s.pincode + ' ' + s.destCity], ['Boxes', N], ['Weight', s.weight + ' kg'], ['Invoice', s.invoice && (s.invoice.no + ' · ' + inr(s.invoice.value))], ['Picked', fdt(s.pickedAt) + ' · ' + (s.pickedByName || '')], ['Pickup no', s.pickupNo]].filter(r => r[1]).map(r => '<span>' + r[0] + '</span><b>' + esc(r[1]) + '</b>').join('') + '</div></div>' +
     '<div class="card"><h2>Receive at hub</h2><p class="mute small">Scan each box label to check all ' + N + ' arrived.</p><div class="big">' + n + ' / ' + N + '</div>' +
     '<div class="scanbox" style="margin-top:10px"><input class="in" id="scan" placeholder="Scan label (HHT trigger)" autocomplete="off" autocapitalize="characters" enterkeyhint="go"><button class="btn" type="button" data-act="cam">📷</button></div><p class="err" id="se"></p>' +
@@ -499,19 +499,19 @@ async function complete(p, btn) {
   const ship = { awb: p.lr, ref: p.ref || p.invoice.no, customer: p.customer || p.vendor.name, origin: p.vendor.name, originPin: p.fromPin, originCity: p.fromCity, originState: p.fromState || '',
     consignee: p.consignee.name, phone: p.consignee.phone || '', address: p.consignee.address, pincode: p.toPin, destCity: p.toCity, destState: p.toState || '',
     pieces: N, weight: kg, l: B[0].l, w: B[0].b, h: B[0].h, boxes: B, material: p.material || '', value: p.invoice.value, invoice: p.invoice, vendor: p.vendor, mode: 'Prepaid', priority: 'Standard',
-    promised: addDays(today(), price.tat), price, stage: 'Picked up', inbound: 'Pending', inScan: {}, pickupId: p._id, pickupNo: p.no || '', pickedAt: now, pickedBy: S.me, pickedByName: S.name,
-    events: [{ s: 'Booked', t: num(p.labelledAt) || now, n: 'LR created in SN Pickup' }, { s: 'Picked up', t: now, n: N + ' boxes scanned by ' + S.name }], createdAt: now, updatedAt: now, createdBy: S.me };
+    promised: addDays(today(), price.tat), price, stage: 'Pickup in transit', inbound: 'Pending', inScan: {}, pickupId: p._id, pickupNo: p.no || '', pickedAt: now, pickedBy: S.me, pickedByName: S.name,
+    events: [{ s: 'Booked', t: num(p.labelledAt) || now, n: 'LR created in SN Pickup' }, { s: 'Picked up', t: now, n: N + ' boxes scanned by ' + S.name }, { s: 'Pickup in transit', t: now + 1, n: 'On the way to the hub' }], createdAt: now, updatedAt: now, createdBy: S.me };
   try {
     const b = fs.batch(); b.set(fs.collection('shipments').doc('LR-' + p.lr), ship);
-    b.set(fs.collection('pickups').doc(p._id), { hht: 'Completed', stage: 'Picked up', pickedAt: now, shipment: 'LR-' + p.lr, inbound: 'Pending', updatedAt: now, events: (p.events || []).concat([{ s: 'Picked up', t: now, n: 'LR ' + p.lr + ' · ' + N + ' boxes' }]).slice(-60) }, { merge: true });
-    await b.commit(); beep(true); toast('Pickup complete · LR ' + p.lr + ' is in Inbound.'); S.force = true; render();
+    b.set(fs.collection('pickups').doc(p._id), { hht: 'Completed', stage: 'In transit', pickedAt: now, shipment: 'LR-' + p.lr, inbound: 'Pending', updatedAt: now, events: (p.events || []).concat([{ s: 'Picked up', t: now, n: 'LR ' + p.lr + ' · ' + N + ' boxes' }]).slice(-60) }, { merge: true });
+    await b.commit(); beep(true); toast('Pickup complete · LR ' + p.lr + ' is now Pickup in transit.'); S.force = true; render();
   } catch (x) { btn.disabled = false; toast('Could not complete (' + (x.code || 'error') + ').', true); }
 }
 async function receive(btn) {
   const s = S.ships.find(x => x._id === S.open.id); if (!s) return; btn.disabled = true; const now = Date.now();
-  try { await fs.collection('shipments').doc(s._id).update({ stage: 'At origin hub', inbound: 'Received', receivedAt: now, receivedBy: S.name, updatedAt: now, events: (s.events || []).concat([{ s: 'At origin hub', t: now, n: 'All ' + s.pieces + ' boxes scanned in by ' + S.name }]).slice(-60) });
-    if (s.pickupId) upd('pickups', s.pickupId, { inbound: 'Received' }).catch(() => {});
-    toast('LR ' + s.awb + ' received at hub.'); S.open = null; S.force = true; render(); }
+  try { await fs.collection('shipments').doc(s._id).update({ stage: 'At origin hub', inbound: 'Received', receivedAt: now, receivedBy: S.name, updatedAt: now, events: (s.events || []).concat([{ s: 'At origin hub', t: now, n: 'Received at hub – reached inbound. All ' + s.pieces + ' boxes scanned in by ' + S.name }]).slice(-60) });
+    if (s.pickupId) upd('pickups', s.pickupId, { inbound: 'Received', stage: 'Delivered', hubAt: now }).catch(() => {});
+    toast('LR ' + s.awb + ' received – reached inbound. Ready for mid mile.'); S.open = null; S.force = true; render(); }
   catch (x) { btn.disabled = false; toast('Could not receive (' + (x.code || 'error') + ').', true); }
 }
 })();

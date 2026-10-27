@@ -223,7 +223,7 @@ footer { color: var(--ink-2); }
 .trk-hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
 .trk-hd b { font-size: 1.15rem; } .trk-hd small { display: block; color: var(--ink-2, #475467); margin-top: 2px; }
 .trk-st { padding: 5px 12px; border-radius: 999px; font-weight: 800; font-size: .85rem; background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); white-space: nowrap; }
-.trk-bar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 16px 0 6px; } .trk-bar i { height: 6px; border-radius: 6px; background: var(--line, #e5e7eb); } .trk-bar i.on { background: var(--c); }
+.trk-bar { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 16px 0 6px; } .trk-bar i { height: 6px; border-radius: 6px; background: var(--line, #e5e7eb); } .trk-bar i.on { background: var(--c); }
 .trk-tl { list-style: none; margin: 14px 0 0 !important; padding: 0 !important; } .trk-tl li { display: flex; gap: 12px; padding: 8px 0; border-top: 1px dashed var(--line, #e5e7eb); } .trk-tl li span { color: var(--ink-2, #475467); font-size: .9rem; min-width: 150px; }
 .trk-msg { margin-top: 14px; color: var(--ink-2, #475467); } .trk-msg.bad { color: #d92d20; font-weight: 600; }
 .ind-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; background: var(--card, #fff); border: 1px solid var(--line, #e5e7eb); margin-bottom: 16px; max-width: 520px; }
@@ -497,7 +497,7 @@ footer { color: var(--ink-2); }
   const asText = q => 'Enquiry – SN Logistics (' + $('#q-kind').value + ')\nName: ' + q.name + (q.company ? ' (' + q.company + ')' : '') + '\nPhone: ' + q.phone + (q.email ? '\nEmail: ' + q.email : '') + '\nLane: ' + (q.from || '?') + ' → ' + (q.to || '?') + '\nVehicle: ' + (q.vehicle || 'suggest') + (q.date ? '\nPickup date: ' + q.date : '') + (q.notes ? '\nLoad: ' + q.notes : '');
   $('#enqCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(asText(enquiry())); toast('Enquiry copied'); } catch (e) { $('#enqMsg').textContent = asText(enquiry()); } });
   // ---- tracking without login: public read-only copy of each shipment's status (Firestore "track", by AWB / reference)
-  const STG = ['Booked', 'Picked up', 'At origin hub', 'In transit', 'At destination hub', 'Out for delivery', 'Delivered'];
+  const STG = ['Booked', 'Picked up', 'Pickup in transit', 'At origin hub', 'In transit', 'At destination hub', 'Out for delivery', 'Delivered'];
   const CLR = s => s === 'Delivered' ? '#0c9b76' : ['NDR', 'RTO', 'Lost / damaged'].includes(s) ? '#d92d20' : '#f26a1b';
   const fdt = t => t ? new Date(+t).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
   const fdd = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';

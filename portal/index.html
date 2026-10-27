@@ -902,7 +902,7 @@ async function importPins(text) {
 }
 // ================= record definitions =================
 const F = (k, label, type, extra) => Object.assign({ k, label, type: type || 'text' }, extra || {});
-const SHIP_STAGES = ['Booked', 'Picked up', 'At origin hub', 'In transit', 'At destination hub', 'Out for delivery', 'Delivered'];
+const SHIP_STAGES = ['Booked', 'Picked up', 'Pickup in transit', 'At origin hub', 'In transit', 'At destination hub', 'Out for delivery', 'Delivered'];
 const MILES = [
   { name: 'First mile', stages: ['Booked', 'Picked up'] },
   { name: 'Mid mile', stages: ['At origin hub', 'In transit', 'At destination hub'] },
@@ -1326,6 +1326,10 @@ async function setStage(k, id, to, note, extra, quiet) {
   const r = rec(k, id); if (!r) return false;
   const from = stageOf(k, r);
   extra = extra || {};
+  /* First mile order: Picked up → Pickup in transit → (hub staff receive) At origin hub (reached inbound) → mid mile → last mile.
+     A shipment still on its way to the hub cannot jump ahead until the hub receives it. */
+  if (k === 'shipments' && ['Booked', 'Picked up', 'Pickup in transit'].includes(from) && SHIP_STAGES.indexOf(to) > SHIP_STAGES.indexOf('At origin hub')) { toast('Receive this LR at the hub first (Inbound in SN Pickup, or set "At origin hub").'); return false; }
+  if (k === 'shipments' && to === 'At origin hub' && r.inbound === 'Pending') extra = Object.assign({ inbound: 'Received', receivedAt: Date.now(), receivedBy: (S.me && S.me.name) || '' }, extra);
   if (HOOK.onStage[k]) { const ok = await HOOK.onStage[k](r, to, from, extra); if (ok === false) return false; }
   const events = (r.events || []).concat([{ s: to, t: Date.now(), n: note || '' }]).slice(-60);
   const ok = await save(k, id, Object.assign({ stage: to, events }, extra), (r[SCHEMA[k].code] || '') + ': ' + from + ' → ' + to);
