@@ -517,7 +517,7 @@ function priceOf(sh) {
   const card = rateCardFor(sh.customer);
   const zone = zoneOf(sh);
   const pcs = Math.max(1, num(sh.pieces) || 1);
-  const vol = (num(sh.l) * num(sh.w) * num(sh.h) * pcs) / (num(st.volDivisor) || 5000);
+  const vol = (Array.isArray(sh.boxes) && sh.boxes.length ? sh.boxes.reduce((s, b) => s + num(b.l) * num(b.b || b.w) * num(b.h), 0) : num(sh.l) * num(sh.w) * num(sh.h) * pcs) / (num(st.volDivisor) || 5000);
   const actual = num(sh.weight);
   const step = num(st.roundTo) || 0.5;
   const chg = Math.ceil(Math.max(actual, vol, 0.5) / step) * step;
@@ -603,6 +603,7 @@ async function boot() {
       S.data[k] = snap.docs.map(d => Object.assign({ _id: d.id }, d.data()));
       S.loaded[k] = true; scheduleRender();
       if (k === 'shipments') { try { syncTrack(); } catch (e) {} }
+      if (k === 'pvendors') { try { syncPvList(); } catch (e) {} }
     }, err => { S.loaded[k] = true; if (err && err.code === 'revoked') S.dbState = 'none'; scheduleRender(); });
   });
 }
@@ -610,6 +611,11 @@ setInterval(() => { try { const ae = document.activeElement; if (S.mod === 'punc
 /* Public tracking: a read-only copy of each shipment's status in "track/<AWB>" (and "track/R-<client ref>") so customers can
    track on the website without a login. Only route cities, pieces, stage, promised date and stage times are copied –
    never the customer, consignee, phone, address, value or notes. Written by staff who can edit, only when something changed. */
+/* short vendor list for pickup executives (pvlist): name, code, address, GSTIN, phone, status – never bank details */
+let pvSigP = {};
+function syncPvList() { if (!S.db || S.readonly) return;
+  (S.data.pvendors || []).forEach(v => { const d = { name: v.name || '', code: v.code || '', gstin: v.gstin || '', phone: v.phone || '', address: v.address || '', pin: v.pin || '', city: v.city || '', state: v.state || '', status: v.status || 'Draft', uid: v.uid || '' }, h = JSON.stringify(d);
+    if (pvSigP[v._id] === h) return; pvSigP[v._id] = h; S.db.collection('pvlist').doc(v._id).set(Object.assign(d, { updatedAt: Date.now() })).catch(() => { delete pvSigP[v._id]; }); }); }
 let trkBusy = false;
 async function syncTrack() {
   if (trkBusy || !S.db || S.readonly) return; trkBusy = true;
@@ -1709,6 +1715,10 @@ HOOK.actions.pickups = r => {
   return h;
 };
 /* SN Pickup (HHT) progress for this pickup, live: executive, accept, vendor, invoice, LR, boxes scanned, proof */
+/* "(10000002) Seeta Rani" – the employee ID tells same-name people apart (from the Punch profile, else the login name) */
+const pkLabel = m => { const n = S.names && S.names[m._id], raw = String((typeof n === 'string' ? n : n && n.name) || m._id), u = (raw.match(/\(@([^)]*)\)$/) || [])[1] || '',
+  e = ((S.data.punch_emp || []).find(x => x._id === m._id) || {}).eid || (/@/.test(u) ? '' : u);
+  return (e ? '(' + e + ') ' : '') + raw.replace(/ \(@[^)]*\)$/, '') + (e ? '' : u ? ' · ' + u : ''); };
 const pkName = id => { const n = S.names && S.names[id]; return String((typeof n === 'string' ? n : n && n.name) || id).replace(/ \(@[^)]*\)$/, ''); };
 function hhtHtml(r) {
   const ops = (S.data.members || []).filter(m => m.status !== 'Suspended' && [m.role].concat(m.roles || []).some(x => /^(ops_|pickup_coord|hub_sup|rider|booking_exec|vendor_coord|lastmile_lead|employee$)/.test(x)));
@@ -1721,7 +1731,7 @@ function hhtHtml(r) {
     ['Picked up', r.pickedAt ? fmtTime(r.pickedAt) : ''], ['Pickup location', r.gps ? '<a href="https://maps.google.com/?q=' + r.gps.lat + ',' + r.gps.lng + '" target="_blank" rel="noopener">Map (±' + Math.round(r.gps.acc || 0) + ' m)</a>' : ''], ['Hub', r.inbound === 'Received' ? 'Received – reached inbound' : r.inbound === 'Pending' ? 'Pickup in transit' : '']].filter(x => x[1]);
   h += kv.map(x => '<div><span class="mini">' + x[0] + '</span><div>' + (x[0] === 'Pickup location' ? x[1] : esc(x[1])) + '</div></div>').join('') + '</div>';
   if (r.photo) h += '<p><img src="' + esc(r.photo) + '" alt="Pickup photo" style="max-width:260px;border-radius:12px;border:1px solid var(--line)"></p>';
-  if (can) h += '<div class="actions"><label class="mini">Assign to <select data-pkexec="' + esc(r._id) + '" style="width:auto"><option value="">' + (r.execName ? esc(r.execName) : 'Choose executive…') + '</option>' + ops.map(m => '<option value="' + esc(m._id) + '">' + esc(pkName(m._id)) + '</option>').join('') + '</select></label></div>';
+  if (can) h += '<div class="actions"><label class="mini">Assign to <select data-pkexec="' + esc(r._id) + '" style="width:auto"><option value="">' + (r.execName ? esc(r.execName) : 'Choose executive…') + '</option>' + ops.map(m => '<option value="' + esc(m._id) + '">' + esc(pkLabel(m)) + '</option>').join('') + '</select></label></div>';
   return h;
 }
 HOOK.detail.pickups = r => {
@@ -2992,7 +3002,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('change', async e => {
   const el = e.target, ds = el.dataset || {};
-  if (ds.pkexec && el.value) { const nm = pkName(el.value); await save('pickups', ds.pkexec, { exec: el.value, execName: nm, hht: 'Assigned', assignedBy: (S.me && S.me.name) || '', assignedAt: Date.now(), rejectWhy: '' }, 'Pickup assigned to ' + nm); toast('Assigned to ' + nm + ' – it is on their SN Pickup now.'); return; }
+  if (ds.pkexec && el.value) { const nm = pkLabel((S.data.members || []).find(x => x._id === el.value) || { _id: el.value }); await save('pickups', ds.pkexec, { exec: el.value, execName: nm, hht: 'Assigned', assignedBy: (S.me && S.me.name) || '', assignedAt: Date.now(), rejectWhy: '' }, 'Pickup assigned to ' + nm); toast('Assigned to ' + nm + ' – it is on their SN Pickup now.'); return; }
   if (ds.pmod && S.roleDraft) { readRoleHead(); S.roleDraft.perms[ds.pmod] = +el.value; render(); return; }
   if (ds.ptab && S.roleDraft) { readRoleHead(); if (el.value === '') delete S.roleDraft.perms[ds.ptab]; else S.roleDraft.perms[ds.ptab] = +el.value; render(); return; }
   if (ds.pdept && S.roleDraft && el.value !== '') { readRoleHead(); NAV.filter(m => m.dept === ds.pdept && !m.always).forEach(m => { S.roleDraft.perms[m.id] = +el.value; }); render(); return; }

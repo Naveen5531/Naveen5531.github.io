@@ -199,12 +199,16 @@ function listen() {
   if (canAssign()) {
     S.unsub.push(fs.collection('members').onSnapshot(async s => {
       const ms = s.docs.map(d => Object.assign({ _id: d.id }, d.data())).filter(x => x.status !== 'Suspended' && [x.role].concat(x.roles || []).some(isExecRole));
-      const us = await fs.collection('users').get().catch(() => null), nm = {}; if (us) us.docs.forEach(d => { nm[d.id] = d.data().name || d.data().username || ''; });
-      S.people = ms.map(x => ({ uid: x._id, name: nm[x._id] || x._id, role: x.role })).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1); later();
+      const [us, pe] = await Promise.all([fs.collection('users').get().catch(() => null), fs.collection('punch_emp').get().catch(() => null)]), nm = {}, un = {}, eid = {};
+      if (us) us.docs.forEach(d => { nm[d.id] = d.data().name || d.data().username || ''; un[d.id] = d.data().username || ''; });
+      if (pe) pe.docs.forEach(d => { if (d.data().eid) eid[d.id] = d.data().eid; });
+      /* "(10000002) Seeta Rani": the employee ID tells same-name people apart (Punch profile, else the login name) */
+      S.people = ms.map(x => { const e = eid[x._id] || (/@/.test(un[x._id] || '') ? '' : un[x._id] || ''), n = nm[x._id] || x._id;
+        return { uid: x._id, name: n, eid: e, role: x.role, label: (e ? '(' + e + ') ' : '') + n + (e ? '' : un[x._id] ? ' · ' + un[x._id] : '') }; }).sort((a, b) => lc(a.name) === lc(b.name) ? (a.eid < b.eid ? -1 : 1) : lc(a.name) < lc(b.name) ? -1 : 1); later();
     }, () => {}));
   }
+  fs.doc('settings/main').get().then(d => { S.settings = d.exists ? d.data() : {}; }).catch(() => {});
   if (canCost()) {
-    fs.doc('settings/main').get().then(d => { S.settings = d.exists ? d.data() : {}; }).catch(() => {});
     fs.collection('rates').get().then(s => { S.rates = s.docs.map(d => d.data()); }).catch(() => {});
   }
 }
@@ -271,7 +275,7 @@ function doneHtml() {
 }
 function assignHtml() {
   const open = S.pickups.filter(p => !['Completed', 'Cancelled'].includes(p.hht || '') && !['Picked up', 'Delivered', 'Closed', 'Cancelled'].includes(p.stage || ''));
-  const ppl = S.people.map(x => '<option value="' + esc(x.uid) + '">' + esc(x.name) + '</option>').join('');
+  const ppl = S.people.map(x => '<option value="' + esc(x.uid) + '">' + esc(x.label || x.name) + '</option>').join('');
   return '<div class="ph"><div><h1>Assign pickups</h1><p>' + open.length + ' open · ' + S.people.length + ' executives</p></div><button class="btn p sm" type="button" data-act="new">+ New pickup</button></div>' +
     (open.length ? open.map(p => '<div class="card"><div class="t" style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(p.customer || (p.shipper && p.shipper.name) || 'Pickup') + '</b><span class="st" style="--c:' + (ST_C[p.hht || (p.exec ? 'Assigned' : 'Requested')] || '#6b7280') + '">' + esc(p.hht || (p.exec ? 'Assigned' : 'Requested')) + '</span></div>' +
       '<div class="mute small" style="margin:4px 0 10px">' + esc(p.no || '') + ' · ' + esc(fd(p.date)) + ' · ' + esc((p.fromCity || p.fromPin || '—') + ' → ' + (p.toCity || p.toPin || '—')) + (p.pieces ? ' · ' + esc(p.pieces) + ' boxes' : '') + (p.rejectWhy ? '<br><span style="color:var(--bad)">Rejected: ' + esc(p.rejectWhy) + '</span>' : '') + '</div>' +
@@ -285,7 +289,7 @@ function newHtml() {
     '<div class="row"><label class="f">From pincode<input name="fromPin" inputmode="numeric" maxlength="6"></label><label class="f">To pincode<input name="toPin" inputmode="numeric" maxlength="6"></label></div>' +
     '<label class="f">Pickup address / contact<textarea name="fromAddress"></textarea></label>' +
     '<div class="row"><label class="f">Expected boxes<input name="pieces" type="number" min="1" inputmode="numeric"></label><label class="f">Client ref / delivery no<input name="ref"></label></div>' +
-    '<label class="f">Assign to<select name="exec"><option value="">Assign later</option>' + S.people.map(x => '<option value="' + esc(x.uid) + '">' + esc(x.name) + '</option>').join('') + '</select></label>' +
+    '<label class="f">Assign to<select name="exec"><option value="">Assign later</option>' + S.people.map(x => '<option value="' + esc(x.uid) + '">' + esc(x.label || x.name) + '</option>').join('') + '</select></label>' +
     '<label class="f">Notes<textarea name="notes"></textarea></label><p class="err" id="ne"></p><div class="row"><button class="btn" type="button" data-act="back">Cancel</button><button class="btn p">Create pickup</button></div></form>';
 }
 
@@ -414,7 +418,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('change', async e => {
   const s = e.target.closest('[data-assign]'); if (s && s.value) { const p = S.pickups.find(x => x._id === s.dataset.assign), who = S.people.find(x => x.uid === s.value); if (!p || !who) return;
-    try { await upd('pickups', p._id, { exec: who.uid, execName: who.name, hht: 'Assigned', assignedBy: S.name, assignedAt: Date.now(), rejectWhy: '' }); toast('Assigned to ' + who.name); } catch (x) { toast('Could not assign (' + (x.code || 'error') + ').', true); } return; }
+    try { await upd('pickups', p._id, { exec: who.uid, execName: who.label || who.name, hht: 'Assigned', assignedBy: S.name, assignedAt: Date.now(), rejectWhy: '' }); toast('Assigned to ' + who.name); } catch (x) { toast('Could not assign (' + (x.code || 'error') + ').', true); } return; }
   if (e.target.name === 'vid') { const v = S.vendors.find(x => x._id === e.target.value) || {}, f = e.target.form;
     f.vname.value = v.name || ''; f.vgst.value = v.gstin || ''; f.vphone.value = v.phone || ''; $('#vsum').textContent = v.name ? v.name + ' · ' + (v.gstin || '') + ' · ' + (v.phone || '') : ''; f.vaddr.value = v.address || ''; f.fromPin.value = v.pin || f.fromPin.value; f.fromCity.value = v.city || f.fromCity.value; f.fromState.value = v.state || f.fromState.value; return; }
   if (e.target.name === 'fromPin' || e.target.name === 'toPin') { const k = e.target.name === 'fromPin' ? 'from' : 'to', i = await pinInfo(e.target.value.trim()), f = e.target.form; if (i && f[k + 'City'] && !f[k + 'City'].value) { f[k + 'City'].value = i.city; f[k + 'State'].value = i.state; } return; }
@@ -429,7 +433,7 @@ document.addEventListener('submit', async e => {
     const [fi, ti] = await Promise.all([pinInfo(d.fromPin), pinInfo(d.toPin)]), dd = new Date(), now = Date.now();
     const doc = { no: 'PU' + String(dd.getFullYear()).slice(2) + pad(dd.getMonth() + 1, 2) + pad(dd.getDate(), 2) + (Math.floor(Math.random() * 90000) + 10000), customer: d.customer.trim(), date: d.date, slot: d.slot, ref: d.ref, fromPin: d.fromPin, fromCity: fi ? fi.city : '', fromState: fi ? fi.state : '', fromAddress: d.fromAddress, toPin: d.toPin, toCity: ti ? ti.city : '', toState: ti ? ti.state : '', pieces: num(d.pieces) || '', notes: d.notes,
       stage: 'Requested', events: [{ s: 'Requested', t: now, n: 'Created in SN Pickup' }], createdAt: now, updatedAt: now, createdBy: S.me };
-    if (who) Object.assign(doc, { exec: who.uid, execName: who.name, hht: 'Assigned', assignedBy: S.name, assignedAt: now });
+    if (who) Object.assign(doc, { exec: who.uid, execName: who.label || who.name, hht: 'Assigned', assignedBy: S.name, assignedAt: now });
     try { await fs.collection('pickups').doc().set(doc); toast('Pickup ' + doc.no + ' created' + (who ? ' and assigned to ' + who.name : '')); S.tab = 'assign'; go(null); } catch (x) { $('#ne').textContent = 'Could not save (' + (x.code || 'error') + ').'; }
     return;
   }
@@ -577,12 +581,14 @@ function takePhoto(p) {
 }
 async function complete(p, btn) {
   const B = p.boxes || [], N = B.length; if (Object.keys(p.scanned || {}).length < N) { toast('Scan all labels first.', true); return; }
-  btn.disabled = true; btn.textContent = 'Saving…'; const gps = await where(), now = Date.now(), kg = r2(B.reduce((s, b) => s + num(b.kg), 0)), price = costOf(p);
-  const ship = { awb: p.lr, ref: p.ref || p.invoice.no, customer: p.customer || p.shipper.name, origin: p.shipper.name, originPin: p.fromPin, originCity: p.fromCity, originState: p.fromState || '',
+  btn.disabled = true; btn.textContent = 'Saving…'; const gps = await where(), now = Date.now(), kg = r2(B.reduce((s, b) => s + num(b.kg), 0));
+  /* the LR cost is saved only by logins that can read the rate cards; otherwise the portal works it out live from the boxes */
+  const price = canCost() && S.rates ? costOf(p) : null, tat = price ? price.tat : (num((S.settings || {})['t' + costOf(p).zone]) || num(DEF['t' + costOf(p).zone]) || 3);
+  const ship = Object.assign(price ? { price } : {}, { awb: p.lr, ref: p.ref || p.invoice.no, customer: p.customer || p.shipper.name, origin: p.shipper.name, originPin: p.fromPin, originCity: p.fromCity, originState: p.fromState || '',
     consignee: p.consignee.name, phone: p.consignee.phone || '', address: p.consignee.address, pincode: p.toPin, destCity: p.toCity, destState: p.toState || '',
     pieces: N, weight: kg, l: B[0].l, w: B[0].b, h: B[0].h, boxes: B, material: p.material || '', value: p.invoice.value, invoice: p.invoice, shipper: p.shipper, mode: 'Prepaid', priority: 'Standard',
-    promised: addDays(today(), price.tat), price, stage: 'Pickup in transit', inbound: 'Pending', inScan: {}, pickupId: p._id, pickupNo: p.no || '', pickedAt: now, gps: gps || null, pickedBy: S.me, pickedByName: S.name,
-    events: [{ s: 'Booked', t: num(p.labelledAt) || now, n: 'LR created in SN Pickup' }, { s: 'Picked up', t: now, n: N + ' boxes scanned by ' + S.name }, { s: 'Pickup in transit', t: now + 1, n: 'On the way to the hub' }], createdAt: now, updatedAt: now, createdBy: S.me };
+    promised: addDays(today(), tat), stage: 'Pickup in transit', inbound: 'Pending', inScan: {}, pickupId: p._id, pickupNo: p.no || '', pickedAt: now, gps: gps || null, pickedBy: S.me, pickedByName: S.name,
+    events: [{ s: 'Booked', t: num(p.labelledAt) || now, n: 'LR created in SN Pickup' }, { s: 'Picked up', t: now, n: N + ' boxes scanned by ' + S.name }, { s: 'Pickup in transit', t: now + 1, n: 'On the way to the hub' }], createdAt: now, updatedAt: now, createdBy: S.me });
   try {
     const b = fs.batch(); b.set(fs.collection('shipments').doc('LR-' + p.lr), ship);
     b.set(fs.collection('pickups').doc(p._id), { hht: 'Completed', stage: 'In transit', pickedAt: now, gps: gps || null, shipment: 'LR-' + p.lr, inbound: 'Pending', updatedAt: now, events: (p.events || []).concat([{ s: 'Picked up', t: now, n: 'LR ' + p.lr + ' · ' + N + ' boxes' }]).slice(-60) }, { merge: true });

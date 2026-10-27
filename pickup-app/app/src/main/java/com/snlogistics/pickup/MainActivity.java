@@ -38,7 +38,10 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
-        s.setCacheMode(WebSettings.LOAD_DEFAULT);
+        // online: always the newest screens; offline: the saved copy
+        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        android.net.NetworkInfo ni = cm != null ? cm.getActiveNetworkInfo() : null;
+        s.setCacheMode(ni != null && ni.isConnected() ? WebSettings.LOAD_NO_CACHE : WebSettings.LOAD_CACHE_ELSE_NETWORK);
         s.setUserAgentString(s.getUserAgentString() + " SNPickup/1.0");
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
