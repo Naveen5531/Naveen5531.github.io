@@ -191,15 +191,21 @@
   const usedMails = async () => new Set((await fs.collection('users').get()).docs.map(d => d.data().mail).filter(Boolean));
   window.MOVANA_FB = {
     domain: DOMAIN, toEmail, toUser, mailDomain: MAIL_DOMAIN, mailBase,
-    /** Give every login except super admins an SN Mail ID (admins and HR only – others are refused by the rules). Punch employees first, so they get the plain name. */
+    /** Give every login an SN Mail ID (run by admins and HR – others are refused by the rules). One person with two logins (Punch + portal/Gmail, same name) shares one ID. */
     async assignMailIds() {
-      const q = await fs.collection('users').get(), U = q.docs.map(d => Object.assign({ id: d.id }, d.data())), used = new Set(U.map(u => u.mail).filter(Boolean));
-      let pe = new Set(); try { pe = new Set((await fs.collection('punch_emp').get()).docs.map(d => d.id)); } catch (e) {}
-      // super admins (and the owner) do not get an SN Mail ID
-      const sup = new Set(); try { const o = await fs.doc('settings/owner').get(); if (o.exists) sup.add(o.data().uid); (await fs.collection('members').get()).docs.forEach(d => { const m = d.data(); if ([m.role].concat(m.roles || []).includes('superadmin')) sup.add(d.id); }); } catch (e) { return 0; }
-      for (const u of U.filter(x => x.mail && sup.has(x.id))) { const b = Object.assign({}, u); delete b.id; delete b.mail; try { await fs.doc('users/' + u.id).set(b); } catch (e) {} }
-      const todo = U.filter(u => !u.mail && u.name && !sup.has(u.id)).sort((a, b) => (pe.has(b.id) ? 1 : 0) - (pe.has(a.id) ? 1 : 0) || (+a.createdAt || 0) - (+b.createdAt || 0));
-      let n = 0; for (const u of todo) { const m = freeMail(u.name, used); try { await fs.doc('users/' + u.id).update({ mail: m }); profCache[u.id] = Object.assign({}, profCache[u.id], { mail: m }); n++; } catch (e) { return n; } } return n;
+      const q = await fs.collection('users').get(), U = q.docs.map(d => Object.assign({ id: d.id }, d.data()));
+      let pe = new Map(); try { (await fs.collection('punch_emp').get()).docs.forEach(d => pe.set(d.id, d.data())); } catch (e) {}
+      const nm = v => String(v || '').toLowerCase().replace(/\s*\(@[^)]*\)\s*$/, '').replace(/\s+/g, ' ').trim();
+      const want = {}, used = new Set();
+      // 1) Punch logins: each is one person and keeps (or gets) its own address
+      U.filter(u => pe.has(u.id) && u.name).sort((a, b) => (+a.createdAt || 0) - (+b.createdAt || 0)).forEach(u => { if (u.mail && !used.has(u.mail)) { want[u.id] = u.mail; used.add(u.mail); } });
+      U.filter(u => pe.has(u.id) && u.name && !want[u.id]).forEach(u => { want[u.id] = freeMail(u.name, used); });
+      // 2) other logins (portal, Gmail, admins): the same person as exactly one Punch login (same name) shares that address; otherwise their own
+      U.filter(u => !pe.has(u.id) && u.name).sort((a, b) => (+a.createdAt || 0) - (+b.createdAt || 0)).forEach(u => {
+        const twins = U.filter(x => pe.has(x.id) && nm(x.name) === nm(u.name));
+        if (twins.length === 1) { want[u.id] = want[twins[0].id]; return; }
+        if (u.mail && !used.has(u.mail)) { want[u.id] = u.mail; used.add(u.mail); } else want[u.id] = freeMail(u.name, used); });
+      let n = 0; for (const u of U) { if (!want[u.id] || want[u.id] === u.mail) continue; try { await fs.doc('users/' + u.id).update({ mail: want[u.id] }); profCache[u.id] = Object.assign({}, profCache[u.id], { mail: want[u.id] }); n++; } catch (e) { return n; } } return n;
     },
     async createStaff(name, username, password) {
       // a second Firebase app creates the login without signing the admin out

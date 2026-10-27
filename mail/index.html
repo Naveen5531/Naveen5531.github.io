@@ -95,7 +95,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <div class="menu" id="menu" role="menu" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="Mail folders"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <div id="cmpHost"></div>
-<script src="../portal/fb.js?v=20261027b"></script>
+<script src="../portal/fb.js?v=20261027c"></script>
 <script>
 (async function () {
 'use strict';
@@ -125,11 +125,21 @@ fs.collection('punch_emp').onSnapshot(s => { S.emps = s.docs.map(d => Object.ass
 
 const nameOf = uid => uid === ME ? 'me' : ((S.users.find(u => u._id === uid) || {}).name || (S.emps.find(e => e._id === uid) || {}).name || 'Someone');
 const mailOf = uid => (S.users.find(u => u._id === uid) || {}).mail || '';
-const people = () => S.users.filter(u => u.name).map(u => { const e = S.emps.find(x => x._id === u._id) || {}; return { uid: u._id, name: u.name, mail: u.mail || '', punch: !!e.name, sub: [u.mail || 'no SN Mail ID', e.name ? 'Punch ' + (e.eid || '') : 'portal login ' + String(u.username || '').replace(/@staff\.movana\.app$/, ''), e.desg].filter(Boolean).join(' · ') }; }).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1);
+/** Mailboxes: one per SN Mail ID. A person with two logins shares one ID, so mail to it reaches both logins. key = the address (or uid:<id> if none yet). */
+const keyOf = uid => mailOf(uid) || 'uid:' + uid;
+const uidsOf = key => key.startsWith('uid:') ? [key.slice(4)] : S.users.filter(u => lc(u.mail) === lc(key)).map(u => u._id);
+const MY = () => new Set(uidsOf(keyOf(ME)).concat([ME]));
+const people = () => { const by = {}; S.users.filter(u => u.name).forEach(u => { const k = keyOf(u._id), e = S.emps.find(x => x._id === u._id) || {}, b = by[k] = by[k] || { key: k, mail: u.mail || '', uids: [], name: u.name, punch: false, eid: '', desg: '' };
+    b.uids.push(u._id); if (e.name) { b.punch = true; b.name = u.name; b.eid = e.eid || ''; b.desg = e.desg || ''; } });
+  return Object.values(by).map(b => Object.assign(b, { sub: [b.mail || 'no SN Mail ID yet', b.eid, b.desg].filter(Boolean).join(' · ') })).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1); };
+/** Recipients of a message, one per mailbox: "me" for my own address, otherwise Name <address>. */
+const whoList = (m, f, full_) => { const keys = m[f + 'Mail'] && m[f + 'Mail'].length ? m[f + 'Mail'] : [...new Set((m[f] || []).map(keyOf))], me = keyOf(ME);
+  return keys.map(k => lc(k) === lc(me) ? 'me' : boxName(k) + (full_ && !k.startsWith('uid:') ? ' <' + k + '>' : '')).join(', '); };
+const boxName = key => { const p = people().find(x => x.key === key); return p ? p.name : nameOf(key.replace(/^uid:/, '')); };
 const st = m => (m.st || {})[ME] || {};
 const all = () => Object.values(S.msgs);
-const inInbox = m => (m.rcpt || []).includes(ME) && !st(m).t, inSent = m => m.from === ME && !st(m).t;
-const unread = m => (m.rcpt || []).includes(ME) && m.from !== ME && !st(m).r && !st(m).t;
+const inInbox = m => (m.rcpt || []).includes(ME) && !MY().has(m.from) && !st(m).t, inSent = m => MY().has(m.from) && !st(m).t;
+const unread = m => (m.rcpt || []).includes(ME) && !MY().has(m.from) && !st(m).r && !st(m).t;
 /** Conversations: messages grouped by thread, newest first. */
 function threads(filter) {
   const by = {}; all().forEach(m => { (by[m.thread || m._id] = by[m.thread || m._id] || []).push(m); });
@@ -152,8 +162,8 @@ function navHtml() {
 function listHtml() {
   const f = FOLD.find(x => x[0] === S.folder) || FOLD[0], T = threads(f[3]);
   return '<div class="ph"><div><h1>' + esc(f[1]) + '</h1><p>' + (S.q ? 'Search: “' + esc(S.q) + '” · ' : '') + T.length + ' conversation' + (T.length === 1 ? '' : 's') + '</p></div></div>' +
-    (T.length ? '<div class="ml">' + T.map(t => { const last = t.L[t.L.length - 1], un = t.L.some(unread), stz = t.L.some(m => st(m).s), others = [...new Set(t.L.map(m => m.from === ME ? 'me' : m.fromName || nameOf(m.from)))];
-      const who = S.folder === 'sent' ? 'To: ' + Object.values(last.toNames || {}).join(', ') : others.slice(0, 3).join(', ');
+    (T.length ? '<div class="ml">' + T.map(t => { const last = t.L[t.L.length - 1], un = t.L.some(unread), stz = t.L.some(m => st(m).s), others = [...new Set(t.L.map(m => MY().has(m.from) ? 'me' : m.fromName || nameOf(m.from)))];
+      const who = S.folder === 'sent' ? 'To: ' + whoList(last, 'to') : others.slice(0, 3).join(', ');
       return '<div class="mr' + (un ? ' un' : '') + '" role="button" tabindex="0" data-open="' + esc(t.id) + '"><button class="star' + (stz ? ' on' : '') + '" type="button" data-star="' + esc(t.id) + '" aria-label="Star">' + svg('star') + '</button><span class="fr">' + esc(who) + (t.L.length > 1 ? '<span class="cnt">' + t.L.length + '</span>' : '') + '</span><span class="tx"><span class="sj">' + esc(last.subject || '(no subject)') + '</span> – ' + esc(String(last.body || '').replace(/\s+/g, ' ').slice(0, 120)) + '</span><span class="dt">' + when(last.at) + '</span></div>'; }).join('') + '</div>'
     : '<div class="empty">' + (S.folder === 'inbox' ? 'No mail yet. Press Compose to write to a colleague.' : 'Nothing here.') + '</div>');
 }
@@ -162,7 +172,7 @@ function threadHtml() {
   const L = T.L, last = L[L.length - 1], trashed = L.every(m => st(m).t), stz = L.some(m => st(m).s);
   return '<div class="row" style="margin-bottom:12px;flex-wrap:wrap"><button class="btn" type="button" data-a="back">' + svg('back') + ' Back</button><button class="btn" type="button" data-a="t-star">' + (stz ? 'Unstar' : 'Star') + '</button><button class="btn" type="button" data-a="t-unread">Mark unread</button><button class="btn' + (trashed ? '' : ' d') + '" type="button" data-a="t-trash">' + (trashed ? 'Restore' : 'Move to trash') + '</button></div>' +
     '<h1 style="font-family:var(--disp);margin:0 0 12px">' + esc(last.subject || '(no subject)') + '</h1>' +
-    L.map(m => '<article class="msg"><div class="mh"><span class="av">' + esc(ini(m.fromName || nameOf(m.from))) + '</span><div class="g1"><b>' + esc(m.from === ME ? S.myName + ' (me)' : m.fromName || nameOf(m.from)) + '</b>' + (mailOf(m.from) ? ' <span class="to">&lt;' + esc(mailOf(m.from)) + '&gt;</span>' : '') + '<div class="to">to ' + esc(Object.keys(m.toNames || {}).filter(u => (m.to || []).includes(u)).map(u => u === ME ? 'me' : m.toNames[u] + (mailOf(u) ? ' <' + mailOf(u) + '>' : '')).join(', ')) + ((m.cc || []).length ? ' · cc ' + esc((m.cc || []).map(u => u === ME ? 'me' : (m.toNames || {})[u] || nameOf(u)).join(', ')) : '') + '</div></div><span class="to">' + esc(full(m.at)) + '</span></div><div class="bd">' + esc(m.body || '') + '</div></article>').join('') +
+    L.map(m => '<article class="msg"><div class="mh"><span class="av">' + esc(ini(m.fromName || nameOf(m.from))) + '</span><div class="g1"><b>' + esc(MY().has(m.from) ? (m.fromName || S.myName) + ' (me)' : m.fromName || nameOf(m.from)) + '</b>' + ((m.fromMail || mailOf(m.from)) ? ' <span class="to">&lt;' + esc(m.fromMail || mailOf(m.from)) + '&gt;</span>' : '') + '<div class="to">to ' + esc(whoList(m, 'to', true)) + ((m.cc || []).length ? ' · cc ' + esc(whoList(m, 'cc', true)) : '') + '</div></div><span class="to">' + esc(full(m.at)) + '</span></div><div class="bd">' + esc(m.body || '') + '</div></article>').join('') +
     '<div class="row"><button class="btn p" type="button" data-a="reply">' + svg('reply') + ' Reply</button>' + ((last.rcpt || []).length > 1 ? '<button class="btn" type="button" data-a="replyall">' + svg('reply') + ' Reply all</button>' : '') + '<button class="btn" type="button" data-a="fwd">' + svg('fwd') + ' Forward</button></div>';
 }
 function render() {
@@ -177,7 +187,7 @@ addEventListener('hashchange', () => { document.body.classList.remove('navopen')
 const draftKey = 'mail.draft.' + ME;
 function openCmp(o) { S.cmp = Object.assign({ to: [], cc: [], subject: '', body: '', thread: null, showCc: false }, o || {}); if (!o) { try { const d = JSON.parse(localStorage.getItem(draftKey) || 'null'); if (d) Object.assign(S.cmp, d); } catch (e) {} } renderCmp(); setTimeout(() => { const f = S.cmp && (S.cmp.to.length ? $('#c-body') : $('#c-to-in')); if (f) f.focus(); }, 30); }
 function keepDraft() { if (!S.cmp || S.cmp.thread) return; try { localStorage.setItem(draftKey, JSON.stringify({ to: S.cmp.to, cc: S.cmp.cc, subject: S.cmp.subject, body: S.cmp.body })); } catch (e) {} }
-function chips(k) { return S.cmp[k].map(u => '<span class="chip" title="' + esc(mailOf(u)) + '">' + esc(nameOf(u)) + (mailOf(u) ? ' <span class="mute small">' + esc(mailOf(u)) + '</span>' : '') + '<button type="button" data-rm="' + k + '|' + esc(u) + '" aria-label="Remove">×</button></span>').join(''); }
+function chips(k) { return S.cmp[k].map(u => '<span class="chip" title="' + esc(u) + '">' + esc(boxName(u)) + (u.startsWith('uid:') ? '' : ' <span class="mute small">' + esc(u) + '</span>') + '<button type="button" data-rm="' + k + '|' + esc(u) + '" aria-label="Remove">×</button></span>').join(''); }
 function renderCmp() { const host = $('#cmpHost'); if (!S.cmp) { host.innerHTML = ''; return; } const c = S.cmp;
   if (host.firstChild) { // keep typing in place: refresh only chips
     $('#c-to-chips').innerHTML = chips('to'); if ($('#c-cc-chips')) $('#c-cc-chips').innerHTML = chips('cc'); return; }
@@ -187,18 +197,21 @@ function renderCmp() { const host = $('#cmpHost'); if (!S.cmp) { host.innerHTML 
     '<div class="cf"><span>Subject</span><input id="c-sub" value="' + esc(c.subject) + '"></div><textarea id="c-body" aria-label="Message">' + esc(c.body) + '</textarea>' +
     '<div class="cb"><button class="btn p" type="button" data-a="c-send">' + svg('sent') + ' Send</button><span class="mute small" style="margin-left:auto">Only people you send to can read it.</span><button class="btn d s" type="button" data-a="c-discard">Discard</button></div></section>'; }
 function suggest(k) { const inp = $('#c-' + k + '-in'), box = $('#sug-' + k), q = lc(inp.value.trim()); if (!q) { box.hidden = true; return; }
-  const L = people().filter(p => p.uid !== ME && !S.cmp.to.includes(p.uid) && !S.cmp.cc.includes(p.uid) && lc(p.name + ' ' + p.sub + ' ' + p.mail).includes(q)).sort((a, b) => (b.punch ? 1 : 0) - (a.punch ? 1 : 0)).slice(0, 8);
-  box.innerHTML = L.length ? L.map((p, i) => '<button type="button" class="' + (i ? '' : 'on') + '" data-pick="' + k + '|' + esc(p.uid) + '"><span class="av">' + esc(ini(p.name)) + '</span><span><b>' + esc(p.name) + '</b><br><span class="mute small">' + esc(p.sub) + '</span></span></button>').join('') : '<div class="empty" style="padding:10px">No one matches.</div>'; box.hidden = false; }
+  const L = people().filter(p => p.key !== keyOf(ME) && !S.cmp.to.includes(p.key) && !S.cmp.cc.includes(p.key) && lc(p.name + ' ' + p.sub + ' ' + p.mail).includes(q)).slice(0, 8);
+  box.innerHTML = L.length ? L.map((p, i) => '<button type="button" class="' + (i ? '' : 'on') + '" data-pick="' + k + '|' + esc(p.key) + '"><span class="av">' + esc(ini(p.name)) + '</span><span><b>' + esc(p.name) + '</b><br><span class="mute small">' + esc(p.sub) + '</span></span></button>').join('') : '<div class="empty" style="padding:10px">No one matches.</div>'; box.hidden = false; }
 async function send() { const c = S.cmp; c.subject = $('#c-sub').value.trim(); c.body = $('#c-body').value;
   if (!c.to.length) { toast('Add at least one person in To.'); return; } if (!c.subject && !c.body.trim()) { toast('Write a subject or a message.'); return; }
-  const rcpt = [...new Set(c.to.concat(c.cc))], toNames = {}; rcpt.forEach(u => toNames[u] = nameOf(u)); const now = Date.now(), ref = fs.collection('mail').doc();
-  const m = { from: ME, fromName: S.myName, to: c.to, cc: c.cc, rcpt, toNames, subject: c.subject || '(no subject)', body: c.body, at: now, thread: c.thread || ref.id, st: { [ME]: { r: 1 } } };
+  const my = MY(), U = k => uidsOf(k).filter(u => !my.has(u)), to = [...new Set(c.to.flatMap(U))], cc = [...new Set(c.cc.flatMap(U))].filter(u => !to.includes(u));
+  // my other login (same SN Mail ID) also keeps a copy, so sent mail shows on either login
+  const twin = [...my].filter(u => u !== ME), rcpt = [...new Set(to.concat(cc, twin))], toNames = {}; rcpt.forEach(u => toNames[u] = nameOf(u));
+  if (!to.length) { toast('Those addresses have no login yet.'); return; } const now = Date.now(), ref = fs.collection('mail').doc();
+  const m = { from: ME, fromName: S.myName, fromMail: mailOf(ME), to, cc, toMail: c.to.filter(k => !k.startsWith('uid:')), ccMail: c.cc.filter(k => !k.startsWith('uid:')), rcpt, toNames, subject: c.subject || '(no subject)', body: c.body, at: now, thread: c.thread || ref.id, st: { [ME]: { r: 1 } } };
   $('[data-a="c-send"]').disabled = true; try { await ref.set(m); } catch (e) { toast('Not sent (' + (e.code || 'error') + ').'); $('[data-a="c-send"]').disabled = false; return; }
   if (!c.thread) try { localStorage.removeItem(draftKey); } catch (e) {} S.cmp = null; renderCmp(); toast('Sent'); }
 function replyTo(all_, fwd) { const T = threads(() => true).find(t => t.id === S.th); if (!T) return; const last = T.L[T.L.length - 1], re = s => /^(re|fwd?):/i.test(s) ? s : (fwd ? 'Fwd: ' : 'Re: ') + s;
   const quote = '\n\n— On ' + full(last.at) + ', ' + (last.fromName || nameOf(last.from)) + ' wrote:\n' + String(last.body || '').split('\n').map(l => '> ' + l).join('\n');
   if (fwd) { openCmp({ subject: re(last.subject || ''), body: '\n\n---------- Forwarded message ----------\nFrom: ' + (last.fromName || nameOf(last.from)) + '\nDate: ' + full(last.at) + '\nSubject: ' + (last.subject || '') + '\n\n' + (last.body || '') }); return; }
-  const to = last.from === ME ? last.to.slice() : [last.from], cc = all_ ? last.rcpt.filter(u => u !== ME && !to.includes(u)) : [];
+  const my = MY(), mine = my.has(last.from), to = [...new Set((mine ? (last.to || []) : [last.from]).map(keyOf))].filter(k => k !== keyOf(ME)), cc = all_ ? [...new Set((last.rcpt || []).filter(u => !my.has(u)).map(keyOf))].filter(k => !to.includes(k)) : [];
   openCmp({ to, cc, subject: re(last.subject || ''), body: quote, thread: T.id }); setTimeout(() => { const b = $('#c-body'); if (b) { b.focus(); b.setSelectionRange(0, 0); } }, 40); }
 
 /* ----- events ----- */
@@ -230,7 +243,7 @@ document.addEventListener('keydown', ev => { const t = ev.target;
   if (t.id === 'c-to-in' || t.id === 'c-cc-in') { const k = t.id === 'c-to-in' ? 'to' : 'cc', box = $('#sug-' + k), bs = [...box.querySelectorAll('[data-pick]')], i = bs.findIndex(b => b.classList.contains('on'));
     if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && bs.length) { ev.preventDefault(); bs.forEach(b => b.classList.remove('on')); bs[(i + (ev.key === 'ArrowDown' ? 1 : -1) + bs.length) % bs.length].classList.add('on'); return; }
     if ((ev.key === 'Enter' || ev.key === ',') && !box.hidden && bs.length) { ev.preventDefault(); (bs[i] || bs[0]).click(); return; }
-    if ((ev.key === 'Enter' || ev.key === ',') && t.value.includes('@')) { ev.preventDefault(); const p = people().find(x => lc(x.mail) === lc(t.value.trim())); if (p && p.uid !== ME) { if (!S.cmp[k].includes(p.uid)) S.cmp[k].push(p.uid); t.value = ''; box.hidden = true; renderCmp(); keepDraft(); } else toast('No one has the address ' + t.value.trim() + '.'); return; }
+    if ((ev.key === 'Enter' || ev.key === ',') && t.value.includes('@')) { ev.preventDefault(); const p = people().find(x => lc(x.mail) === lc(t.value.trim())); if (p && p.key !== keyOf(ME)) { if (!S.cmp[k].includes(p.key)) S.cmp[k].push(p.key); t.value = ''; box.hidden = true; renderCmp(); keepDraft(); } else toast('No one has the address ' + t.value.trim() + '.'); return; }
     if (ev.key === 'Backspace' && !t.value && S.cmp[k].length) { S.cmp[k].pop(); renderCmp(); return; } }
   if (ev.key === 'Escape') { $('#menu').hidden = true; document.body.classList.remove('navopen'); }
   if ((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter' && S.cmp) { ev.preventDefault(); send(); } });

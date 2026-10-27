@@ -86,7 +86,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 </header>
 <div class="menu" id="menu" role="menu" hidden></div><div class="notif" id="notif" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="People"></nav><main id="main"><div class="empty">Loading…</div></main></div>
-<script src="../portal/fb.js?v=20261027b"></script>
+<script src="../portal/fb.js?v=20261027c"></script>
 <script src="../portal/offer.js?v=4"></script>
 <script src="../portal/payslip.js?v=2"></script>
 <script>
@@ -222,9 +222,10 @@ const credText = x => { const e = D.emp.find(o => o._id === x.uid) || {}, base =
     '\nHow to start\n1. Install the Punch app: ' + base + 'Punch.apk\n2. Sign in with your Punch ID and password.\n3. Set your own password: ' + base + 'hr/#/settings\n4. SN People (leave, payslips, HR tickets): ' + base + 'hr/\n5. SN Mail (internal mail): ' + base + 'mail/\n\nThe same login works in all of them. Please do not share your password.\n\nRegards,\nHR – SN Logistics'; };
 /** Mail the welcome message with the login details to each new employee's SN Mail (and their reporting manager if asked). */
 async function sendCreds(L, cc) { let n = 0;
-  for (const c of L) { const e = D.emp.find(o => o._id === c.uid) || {}, m = cc && e.mgr ? D.emp.find(o => !o.noPunch && normN(o.name) === normN(e.mgr)) : null, to = [c.uid], ccL = m && m._id !== c.uid && m._id !== S.uid ? [m._id] : [];
+  for (const c of L) { const e = D.emp.find(o => o._id === c.uid) || {}, m = cc && e.mgr ? D.emp.find(o => !o.noPunch && normN(o.name) === normN(e.mgr)) : null, box = id => { const ml = mailOf(id); return ml ? D.users.filter(u => u.mail === ml).map(u => u._id).concat([id]) : [id]; },
+      to = [...new Set(box(c.uid))], ccL = m && m._id !== c.uid && m._id !== S.uid ? [...new Set(box(m._id))].filter(u => !to.includes(u) && u !== S.uid) : [];
     const rcpt = to.concat(ccL), toNames = {}; rcpt.forEach(u => toNames[u] = u === c.uid ? c.name : m.name); const ref = fs.collection('mail').doc();
-    try { await ref.set({ from: S.uid, fromName: S.me.name, to, cc: ccL, rcpt, toNames, subject: 'Welcome to SN Logistics – your login details', body: credText(Object.assign({}, c, { mail: c.mail || mailOf(c.uid) })), at: Date.now(), thread: ref.id, st: { [S.uid]: { r: 1 } } }); c.sent = 1; n++; }
+    try { await ref.set({ from: S.uid, fromName: S.me.name, fromMail: mailOf(S.uid), toMail: [mailOf(c.uid)].filter(Boolean), ccMail: m && mailOf(m._id) ? [mailOf(m._id)] : [], to, cc: ccL, rcpt, toNames, subject: 'Welcome to SN Logistics – your login details', body: credText(Object.assign({}, c, { mail: c.mail || mailOf(c.uid) })), at: Date.now(), thread: ref.id, st: { [S.uid]: { r: 1 } } }); c.sent = 1; n++; }
     catch (x) { toast('Could not mail ' + c.name + ' (' + (x.code || 'error') + ').'); } }
   if (n) toast('Login details sent to ' + n + ' employee' + (n > 1 ? 's' : '') + ' in SN Mail' + (cc ? ' (manager copied)' : '')); return n; }
 /** Automatic Punch IDs: anyone in the employee list without a Punch login gets one (Punch ID = employee ID, password Welcome@123),
