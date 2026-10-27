@@ -1,4 +1,4 @@
-/* Movana – payslip: the same A4 salary slip as the Punch app (layout, letterhead, wording and print), built from Punch data. */
+/* SN Logistics – payslip: the same A4 salary slip as the Punch app (layout, letterhead, wording and print), built from Punch data. */
 (function () {
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const f2 = v => (+v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><title>Movana People</title><link rel="icon" href="../portal/icon.svg">
+<meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><title>SN People</title><link rel="icon" href="../brand/sn-icon-64.png"><link rel="apple-touch-icon" href="../brand/sn-apple-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&display=swap">
 <style>
-/* Movana People – HR for Movana Logistics. Same look as the Punch app: light grey canvas, white rounded cards, green for "in", orange for "out". */
+/* SN People – HR for SN Logistics. Same look as the Punch app: light grey canvas, white rounded cards, green for "in", orange for "out". */
 :root{--bg:#f2f3f7;--card:#fff;--ink:#101828;--ink2:#344054;--mute:#6b7280;--line:#e9ebf1;--soft:#f3f4f8;--in:#0c9b76;--in2:#25cf9f;--out:#f26a1b;--bad:#d92d20;--warn:#b54708;--info:#3557b5;
   --sh:0 1px 2px rgba(16,24,40,.05),0 8px 24px -12px rgba(16,24,40,.12);--r:20px;--disp:"Bricolage Grotesque",-apple-system,system-ui,sans-serif;--body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#090b0f;--card:#15181e;--ink:#f3f4f6;--ink2:#d0d5dd;--mute:#9aa1ad;--line:#252a33;--soft:#1d2129;--in:#2fd1a0;--in2:#6ff0c8;--out:#ff8a4c;--sh:0 1px 2px rgba(0,0,0,.4);color-scheme:dark}}
@@ -64,8 +64,11 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 @media (max-width:560px){.brand b{display:none}#whoName{display:none}}
 @media print{.top,.nav,.noprint{display:none!important}.shell{display:block}main{padding:0}.card{box-shadow:none;border:1px solid #ddd}}
 .askbg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:grid;place-items:center;z-index:100;padding:16px}.askbg[hidden]{display:none}.askbox{background:var(--card);border-radius:20px;padding:22px;max-width:420px;width:100%;box-shadow:0 30px 80px -20px rgba(0,0,0,.5)}.askbox p{margin:10px 0 12px;font-weight:600;line-height:1.5}.askic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--in) 14%,transparent);color:var(--in)}.askic svg{width:22px;height:22px}
+.modesw{display:flex;background:var(--soft);border-radius:999px;padding:3px;gap:2px}.modesw[hidden]{display:none}.modesw button{border:0;background:none;border-radius:999px;padding:6px 12px;font:700 .8rem var(--body);color:var(--mute);cursor:pointer}.modesw button[aria-pressed="true"]{background:var(--card);color:var(--in);box-shadow:0 1px 4px rgba(0,0,0,.12)}@media (max-width:560px){.modesw button{padding:5px 8px;font-size:.72rem}}
+.notif{position:absolute;right:60px;top:58px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 50px -20px rgba(0,0,0,.35);padding:6px;width:min(320px,92vw);z-index:30;display:grid;gap:2px}.notif[hidden]{display:none}.notif .h{padding:10px 12px;font-weight:800;border-bottom:1px solid var(--line);margin-bottom:4px}.notif a{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;text-decoration:none;color:var(--ink);font-weight:600}.notif a:hover{background:var(--soft)}.notif a svg{width:18px;height:18px;flex:none;color:var(--in)}.notif a .n{margin-left:auto;background:var(--bad,#d33);color:#fff;border-radius:99px;padding:0 7px;font-size:.72rem}.notif .e{padding:14px 12px;color:var(--mute)}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}.pc{background:var(--card);border-radius:14px;padding:12px;box-shadow:var(--sh);border-left:4px solid var(--line)}.pc.in{border-color:var(--in)}.pc.none{border-color:var(--warn,#e8a33d)}.pc.out{border-color:#64748b}.pc.off{border-color:#a78bfa}.pc b{display:block}.pc .st{font-weight:700;margin-top:4px}.pc .sb{font-size:.8rem;color:var(--mute)}
 </style>
-<script>window.MOVANA_APP_TITLE = 'Movana People'; window.MOVANA_APP_SUB = 'HR for Movana Logistics · same login as the staff portal and Punch';</script>
+<script>window.MOVANA_APP_TITLE = 'SN People'; window.MOVANA_APP_SUB = 'HR for SN Logistics · same login as the staff portal and Punch';</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -73,12 +76,14 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 </head><body>
 <header class="top">
   <button class="ib burger" type="button" id="burger" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  <a class="brand" href="#/home"><span class="mk">ML</span><span><b>Movana People</b><small>HR · Movana Logistics</small></span></a>
+  <a class="brand" href="#/home"><img src="../brand/sn-icon-64.png" alt="SN Logistics" width="38" height="38" style="width:38px;height:38px;border-radius:11px;display:block;flex:none;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)"><span><b>SN People</b><small>HR · SN Logistics</small></span></a>
   <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search people by name or employee ID" autocomplete="off" aria-label="Search people"><div class="hits" id="hits" hidden></div></div>
+  <div class="modesw" id="modesw" hidden role="group" aria-label="View"><button type="button" data-mode="emp">Employee</button><button type="button" data-mode="admin">Admin</button></div>
+  <a class="ib" href="../mail/" id="mailBtn" aria-label="SN Mail" style="position:relative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span class="dot" id="mailN" hidden></span></a>
   <button class="ib" type="button" id="bell" aria-label="Things waiting for you"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot" id="bellN" hidden></span></button>
   <button class="who" type="button" id="who" aria-haspopup="menu" aria-label="Profile menu"><span class="av" id="whoAv">·</span><span id="whoName"></span></button>
 </header>
-<div class="menu" id="menu" role="menu" hidden></div>
+<div class="menu" id="menu" role="menu" hidden></div><div class="notif" id="notif" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="People"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <script src="../portal/fb.js?v=20261026q"></script>
 <script src="../portal/offer.js?v=4"></script>
@@ -116,7 +121,7 @@ function ask(msg, o) { o = o || {}; return new Promise(res => {
   document.getElementById('askNo').onclick = () => done(o.input ? null : false); document.getElementById('askOk').onclick = () => done(o.input ? inp.value.trim() : true);
   m.onclick = e => { if (e.target === m) done(o.input ? null : false); }; }); }
 let toastT; const toast = m => { let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 3000); };
-const I = { home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+const I = { mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>', home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   cal: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>', pay: '<rect x="2" y="6" width="20" height="13" rx="3"/><path d="M2 11h20M6 15h4"/>', req: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
   exp: '<path d="M4 4h16v16l-3-2-3 2-3-2-3 2-3-2-1 1z"/><path d="M8 9h8M8 13h5"/>', goal: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>', learn: '<path d="M2 8l10-5 10 5-10 5z"/><path d="M6 10v5c3 2 9 2 12 0v-5"/>',
   doc: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h6"/>', help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/>', exit: '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>',
@@ -133,8 +138,9 @@ const HR_APPR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_tl', '
 const SAL_V = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
 const ADMIN = ['superadmin', 'admin_head'];
 const SAL_E = ['superadmin', 'admin_head', 'hr_head', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
-const S = { uid: null, self: null, me: {}, roles: [], d: {}, open: {}, q: {}, ym: ymNow(), f: {} };
+const S = { mode: 'emp', uid: null, self: null, me: {}, roles: [], d: {}, open: {}, q: {}, ym: ymNow(), f: {} };
 const has = list => S.roles.some(r => list.includes(r));
+const canAdminView = () => has(HR_ALL) || has(ADMIN) || has(SAL_V);
 const isHR = () => has(HR_ALL), canAppr = () => has(HR_APPR), canSal = () => has(SAL_V), canSalE = () => has(SAL_E), isAdmin = () => has(ADMIN);
 
 /* ================= sign in (shared with the portal) ================= */
@@ -145,6 +151,9 @@ S.uid = U.uid; S.self = U.uid;
   const md = m && m.exists ? m.data() : null, owner = o && o.exists && o.data().uid === U.uid; S.ownerUid = o && o.exists ? o.data().uid : '';
   S.roles = owner ? ['superadmin'] : (md && md.status !== 'Suspended' ? [md.role].concat(md.roles || []).filter(Boolean) : ['none']);
   S.me = { name: (u && u.exists && u.data().name) || String(U.email || '').split('@')[0], email: U.email }; }
+try { S.mode = localStorage.getItem('hr.mode') === 'admin' && canAdminView() ? 'admin' : 'emp'; } catch (e) {}
+let SEEN = {}; try { SEEN = JSON.parse(localStorage.getItem('hr.seen.' + S.uid) || '{}') || {}; } catch (e) {}
+const markSeen = id => { SEEN[id] = Date.now(); try { localStorage.setItem('hr.seen.' + S.uid, JSON.stringify(SEEN)); } catch (e) {} };
 $('#whoAv').textContent = ini(S.me.name); $('#whoName').textContent = S.me.name;
 
 /* ================= live data ================= */
@@ -158,6 +167,7 @@ if (isHR()) { live('members', col('members')); live('docs', col('hr_docs')); liv
   ['enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => live(k, col({ enrol: 'hr_enrol', goals: 'hr_goals', reviews: 'hr_reviews', exp: 'hr_expenses', exits: 'hr_exits', help: 'hr_help' }[k]))); }
 else { live('docs', mineQ('hr_docs')); live('att', mineQ('punch_att')); live('mark', mineQ('punch_mark')); live('req', mineQ('punch_req')); liveDoc('bal', fs.doc('punch_bal/' + S.uid));
   ['enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => live(k, mineQ({ enrol: 'hr_enrol', goals: 'hr_goals', reviews: 'hr_reviews', exp: 'hr_expenses', exits: 'hr_exits', help: 'hr_help' }[k]))); }
+fs.collection('mail').where('rcpt', 'array-contains', S.uid).onSnapshot(q => { const n = q.docs.filter(d => { const m = d.data(), x = (m.st || {})[S.uid] || {}; return m.from !== S.uid && !x.r && !x.t; }).length; const b = $('#mailN'); if (b) { b.hidden = !n; b.textContent = n; } }, () => {});
 if (canSal()) { live('pexp', col('punch_exp')); live('pay', col('punch_pay')); live('offer', col('punch_offer')); }
 else { liveDoc('pexp', fs.doc('punch_exp/' + S.uid)); liveDoc('pay', fs.doc('punch_pay/' + S.uid)); liveDoc('offer', fs.doc('punch_offer/' + S.uid)); }
 /** One list of people: every Punch employee, plus everyone onboarded in the portal (Employees) who has no Punch login yet.
@@ -250,7 +260,7 @@ function payslip(e, v, ym) {
   const hf = (v.hikes || []).filter(h => num(h.p) && h.f && ym >= h.f).reduce((f, h) => f * (1 + num(h.p) / 100), 1), amt = k => num(v[k]) * hf;
   const full = { b: amt('basicAmt'), h: amt('hraAmt'), c: amt('convAmt'), s: amt('splAmt') }, sal = full.b + full.h + full.c + full.s;
   const x = monthSum(e, ym), basis = v.basis || 'cal', dim = daysIn(ym), base = basis === 'cal' ? dim : basis === 'work' ? dim - x.wo : num(basis);
-  let pd = x.p + x.h / 2 + x.co + (v.leavePaid === false ? 0 : x.D.filter(d => /^Leave/.test(d.st) && !/LOP/.test(d.st)).length) + (v.holPaid === false ? 0 : x.hol) + (basis === 'cal' || basis === '30' ? x.wo : 0);
+  let pd = x.p + x.h / 2 + x.co + (v.leavePaid === false || v.leavePaid === 0 ? 0 : x.D.filter(d => /^Leave/.test(d.st) && !/LOP/.test(d.st)).length) + (v.holPaid === false || v.holPaid === 0 ? 0 : x.hol) + (basis === 'cal' || basis === '30' ? x.wo : 0);
   if (basis === '26' || basis === '30') pd = Math.min(pd, base);
   const k = base ? pd / base : 0, E = { basic: r2(full.b * k), hra: r2(full.h * k), conv: r2(full.c * k), spl: r2(full.s * k) }, gross = r2(E.basic + E.hra + E.conv + E.spl);
   const pf = v.pfMode === 'fix' ? num(v.pf) : Math.round(E.basic * num(v.pfPct == null ? 12 : v.pfPct) / 100), ded = { pf, pt: num(v.pt), vpf: num(v.vpf), esi: num(v.esi), oth: num(v.oth) };
@@ -264,16 +274,20 @@ const V = [];
 const add = (id, g, label, icon, render, ok, n) => V.push({ id, g, label, icon, render, ok: ok || (() => true), n });
 const ext = (g, label, icon, href, ok) => V.push({ id: null, g, label, icon, href, ok: ok || (() => true) });
 let route = '';
-function go(h) { location.hash = '#/' + h; }
+function go(h) { if (location.hash === '#/' + h) render(); else location.hash = '#/' + h; }
 addEventListener('hashchange', () => { document.body.classList.remove('navopen'); render(); window.scrollTo(0, 0); });
 let FOLD = {}; try { FOLD = JSON.parse(localStorage.getItem('hr.fold') || '{}') || {}; } catch (e) {}
+const EMP_G = ['Home', 'Me', 'Company'], sideOf = v => v.g === 'Apps' ? 'both' : EMP_G.includes(v.g) ? 'emp' : 'admin';
+const onSide = v => sideOf(v) === 'both' || sideOf(v) === S.mode;
+/** Badge: things that arrived after this page was last opened (opening the page clears it). n() returns [{at}] or a number. */
+const badge = v => { if (!v.n) return 0; const r = v.n(); return Array.isArray(r) ? r.filter(x => num(x.at) > num(SEEN[v.id])).length : num(r); };
 const folded = (g, vis) => FOLD[g] != null ? FOLD[g] : !vis.some(v => v.g === g && v.id === route) && g !== 'Home';
 function navHtml() {
-  const vis = V.filter(v => v.ok() && !v.hide); let g0 = '';
+  const vis = V.filter(v => v.ok() && !v.hide && onSide(v)); let g0 = '';
   const chev = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
   return vis.map(v => { const f = folded(v.g, vis); let gh = '';
-    if (v.g !== g0) { const gn = vis.filter(w => w.g === v.g).reduce((t, w) => t + (w.n ? w.n() : 0), 0); gh = '<button type="button" class="g" data-fold="' + esc(v.g) + '" aria-expanded="' + !f + '">' + esc(v.g) + (f && gn ? '<span class="gn">' + gn + '</span>' : '') + chev + '</button>'; }
-    g0 = v.g; if (f) return gh; const n = v.n ? v.n() : 0;
+    if (v.g !== g0) { const gn = vis.filter(w => w.g === v.g).reduce((t, w) => t + badge(w), 0); gh = '<button type="button" class="g" data-fold="' + esc(v.g) + '" aria-expanded="' + !f + '">' + esc(v.g) + (f && gn ? '<span class="gn">' + gn + '</span>' : '') + chev + '</button>'; }
+    g0 = v.g; if (f) return gh; const n = badge(v);
     return gh + (v.href ? '<a class="ext" href="' + esc(v.href) + '">' + svg(v.icon) + '<span>' + esc(v.label) + '</span></a>' : '<a href="#/' + v.id + '"' + (v.id === route ? ' aria-current="page"' : '') + '>' + svg(v.icon) + '<span>' + esc(v.label) + '</span>' + (n ? '<span class="n">' + n + '</span>' : '') + '</a>'); }).join('');
 }
 const ph = (t, sub, act) => '<div class="ph"><div><h1>' + esc(t) + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (act ? '<div class="act">' + act + '</div>' : '') + '</div>';
@@ -288,10 +302,9 @@ function vHome() {
   const e = meEmp(), ym = ymNow(), at = attDoc(S.self, ym), dd = today().slice(8), d = at && at.days && at.days[dd], open = at && at.open && iso(new Date(at.open.t)) === today() ? at.open : null, b = balOf(S.self), h = new Date().getHours();
   const st = open ? 'Checked in at ' + tm(open.t) : d && d.a ? 'Today ' + tm(d.a) + ' – ' + (d.b ? tm(d.b) : '…') + ' · ' + hm(d.ms) : 'Not checked in yet today';
   const pwNote = onDefaultPw() ? '<section class="card" style="margin-bottom:14px;border:2px solid var(--warn,#e8a33d)"><div class="row"><b>You are using the starting password.</b><span class="mute">Set your own – it is used for the Punch app too.</span><a class="btn s p" href="#/settings" style="margin-left:auto">Set password</a></div></section>' : '';
-  let x = pwNote + '<div class="grid g2"><section class="card hero"><div class="row" style="align-items:center;gap:14px"><span class="av lg" style="background:rgba(255,255,255,.2)">' + esc(ini(e.name)) + '</span><div><h1 style="color:#fff">Good ' + (h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening') + ', ' + esc(String(e.name || S.me.name).split(' ')[0]) + '</h1><p>' + esc([e.desg, e.eid].filter(Boolean).join(' · ') || 'Welcome to Movana People') + '</p></div></div>' +
+  let x = pwNote + '<div class="grid g2"><section class="card hero"><div class="row" style="align-items:center;gap:14px"><span class="av lg" style="background:rgba(255,255,255,.2)">' + esc(ini(e.name)) + '</span><div><h1 style="color:#fff">Good ' + (h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening') + ', ' + esc(String(e.name || S.me.name).split(' ')[0]) + '</h1><p>' + esc([e.desg, e.eid].filter(Boolean).join(' · ') || 'Welcome to SN People') + '</p></div></div>' +
     '<div class="tiles mt"><a class="t" href="#/attendance"><span>Today</span><b style="font-size:1rem">' + esc(st) + '</b></a>' + (b ? ['PL', 'SL', 'CL'].map(t => '<a class="t" href="#/leave"><span>' + { PL: 'Privilege', SL: 'Sick', CL: 'Casual' }[t] + ' leave</span><b>' + r2((b.lv || {})[t] ? b.lv[t].b : 0) + '</b></a>').join('') + '<a class="t" href="#/leave"><span>Comp off</span><b>' + r2((b.co || {}).b) + '</b></a>' : '<a class="t" href="#/leave"><span>Leave balance</span><b style="font-size:1rem">Open Punch once to load it</b></a>') + '</div></section>';
-  x += '<section class="card"><h2>Quick actions</h2><div class="qa">' + [['leave', 'cal', 'Apply leave'], ['requests', 'req', 'Attendance request'], ['payslips', 'pay', 'Payslips'], ['expenses', 'exp', 'Claim expense'], ['helpdesk', 'help', 'Ask HR'], ['documents', 'doc', 'My documents'], ['goals', 'goal', 'My goals'], ['learning', 'learn', 'Training']].map(([r, i, l]) => '<a href="#/' + r + '">' + svg(i) + l + '</a>').join('') + '</div></section></div>';
-  if (isHR()) { const P = pend(); x += '<section class="card mt"><h2>Waiting for HR <a class="more" href="#/approvals">Open approvals</a></h2><div class="tiles">' + [['Leave & attendance', P.req, 'approvals'], ['Expenses', P.exp, 'hr-expenses'], ['Helpdesk', P.help, 'hr-helpdesk'], ['Resignations', P.exits, 'hr-exits'], ['Candidates in pipeline', P.cands, 'recruitment'], ['Offers awaiting acceptance', P.offers, 'onboarding']].map(([l, n, r]) => '<a class="t" href="#/' + r + '"><span>' + l + '</span><b>' + n + '</b></a>').join('') + '</div></section>'; }
+  x += '<section class="card"><h2>Quick actions</h2><div class="qa">' + [['leave', 'cal', 'Apply leave'], ['requests', 'req', 'Attendance request'], ['payslips', 'pay', 'Payslips'], ['expenses', 'exp', 'Claim expense'], ['helpdesk', 'help', 'HR ticket'], ['documents', 'doc', 'My documents'], ['goals', 'goal', 'My goals'], ['learning', 'learn', 'Training']].map(([r, i, l]) => '<a href="#/' + r + '">' + svg(i) + l + '</a>').join('') + '</div></section></div>';
   const posts = D.posts.slice().sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || num(b.at) - num(a.at)).slice(0, 6);
   const up = D.hol.filter(o => o.date >= today()).sort((a, b) => a.date < b.date ? -1 : 1).slice(0, 5);
   const ann = D.emp.filter(o => o.join && o.join.slice(5) >= today().slice(5) && o.join.slice(0, 4) < today().slice(0, 4)).sort((a, b) => a.join.slice(5) < b.join.slice(5) ? -1 : 1).slice(0, 5);
@@ -301,12 +314,12 @@ function vHome() {
     '<section class="card"><h2>' + svg('people') + ' People</h2><div class="list">' + nj.map(o => '<div class="li"><span class="av">' + esc(ini(o.name)) + '</span><div class="g1"><b>' + esc(o.name) + '</b><span>Joined ' + esc(fmtD(o.join)) + (o.desg ? ' · ' + esc(o.desg) : '') + '</span></div>' + pill('New joiner', 'good') + '</div>').join('') + ann.map(o => '<div class="li"><span class="av">' + esc(ini(o.name)) + '</span><div class="g1"><b>' + esc(o.name) + '</b><span>Work anniversary · ' + esc(fmtD(today().slice(0, 4) + o.join.slice(4))) + '</span></div>' + pill((+today().slice(0, 4) - +o.join.slice(0, 4)) + ' yr', 'info') + '</div>').join('') + (nj.length || ann.length ? '' : '<div class="empty">No new joiners or anniversaries coming up.</div>') + '</div></section></div></div>';
   return x;
 }
-function pend() { return { docs: D.docs.filter(d => d.s === 'Submitted').length, req: D.req.filter(r => r.s === 'Pending').length, exp: D.exp.filter(r => r.s === 'Pending').length, help: D.help.filter(r => r.s === 'Open').length, exits: D.exits.filter(r => r.s === 'Pending').length, cands: D.cands.filter(c => !['Hired', 'Rejected'].includes(c.stage)).length, offers: D.offer.filter(o => o.status === 'Released').length }; }
+function pend() { return { docs: D.docs.filter(d => d.s === 'Submitted').length, req: D.req.filter(r => r.s === 'Pending').length, exp: D.exp.filter(r => r.s === 'Pending').length, help: D.help.filter(r => r.s !== 'Resolved').length, exits: D.exits.filter(r => r.s === 'Pending').length, cands: D.cands.filter(c => !['Hired', 'Rejected'].includes(c.stage)).length, offers: D.offer.filter(o => o.status === 'Released').length }; }
 
 /* ================= Me ================= */
 function vProfile() {
   const e = meEmp(), u = D.users.find(x => x._id === S.self) || {};
-  return ph('My profile', 'Kept by HR. Ask HR through the helpdesk to change anything.') + '<section class="card"><div class="row" style="gap:16px;margin-bottom:14px"><span class="av lg">' + esc(ini(e.name)) + '</span><div><h2>' + esc(e.name || S.me.name) + '</h2><div class="mute">' + esc([e.desg, e.grade && 'Grade ' + e.grade].filter(Boolean).join(' · ')) + '</div><div class="row mt">' + S.roles.map(r => pill(roleName(r), 'info')).join('') + '</div></div></div>' +
+  return ph('My profile', 'Kept by HR. Raise an HR ticket to change anything.') + '<section class="card"><div class="row" style="gap:16px;margin-bottom:14px"><span class="av lg">' + esc(ini(e.name)) + '</span><div><h2>' + esc(e.name || S.me.name) + '</h2><div class="mute">' + esc([e.desg, e.grade && 'Grade ' + e.grade].filter(Boolean).join(' · ')) + '</div><div class="row mt">' + S.roles.map(r => pill(roleName(r), 'info')).join('') + '</div></div></div>' +
     '<div class="kv">' + [['Employee ID', e.eid], ['Designation', e.desg], ['Grade', e.grade], ['Department', e.cat], ['Workplace', (e.wp || {}).name], ['Date of joining', fmtD(e.join)], ['Weekly off', (e.wo || []).map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ')], ['Login', u.username || S.me.email]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>';
 }
 const ROLE_N = { superadmin: 'Super admin', admin_head: 'Admin head', hr_head: 'HR head', hr_manager: 'HR manager', hr_exec: 'HR executive', employee: 'Employee', none: 'No role yet' };
@@ -347,7 +360,7 @@ function slipData(e, v, ym, employeeView) {
   for (let k = fy; k <= ym; ) { if (!(jm && k < jm)) { const q = k === ym ? p : payslip(e, v, k); if (q && q.pd > 0) { SLIP_E.forEach(([l, f]) => Y[l] = r2((Y[l] || 0) + q.E[f])); SLIP_D.forEach(([l, f]) => Y[l] = r2((Y[l] || 0) + q.ded[f])); q.ex.forEach(([l, a]) => Y[l] = r2((Y[l] || 0) + a)); Y['Gross pay'] = r2((Y['Gross pay'] || 0) + q.gross); Y['Total deductions'] = r2((Y['Total deductions'] || 0) + q.td); Y['Net pay (take home)'] = r2((Y['Net pay (take home)'] || 0) + q.net); } }
     const d = new Date(+k.slice(0, 4), +k.slice(5), 1); k = d.getFullYear() + '-' + pad(d.getMonth() + 1); }
   const b = balOf(e._id), x = p.x;
-  return { company: { name: 'Movana Logistics' }, employee: employeeView, month: ym, emp: { name: e.name, eid: e.eid, desg: e.desg, grade: e.grade, cat: e.cat, join: e.join, loc: (e.wp || {}).name },
+  return { company: { name: 'SN Logistics' }, employee: employeeView, month: ym, emp: { name: e.name, eid: e.eid, desg: e.desg, grade: e.grade, cat: e.cat, join: e.join, loc: (e.wp || {}).name },
     earn: SLIP_E.map(([l, f]) => [l, p.E[f]]), ded: SLIP_D.map(([l, f]) => [l, p.ded[f]]).concat(p.ex), gross: p.gross, tded: p.td, net: p.net, payDays: p.pd, baseDays: p.base, worked: x.p + x.h / 2, wo: x.wo, hol: x.hol, lop: x.a + x.h / 2, ytd: Y,
     leave: b ? ['PL', 'SL', 'CL', 'ML', 'PT', 'MR', 'BL', 'LOP'].concat(Object.keys(b.lv || {}).filter(t => !['PL', 'SL', 'CL', 'ML', 'PT', 'MR', 'BL', 'LOP'].includes(t))).filter(t => (b.lv || {})[t] || ['PL', 'SL', 'CL', 'LOP'].includes(t)).map(t => [(((b.lv || {})[t] || {}).name || { PL: 'Privilege leave', SL: 'Sick leave', CL: 'Casual leave', LOP: 'Loss of pay (unpaid)' }[t] || t) + ' (' + t + ')', ((b.lv || {})[t] || {}).b || 0]).concat([['Comp off', (b.co || {}).b || 0]]) : null };
 }
@@ -421,12 +434,38 @@ function vDocuments() {
   const o = D.offer.find(x => x._id === S.self), ok = o && ['Released', 'Accepted'].includes(o.status);
   const ds = docStat(S.self);
   return ph('My documents', 'Upload the joining documents HR needs. Photos or PDFs.') + '<section class="card" style="margin-bottom:14px"><h2>' + svg('doc') + ' Joining documents<span class="more mute">' + (ds.n ? ds.ok + ' of ' + ds.n + ' verified' : 'optional for super admin') + '</span></h2>' + docList(S.self, false) + '</section><div class="grid g2"><section class="card"><h2>Offer letter</h2>' + (ok ? '<p>' + (o.status === 'Accepted' ? 'You accepted this offer on ' + esc(fmtT(o.acceptedAt)) + '.' : 'Released by HR. Please read and accept it.') + '</p><div class="row"><button class="btn" type="button" data-a="of-view">' + (S.ofView ? 'Hide' : 'View') + '</button><button class="btn" type="button" data-a="of-print">Print / PDF</button>' + (o.status === 'Released' ? '<button class="btn p" type="button" data-a="of-accept">Accept offer</button>' : '') + '</div>' : '<div class="empty">No offer letter released to you.</div>') + '</section>' +
-    '<section class="card"><h2>Payslips</h2><p>Monthly salary slips worked out from your attendance.</p><a class="btn" href="#/payslips">Open payslips</a></section></div>' + (ok && S.ofView && window.OfferLetter ? '<div class="card mt" style="overflow-x:auto">' + OfferLetter.html(o, { name: 'Movana Logistics' }) + '</div>' : '');
+    '<section class="card"><h2>Payslips</h2><p>Monthly salary slips worked out from your attendance.</p><a class="btn" href="#/payslips">Open payslips</a></section></div>' + (ok && S.ofView && window.OfferLetter ? '<div class="card mt" style="overflow-x:auto">' + OfferLetter.html(o, { name: 'SN Logistics' }) + '</div>' : '');
+}
+/* ================= HR tickets ================= */
+const TK_CAT = ['Salary & payslip', 'Leave & attendance', 'Punch app / login', 'Documents & letters', 'Policy question', 'Reimbursement', 'Referral', 'Other'];
+const TK_ST = ['Open', 'In progress', 'Waiting for you', 'Resolved'];
+const tkMsgs = r => (r.msgs && r.msgs.length ? r.msgs : [{ by: r.uid, name: r.name, text: r.detail || '', at: r.at }].concat(r.reply ? [{ by: r.by, name: r.byName || 'HR', text: r.reply, at: r.decidedAt, hr: 1 }] : []));
+const tkNo = r => r.no || ('HR-' + String(r.at || 0).slice(-6));
+const tkLast = (r, hr) => tkMsgs(r).filter(m => !!m.hr === !!hr).reduce((t, m) => Math.max(t, num(m.at)), 0);
+const tkDue = r => num(r.at) + ({ Urgent: 4, High: 24, Normal: 48 }[r.pri || 'Normal'] || 48) * 36e5;
+const tkPill = r => stPill(r.s === 'Open' ? 'Open' : r.s) + (r.s !== 'Resolved' && Date.now() > tkDue(r) ? ' ' + pill('Overdue', 'bad') : '');
+function tkThread(r, hr) {
+  const M = tkMsgs(r), open = r.s !== 'Resolved';
+  return '<section class="card" style="margin-bottom:14px" id="tkCard"><h2>' + esc(tkNo(r)) + ' · ' + esc(r.subject) + ' ' + tkPill(r) + '<button class="btn s more" type="button" data-a="tk-close">Close</button></h2>' +
+    '<p class="mute small">' + esc([r.cat, (r.pri || 'Normal') + ' priority', 'raised by ' + r.name + (r.eid ? ' (' + r.eid + ')' : ''), fmtT(r.at), r.assName ? 'with ' + r.assName : ''].filter(Boolean).join(' · ')) + '</p>' +
+    '<div class="list">' + M.map(m => '<div class="li" style="align-items:flex-start;' + (m.hr ? 'background:color-mix(in srgb,var(--in) 8%,var(--soft))' : '') + '"><span class="av">' + esc(ini(m.name)) + '</span><div class="g1"><b>' + esc(m.name) + (m.hr ? ' <span class="mute small">HR</span>' : '') + '</b><span style="white-space:pre-wrap">' + esc(m.text) + '</span><span class="mute small">' + esc(fmtT(m.at)) + '</span></div></div>').join('') + '</div>' +
+    (open || hr ? '<div class="form mt"><label class="wide">' + (hr ? 'Reply to ' + esc(r.name) : 'Add a message') + '<textarea id="tk-msg"></textarea></label>' + (hr ? '<label>Status after reply<select id="tk-st">' + TK_ST.map(x => '<option' + (x === (r.s === 'Open' ? 'In progress' : r.s) ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></label>' : '') + '</div><div class="row mt"><button class="btn p" type="button" data-a="tk-reply" data-x="' + esc(r._id) + '">Send</button>' +
+      (hr && r.ass !== S.uid ? '<button class="btn" type="button" data-a="tk-mine" data-x="' + esc(r._id) + '">Assign to me</button>' : '') + (!hr && r.s === 'Open' && M.length === 1 ? '<button class="btn d" type="button" data-a="own-del" data-c="hr_help" data-x="' + esc(r._id) + '">Withdraw</button>' : '') + '</div>' : '') + '</section>';
 }
 function vHelpdesk() {
-  const R = mine(D.help).sort((a, b) => num(b.at) - num(a.at));
-  return ph('Ask HR', 'Questions about salary, leave, documents, policies – or refer a friend for an open job.') + '<div class="grid g2"><section class="card"><h2>New query</h2><div class="form">' + fld('hd-cat', 'Category', 'select:Salary & payslip|Leave & attendance|Documents & letters|Policy|Profile change|Referral|Other') + fld('hd-sub', 'Subject', 'text') + fld('hd-text', 'Details', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="hd-send">Send to HR</button></div></section>' +
-    '<section class="card"><h2>My queries</h2>' + (R.length ? '<div class="list">' + R.map(r => '<div class="li" style="align-items:flex-start"><div class="g1"><b>' + esc(r.subject) + '</b><span>' + esc(r.cat) + ' · ' + esc(fmtT(r.at)) + '</span>' + (r.reply ? '<span style="white-space:normal;color:var(--ink2)">HR: ' + esc(r.reply) + '</span>' : '') + '</div>' + stPill(r.s) + (r.s === 'Open' ? '<button class="btn s d" type="button" data-a="own-del" data-c="hr_help" data-x="' + esc(r._id) + '">Withdraw</button>' : '') + '</div>').join('') + '</div>' : '<div class="empty">No queries yet.</div>') + '</section></div>';
+  const R = mine(D.help).sort((a, b) => Math.max(tkLast(b, 1), num(b.at)) - Math.max(tkLast(a, 1), num(a.at))), cur = S.tk && R.find(r => r._id === S.tk);
+  return ph('HR tickets', 'Raise a ticket with HR and follow it here – salary, leave, the Punch app, documents, policies or a referral.', '<button class="btn p" type="button" data-a="tk-new">＋ New ticket</button>') + (cur ? tkThread(cur, false) : '') +
+    (S.tkNew ? '<section class="card" style="margin-bottom:14px"><h2>New ticket</h2><div class="form">' + fld('hd-cat', 'Category', 'select:' + TK_CAT.join('|')) + fld('hd-pri', 'Priority', 'select:Normal|High|Urgent') + fld('hd-sub', 'Subject', 'text') + fld('hd-text', 'Describe the issue', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="hd-send">Raise ticket</button><button class="btn" type="button" data-a="tk-new">Cancel</button></div></section>' : '') +
+    tbl(['Ticket', 'Subject', 'Category', 'Status', 'Last update', ''], R.map(r => '<tr><td><b>' + esc(tkNo(r)) + '</b></td><td>' + esc(r.subject) + '</td><td>' + esc(r.cat || '') + '</td><td>' + tkPill(r) + '</td><td>' + esc(fmtT(Math.max(tkLast(r, 1), num(r.at)))) + '</td><td><button class="btn s" type="button" data-a="tk-open" data-x="' + esc(r._id) + '">Open</button></td></tr>'), 'No tickets yet.');
+}
+function vHrHelp() {
+  const f = S.tkF || 'active', q = lc(S.q.tk || ''), A = D.help.slice(), cnt = k => A.filter(r => k === 'active' ? r.s !== 'Resolved' : k === 'mine' ? r.ass === S.uid && r.s !== 'Resolved' : r.s === k).length;
+  const R = A.filter(r => (f === 'active' ? r.s !== 'Resolved' : f === 'mine' ? r.ass === S.uid && r.s !== 'Resolved' : f === 'all' ? true : r.s === f) && (!q || lc([tkNo(r), r.subject, r.name, r.eid, r.cat].join(' ')).includes(q)))
+    .sort((a, b) => ({ Urgent: 0, High: 1, Normal: 2 }[a.pri || 'Normal'] - { Urgent: 0, High: 1, Normal: 2 }[b.pri || 'Normal']) || tkDue(a) - tkDue(b)), cur = S.tk && A.find(r => r._id === S.tk);
+  return ph('HR tickets', 'Every ticket raised with HR, with response time by priority (Urgent 4 h, High 24 h, Normal 48 h).', '<input id="q-tk" type="search" class="btn" placeholder="Ticket no., name, subject" value="' + esc(S.q.tk || '') + '" style="min-width:min(220px,100%)">') +
+    '<div class="row" style="margin-bottom:12px;flex-wrap:wrap">' + [['active', 'Active'], ['mine', 'Assigned to me'], ['Open', 'Open'], ['In progress', 'In progress'], ['Waiting for you', 'Waiting for employee'], ['Resolved', 'Resolved'], ['all', 'All']].map(([k, l]) => '<button class="btn s' + (f === k ? ' p' : '') + '" type="button" data-a="tk-f" data-x="' + esc(k) + '">' + l + (k !== 'all' ? ' · ' + cnt(k) : '') + '</button>').join('') + '</div>' +
+    (cur ? tkThread(cur, true) : '') +
+    tbl(['Ticket', 'Employee', 'Subject', 'Priority', 'Status', 'Assigned', 'Due', ''], R.map(r => '<tr><td><b>' + esc(tkNo(r)) + '</b></td><td>' + esc(r.name) + '<div class="mute small">' + esc(r.eid || '') + '</div></td><td class="w">' + esc(r.subject) + '<div class="mute small">' + esc(r.cat || '') + '</div></td><td>' + pill(r.pri || 'Normal', r.pri === 'Urgent' ? 'bad' : r.pri === 'High' ? 'warn' : '') + '</td><td>' + tkPill(r) + '</td><td>' + esc(r.assName || '—') + '</td><td>' + esc(r.s === 'Resolved' ? '' : fmtT(tkDue(r))) + '</td><td><button class="btn s" type="button" data-a="tk-open" data-x="' + esc(r._id) + '">Open</button></td></tr>'), 'No tickets here.');
 }
 function vSeparation() {
   const R = mine(D.exits).sort((a, b) => num(b.at) - num(a.at)), open = R.find(r => r.s === 'Pending');
@@ -473,7 +512,7 @@ function vAnnouncements() {
 }
 function vCareers() {
   const J = D.jobs.filter(j => j.s !== 'Closed');
-  return ph('Careers', 'Open roles at Movana Logistics. Know someone good? Refer them through Ask HR (category Referral).') + (J.length ? '<div class="grid g3">' + J.map(j => '<section class="card"><h2>' + esc(j.title) + '</h2><p class="mute small">' + esc([j.dept, j.loc, j.type, j.openings && j.openings + ' opening(s)'].filter(Boolean).join(' · ')) + '</p><p>' + esc(j.desc || '') + '</p><a class="btn s" href="#/helpdesk">Refer someone</a></section>').join('') + '</div>' : '<div class="empty">No open roles right now.</div>');
+  return ph('Careers', 'Open roles at SN Logistics. Know someone good? Refer them with an HR ticket (category Referral).') + (J.length ? '<div class="grid g3">' + J.map(j => '<section class="card"><h2>' + esc(j.title) + '</h2><p class="mute small">' + esc([j.dept, j.loc, j.type, j.openings && j.openings + ' opening(s)'].filter(Boolean).join(' · ')) + '</p><p>' + esc(j.desc || '') + '</p><a class="btn s" href="#/helpdesk">Refer someone</a></section>').join('') + '</div>' : '<div class="empty">No open roles right now.</div>');
 }
 
 /* ================= HR ================= */
@@ -484,6 +523,7 @@ function empForm() {
   return '<section class="card" style="margin-bottom:14px"><h2>' + (id === 'new' ? 'New employee' : 'Edit ' + esc(e.name)) + '</h2><div class="form">' + fld('em-name', 'Full name', 'text', e.name) + fld('em-eid', 'Employee ID', 'text', e.eid) + fld('em-desg', 'Designation', 'text', e.desg) +
     '<label>Grade<select id="em-grade">' + opt(GRADES, e.grade) + '</select></label><label>Department<select id="em-cat">' + opt(DEPTS_HR, e.cat) + '</select></label>' + fld('em-hub', 'Workplace', 'text', (e.wp || {}).name) + fld('em-join', 'Date of joining', 'date', e.join) +
     '<label>Reporting manager<select id="em-mgr">' + opt(D.emp.filter(o => o._id !== id).map(o => o.name).sort(), e.mgr) + '</select></label>' + fld('em-phone', 'Mobile', 'tel', e.phone) + '</div>' +
+    (id !== 'new' && !e.noPunch ? '<h3 class="mt">Punch app settings</h3><div class="form">' + fld('em-lat', 'Workplace latitude', 'number', (e.wp || {}).lat) + fld('em-lng', 'Workplace longitude', 'number', (e.wp || {}).lng) + fld('em-radius', 'Check-in radius (m)', 'number', e.radius || 150) + '</div><p class="mute small mt">Weekly off</p><div class="row" style="flex-wrap:wrap">' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => '<label class="row" style="gap:4px"><input type="checkbox" data-wo="' + i + '"' + ((e.wo || [0]).includes(i) ? ' checked' : '') + '>' + d + '</label>').join('') + '</div><p class="mute small">Latitude and longitude: open the workplace in Google Maps, long-press the spot and copy the numbers.</p>' : '') +
     (id !== 'new' && isSuperP(id) ? '<p class="mute small mt">Super admin: only the name and employee ID are required.</p>' : '<p class="mute small mt"><b>All fields are required.</b></p>') + '<p class="mute small mt">' + (id === 'new' ? (canAppr() ? 'Saving also creates the Punch app login: Punch ID = employee ID, password ' + DEFAULT_PW + '.' : 'Saved to the employee list. HR team lead and above create the Punch login.') : 'Saved to the portal\'s employee list' + (e.noPunch ? '' : ' and this person\'s Punch app profile') + ' at the same time.') + '</p><div class="row mt"><button class="btn p" type="button" data-a="em-save">Save</button><button class="btn" type="button" data-a="em-cancel">Cancel</button></div></section>';
 }
 function vHrEmployees() {
@@ -503,12 +543,46 @@ function vOnboarding() {
         '<td>' + (!st.n ? pill('Not required (super admin)') : st.ok === st.n ? pill('All ' + st.n + ' verified', 'good') : pill(st.up + '/' + st.n + ' uploaded' + (st.wait ? ' · ' + st.wait + ' to verify' : ''), st.wait ? 'info' : 'warn')) + '</td><td><button class="btn s" type="button" data-a="doc-open" data-x="' + esc(e._id) + '">Documents</button></td></tr>'; }), 'No new joiners.') +
     '<p class="mute small mt">Packages and CTC offer letters: HR › Package &amp; offer letter.</p>';
 }
-function vTeamAtt() {
-  const E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = S.ym, dd = today().slice(8);
-  return ph('Team attendance', 'Live from Punch.', monthPick('ym', S.ym) + '<a class="btn" href="../portal/#punch">Live board (portal)</a>') +
-    tbl(['Name', 'Today', '#Present', '#Half', '#Absent', '#Leave', '#Week off', '#Hours'], E.map(e => { if (e.noPunch) return '<tr><td>' + esc(e.name) + '</td><td colspan="7" class="mute">No Punch login yet – attendance starts once they use the Punch app</td></tr>'; const x = monthSum(e, ym), at = attDoc(e._id, ymNow()), open = at && at.open && iso(new Date(at.open.t)) === today(), d = at && at.days && at.days[dd];
-      return '<tr><td>' + esc(e.name) + '</td><td>' + (open ? pill('In since ' + tm(at.open.t), 'good') : d && d.a ? pill(tm(d.a) + '–' + (d.b ? tm(d.b) : '…'), 'info') : pill(dayOf(e, ymNow(), +dd).st || 'Not in', 'warn')) + '</td><td class="n">' + x.p + '</td><td class="n">' + x.h + '</td><td class="n">' + x.a + '</td><td class="n">' + x.l + '</td><td class="n">' + x.wo + '</td><td class="n">' + hm(x.ms) + '</td></tr>'; }));
+/** Admin home: who is in right now (live from the Punch app), what is waiting for HR, and the month so far. */
+function vLive() {
+  const E = D.emp.filter(e => !e.noPunch).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = ymNow(), dd = today().slice(8), now = Date.now(), G = { in: [], none: [], out: [], off: [] };
+  const lastAt = Math.max(0, ...D.att.map(d => num(d.updatedAt)));
+  E.forEach(e => { const a = attDoc(e._id, ym), d = a && a.days && a.days[dd], open = a && a.open && iso(new Date(a.open.t)) === today() ? a.open : null, x = dayOf(e, ym, +dd), wp = (e.wp || {}).name || '';
+    const done = a ? (a.logs || []).filter(l => l.in && iso(new Date(l.in)) === today()) : [], msd = done.reduce((t, l) => t + (num(l.out) - num(l.in)), 0);
+    const map = open && open.lat != null ? ' · <a href="https://www.google.com/maps?q=' + open.lat + ',' + open.lng + '" target="_blank" rel="noopener">Map</a>' : '';
+    if (open) G.in.push({ e, st: 'In since ' + tm(open.t), sb: hm(now - open.t + msd) + ' today' + (wp ? ' · ' + esc(wp) : '') + map });
+    else if (done.length) G.out.push({ e, st: 'Out at ' + tm(done[done.length - 1].out), sb: tm(done[0].in) + ' – ' + tm(done[done.length - 1].out) + ' · ' + hm(msd) });
+    else if (d && d.a) G.out.push({ e, st: d.b ? 'Out at ' + tm(d.b) : 'Checked in ' + tm(d.a), sb: hm(d.ms) });
+    else if (['Week off', 'Holiday', 'Comp off'].includes(x.st) || /^Leave/.test(x.st)) G.off.push({ e, st: x.st, sb: esc(e.desg || '') });
+    else G.none.push({ e, st: 'Not checked in', sb: (a ? '' : 'No data from the Punch app yet · ') + esc(e.desg || '') }); });
+  const P = isHR() ? pend() : null, sal = canSal(), tot = sal ? E.reduce((t, e) => { const p = payslip(e, payOf(e._id), ym); return t + (p ? p.gross : 0); }, 0) : 0;
+  let x = ph('Live board', '<span class="pill good">● Live</span> ' + (lastAt ? 'Last update from the Punch app ' + fmtT(lastAt) : 'Waiting for the first check-in') + ' · ' + fmtD(today()), '<a class="btn" href="#/team-attendance">Attendance register</a>') +
+    '<div class="tiles" style="margin-bottom:14px"><div class="t"><span>In now</span><b>' + G.in.length + '</b></div><div class="t"><span>Done for today</span><b>' + G.out.length + '</b></div><div class="t"><span>Not checked in</span><b>' + G.none.length + '</b></div><div class="t"><span>Off / leave today</span><b>' + G.off.length + '</b></div>' + (sal ? '<a class="t" href="#/payroll"><span>Salary earned so far</span><b>' + money(tot) + '</b></a>' : '') + '</div>';
+  if (P) x += '<section class="card" style="margin-bottom:14px"><h2>Waiting for HR</h2><div class="tiles">' + [['Leave & attendance', P.req, 'approvals'], ['Expenses', P.exp, 'hr-expenses'], ['HR tickets', P.help, 'hr-helpdesk'], ['Resignations', P.exits, 'hr-exits'], ['Documents to verify', P.docs, 'onboarding'], ['Offers awaiting acceptance', P.offers, 'packages']].map(([l, n, r]) => '<a class="t" href="#/' + r + '"><span>' + l + '</span><b>' + n + '</b></a>').join('') + '</div></section>';
+  [['in', 'In now'], ['none', 'Not checked in'], ['out', 'Checked out'], ['off', 'Off or on leave']].forEach(([k, t]) => { if (G[k].length) x += '<h3>' + t + ' <span class="mute small">' + G[k].length + '</span></h3><div class="board" style="margin-bottom:14px">' + G[k].map(c => '<div class="pc ' + k + '"><b>' + esc(c.e.name) + ' <span class="mute small">' + esc(c.e.eid || '') + '</span></b><div class="st">' + esc(c.st) + '</div><div class="sb">' + c.sb + '</div></div>').join('') + '</div>'; });
+  if (!E.length) x += '<div class="empty">No one is on Punch yet. Create Punch logins in Employees.</div>';
+  return x;
 }
+const MARKS = [['present', 'Present'], ['absent', 'Absent'], ['weekoff', 'Week off'], ['holiday', 'Holiday'], ['holpresent', 'Holiday + Present'], ['compoff', 'Comp off'], ['leave:PL', 'Leave PL'], ['leave:SL', 'Leave SL'], ['leave:CL', 'Leave CL'], ['leave:LOP', 'Leave LOP']];
+function vTeamAtt() {
+  const E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = S.ym, dd = today().slice(8), sal = canSal();
+  return ph('Attendance register', 'From Punch check-ins. A mark set by HR (or an approved request) takes priority; the employee\'s app follows it.', monthPick('ym', S.ym) + '<button class="btn" type="button" data-a="att-csv">Download CSV</button>') +
+    tbl(['Name', 'Today', '#Present', '#Half', '#Absent', '#Leave', '#Comp off', '#Week off', '#Hours'].concat(sal ? ['#Pay days', '#Earned'] : []).concat(['']), E.map(e => { if (e.noPunch) return '<tr><td>' + esc(e.name) + '</td><td colspan="' + (sal ? 11 : 9) + '" class="mute">No Punch login yet – attendance starts once they use the Punch app</td></tr>';
+      const x = monthSum(e, ym), at = attDoc(e._id, ymNow()), open = at && at.open && iso(new Date(at.open.t)) === today(), d = at && at.days && at.days[dd], p = sal ? payslip(e, payOf(e._id), ym) : null, op = S.attOpen === e._id;
+      let r = '<tr><td><b>' + esc(e.name) + '</b><div class="mute small">' + esc(e.eid || '') + '</div></td><td>' + (open ? pill('In since ' + tm(at.open.t), 'good') : d && d.a ? pill(tm(d.a) + '–' + (d.b ? tm(d.b) : '…'), 'info') : pill(dayOf(e, ymNow(), +dd).st || 'Not in', 'warn')) + '</td><td class="n">' + x.p + '</td><td class="n">' + x.h + '</td><td class="n">' + x.a + '</td><td class="n">' + x.l + '</td><td class="n">' + x.co + '</td><td class="n">' + x.wo + '</td><td class="n">' + hm(x.ms) + '</td>' +
+        (sal ? (p ? '<td class="n">' + p.pd + ' / ' + p.base + '</td><td class="n">' + money(p.gross) + '</td>' : '<td colspan="2" class="mute">No salary set</td>') : '') + '<td><button class="btn s" type="button" data-a="att-days" data-x="' + esc(e._id) + '">' + (op ? 'Hide days' : 'Days') + '</button></td></tr>';
+      if (op) { const mk = markDoc(e._id, ym) || {};
+        r += '<tr><td colspan="' + (sal ? 12 : 10) + '">' + tbl(['Date', 'Status', 'In', 'Out', '#Hours'].concat(isHR() ? ['HR mark'] : []), x.D.map(dd2 => { const cur = (mk.marks || {})[dd2.k], cv = cur === 'leave' ? 'leave:' + ((mk.lt || {})[dd2.k] || '') : cur;
+          return '<tr><td>' + esc(fmtD(dd2.k)) + '</td><td>' + esc(dd2.st) + '</td><td>' + (dd2.a ? tm(dd2.a) : '') + '</td><td>' + (dd2.b ? tm(dd2.b) : '') + '</td><td class="n">' + (dd2.ms ? hm(dd2.ms) : '') + '</td>' + (isHR() ? '<td><select class="btn s" data-mark="' + esc(e._id) + '|' + dd2.k + '" aria-label="Mark ' + esc(fmtD(dd2.k)) + '"><option value="">—</option>' + MARKS.map(([v, n]) => '<option value="' + v + '"' + (cv === v ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td>' : '') + '</tr>'; })) + '</td></tr>'; }
+      return r; }));
+}
+async function setMark(uid, k, v) { if (!isHR()) return; const ym = k.slice(0, 7), cur = markDoc(uid, ym) || {}, marks = Object.assign({}, cur.marks), lt = Object.assign({}, cur.lt);
+  if (!v) { delete marks[k]; delete lt[k]; } else if (v.startsWith('leave:')) { marks[k] = 'leave'; lt[k] = v.slice(6); } else { marks[k] = v; delete lt[k]; }
+  await save('punch_mark/' + uid + '_' + ym, { uid, ym, marks, lt, by: S.uid, updatedAt: Date.now() }, 'Saved – the Punch app updates'); }
+function attCsv() { const ym = S.ym, rows = [['Employee', 'ID', 'Date', 'Status', 'In', 'Out', 'Hours']];
+  D.emp.filter(e => !e.noPunch).forEach(e => monthDays(e, ym).forEach(d => rows.push([e.name, e.eid || '', d.k, d.st, d.a ? tm(d.a) : '', d.b ? tm(d.b) : '', d.ms ? (d.ms / 36e5).toFixed(2) : ''])));
+  const b = new Blob(['﻿' + rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(',')).join('\n')], { type: 'text/csv' }), u = URL.createObjectURL(b), l = document.createElement('a'); l.href = u; l.download = 'Attendance_' + ym + '.csv'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }
+
 function vApprovals() {
   const P = D.req.filter(r => r.s === 'Pending').sort((a, b) => num(a.at) - num(b.at)), done = D.req.filter(r => r.s !== 'Pending').sort((a, b) => num(b.decidedAt || b.at) - num(a.decidedAt || a.at)).slice(0, 20);
   return ph('Leave & attendance approvals', canAppr() ? 'Approve and the employee\'s Punch app updates straight away.' : 'HR team lead and above approve.') + '<section class="card"><h2>Waiting (' + P.length + ')</h2>' +
@@ -561,11 +635,15 @@ function vPackages() {
       '<h3>Salary structure</h3><div class="form">' + OFF_P.map(nf).join('') + '<label>Gratuity in CTC<select id="pk-grat"' + dis + '><option value="1"' + (o.grat ? ' selected' : '') + '>Yes (4.81% of Basic)</option><option value="0"' + (o.grat ? '' : ' selected') + '>No</option></select></label></div>' +
       '<div class="tiles mt"><div class="t"><span>Gross / month</span><b>' + money(k.gross) + '</b></div><div class="t"><span>Take-home / month</span><b>' + money(k.net) + '</b></div><div class="t"><span>CTC / month</span><b>' + money(k.m) + '</b></div><div class="t"><span>CTC / year</span><b>' + money(k.y) + '</b></div></div>' +
       tbl(['Component', '#Monthly', '#Annual'], [['Basic', k.b], ['HRA', k.h], ['Conveyance', k.c], ['Special allowance', k.sp], ['Gross salary', k.gross, 1], ['PF – employer', k.pfR], ['Gratuity', k.gr], ['Cost to company (CTC)', k.m, 1], ['Less: PF – employee', -k.pfE], ['Less: Professional tax', -k.pt], ['Take-home (approx.)', k.net, 1]].map(([l, v, b]) => '<tr><td>' + (b ? '<b>' + l + '</b>' : l) + '</td><td class="n">' + (b ? '<b>' + money(v) + '</b>' : money(v)) + '</td><td class="n">' + (b ? '<b>' + money(v * 12) + '</b>' : money(v * 12)) + '</td></tr>')) +
+      (() => { const v = payOf(cur._id) || {}, hk = (v.hikes || []).concat([{ p: '', f: '' }, { p: '', f: '' }]).slice(0, Math.max(2, (v.hikes || []).length + 1)), sel = (id, L, cv) => '<select id="' + id + '"' + dis + '>' + L.map(([a2, b2]) => '<option value="' + a2 + '"' + (String(cv) === a2 ? ' selected' : '') + '>' + b2 + '</option>').join('') + '</select>';
+        return '<h3 class="mt">Pay settings</h3><div class="form"><label>PF calculation' + sel('ps-pfMode', [['pct', '% of earned Basic'], ['fix', 'Fixed amount']], v.pfMode === 'fix' ? 'fix' : 'pct') + '</label>' + fld('ps-pf', 'PF fixed ₹ (if fixed)', 'number', v.pf, dis) + fld('ps-vpf', 'VPF / month', 'number', v.vpf, dis) + fld('ps-esi', 'ESI / month', 'number', v.esi, dis) + fld('ps-oth', 'Other deduction / month', 'number', v.oth, dis) +
+          '<label>Days basis' + sel('ps-basis', [['cal', 'Calendar days'], ['work', 'Working days'], ['26', 'Fixed 26'], ['30', 'Fixed 30']], v.basis || 'cal') + '</label><label>Paid leave counts as paid' + sel('ps-leavePaid', [['1', 'Yes'], ['0', 'No']], v.leavePaid === false || v.leavePaid === 0 ? '0' : '1') + '</label><label>Holidays are paid' + sel('ps-holPaid', [['1', 'Yes'], ['0', 'No']], v.holPaid === false || v.holPaid === 0 ? '0' : '1') + '</label></div>' +
+          '<p class="mute small mt">Hikes – each raises Basic, HRA, Conveyance and Special from that month.</p><div class="form">' + hk.map((h, i2) => fld('ps-hp' + i2, 'Hike %', 'number', h.p, dis) + fld('ps-hf' + i2, 'From month', 'month', h.f, dis)).join('') + '</div>'; })() +
       '<h3 class="mt">Joining details <span class="mute small">(all required to release)</span></h3><div class="form">' + OFF_J.map(([k2, l, t]) => k2 === 'mgr' ? '<label>' + l + '<select id="pk-mgr"' + dis + '><option value=""></option>' + D.emp.filter(z => z._id !== cur._id).map(z => '<option' + (normN(z.name) === normN(o.mgr) ? ' selected' : '') + '>' + esc(z.name) + '</option>').join('') + '</select></label>' : k2 === 'grade' ? '<label>' + l + '<select id="pk-grade"' + dis + '><option value=""></option>' + GRADES.concat(o.grade && !GRADES.includes(o.grade) ? [o.grade] : []).map(g => '<option' + (g === o.grade ? ' selected' : '') + '>' + esc(g) + '</option>').join('') + '</select></label>' : fld('pk-' + k2, l, t || 'text', o[k2], dis)).join('') + '</div>' +
       '<h3 class="mt">Terms</h3><div class="form">' + OFF_T.map(nf).join('') + '</div>' +
       '<div class="row mt">' + (ed ? '<button class="btn p" type="button" data-a="pk-save">Save package</button>' : '') + '<button class="btn" type="button" data-a="pk-prev">' + (S.pkgPrev ? 'Hide letter' : 'Preview CTC offer letter') + '</button><button class="btn" type="button" data-a="pk-print">Print / PDF</button>' +
         (ed && !['Released', 'Accepted'].includes(o.status) ? '<button class="btn p" type="button" data-a="pk-release">Release offer letter</button>' : '') + (ed && o.status === 'Released' ? '<button class="btn d" type="button" data-a="pk-withdraw">Withdraw</button>' : '') + '</div>' +
-      (S.pkgPrev && window.OfferLetter ? '<div class="mt" style="overflow-x:auto">' + OfferLetter.html(o, { name: 'Movana Logistics' }) + '</div>' : '') + '</section>'; }
+      (S.pkgPrev && window.OfferLetter ? '<div class="mt" style="overflow-x:auto">' + OfferLetter.html(o, { name: 'SN Logistics' }) + '</div>' : '') + '</section>'; }
   return x + tbl(['Name', 'ID', 'Designation', '#Gross / month', '#CTC / year', 'Offer letter', ''], E.map(e => { if (e.noPunch) return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td colspan="3" class="mute">Create the Punch login first (Employees)</td><td></td></tr>';
     const o = offerFor(e), k = ctcOf(o); return '<tr><td><b>' + esc(e.name) + '</b></td><td>' + esc(e.eid || '') + '</td><td>' + esc(o.desg || '') + '</td><td class="n">' + money(k.gross) + '</td><td class="n">' + money(k.y) + '</td><td>' + stPill(o.status) + '</td><td><button class="btn s' + (S.pkgFor === e._id ? ' p' : '') + '" type="button" data-a="pk-open" data-x="' + esc(e._id) + '">' + (ed ? 'Package' : 'View') + '</button></td></tr>'; }), 'No employees.');
 }
@@ -573,10 +651,13 @@ async function savePkg(release) {
   const e = empOf(S.pkgFor); if (!e || !canSalE()) return; const o = readPkg(e), now = Date.now();
   if (!(num(o.basic) > 0)) { toast('Build the structure from the CTC (or enter Basic).'); return; }
   if (release) { const miss = OFF_J.filter(([k]) => k !== 'addr' && k !== 'email' && !o[k]).map(x => x[1]); if (!isSuperP(e._id) && miss.length) { toast('Fill in: ' + miss.join(', ')); return; }
-    if (!await ask('Release the CTC offer letter to ' + e.name + ' (CTC ' + money(ctcOf(o).y) + ' a year)? They can read and accept it in Movana People.', { ok: 'Release' })) return; o.status = 'Released'; o.releasedAt = now; o.releasedBy = S.uid; }
+    if (!await ask('Release the CTC offer letter to ' + e.name + ' (CTC ' + money(ctcOf(o).y) + ' a year)? They can read and accept it in SN People.', { ok: 'Release' })) return; o.status = 'Released'; o.releasedAt = now; o.releasedBy = S.uid; }
   o.uid = e._id; o.updatedAt = now; o.by = S.uid;
   if (!(await save('punch_offer/' + e._id, o))) return;
-  const v = Object.assign({}, payOf(e._id) || {}); delete v._id; Object.assign(v, { basicAmt: num(o.basic), hraAmt: num(o.hra), convAmt: num(o.conv), splAmt: num(o.spl), pfPct: num(o.pfPct), pfMode: 'pct', pt: num(o.pt), v2: 1, updatedAt: now, by: S.uid });
+  const v = Object.assign({}, payOf(e._id) || {}); delete v._id; const gv = id => { const el = document.getElementById(id); return el ? el.value : null; };
+  Object.assign(v, { basicAmt: num(o.basic), hraAmt: num(o.hra), convAmt: num(o.conv), splAmt: num(o.spl), pfPct: num(o.pfPct), pfMode: gv('ps-pfMode') || v.pfMode || 'pct', pt: num(o.pt), v2: 1, updatedAt: now, by: S.uid });
+  if (gv('ps-basis') != null) { Object.assign(v, { pf: num(gv('ps-pf')), vpf: num(gv('ps-vpf')), esi: num(gv('ps-esi')), oth: num(gv('ps-oth')), basis: gv('ps-basis'), leavePaid: gv('ps-leavePaid') === '0' ? 0 : 1, holPaid: gv('ps-holPaid') === '0' ? 0 : 1 });
+    const hk = []; for (let i2 = 0; document.getElementById('ps-hp' + i2); i2++) { const pc = num(gv('ps-hp' + i2)), f = gv('ps-hf' + i2); if (pc && f) hk.push({ p: pc, f }); } v.hikes = hk; }
   await save('punch_pay/' + e._id, v);
   await patchEmp(e, { desg: o.desg, grade: o.grade, cat: o.cat, join: o.join, mgr: o.mgr });
   S.pkgDraft = null; toast(release ? 'Offer letter released' : 'Package saved – monthly salary updated in Punch'); render();
@@ -604,10 +685,6 @@ function vHrExpenses() {
   const R = D.exp.slice().sort((a, b) => (a.s === 'Pending' ? 0 : 1) - (b.s === 'Pending' ? 0 : 1) || num(b.at) - num(a.at));
   return ph('Expense claims') + tbl(['Employee', 'Date', 'Category', '#Amount', 'Details', 'Status', ''], R.map(r => '<tr><td>' + esc(r.name) + '</td><td>' + esc(fmtD(r.date)) + '</td><td>' + esc(r.cat) + '</td><td class="n">' + money(r.amount) + '</td><td class="w">' + esc(r.note || '') + '</td><td>' + stPill(r.s) + '</td><td>' + (r.s === 'Pending' && canAppr() ? '<button class="btn s p" type="button" data-a="st" data-c="hr_expenses" data-x="' + esc(r._id) + '" data-v="Approved">Approve</button> <button class="btn s d" type="button" data-a="st" data-c="hr_expenses" data-x="' + esc(r._id) + '" data-v="Rejected">Reject</button>' : r.s === 'Approved' && canAppr() ? '<button class="btn s" type="button" data-a="st" data-c="hr_expenses" data-x="' + esc(r._id) + '" data-v="Paid">Mark paid</button>' : '') + '</td></tr>'), 'No claims.');
 }
-function vHrHelp() {
-  const R = D.help.slice().sort((a, b) => (a.s === 'Open' ? 0 : 1) - (b.s === 'Open' ? 0 : 1) || num(b.at) - num(a.at));
-  return ph('HR helpdesk') + (R.length ? '<div class="list">' + R.map(r => '<div class="card"><div class="row"><b>' + esc(r.subject) + '</b>' + stPill(r.s) + '<span class="mute small" style="margin-left:auto">' + esc(r.name) + ' · ' + esc(r.cat) + ' · ' + esc(fmtT(r.at)) + '</span></div><p style="white-space:pre-wrap">' + esc(r.detail || '') + '</p>' + (r.s === 'Open' ? '<div class="form"><label class="wide">Reply<textarea data-hr="' + esc(r._id) + '"></textarea></label></div><div class="row mt"><button class="btn s p" type="button" data-a="hd-reply" data-x="' + esc(r._id) + '">Reply & resolve</button></div>' : '<p class="mute">HR: ' + esc(r.reply || '') + '</p>') + '</div>').join('') + '</div>' : '<div class="empty">No queries.</div>');
-}
 function vHrExits() {
   const R = D.exits.slice().sort((a, b) => (a.s === 'Pending' ? 0 : 1) - (b.s === 'Pending' ? 0 : 1) || num(b.at) - num(a.at));
   return ph('Separations', 'Resignations and exits.') + tbl(['Employee', 'Reason', 'Asked LWD', 'Agreed LWD', 'Comments', 'Status', ''], R.map(r => '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.reason) + '</td><td>' + esc(fmtD(r.lwdAsked)) + '</td><td>' + (r.s === 'Pending' && canAppr() ? '<input type="date" data-lwd="' + esc(r._id) + '" value="' + esc(r.lwdAsked || '') + '" class="btn s">' : esc(fmtD(r.lwd))) + '</td><td class="w">' + esc(r.text || '') + '</td><td>' + stPill(r.s) + '</td><td>' + (r.s === 'Pending' && canAppr() ? '<button class="btn s p" type="button" data-a="sx-ok" data-x="' + esc(r._id) + '">Accept</button> <button class="btn s d" type="button" data-a="st" data-c="hr_exits" data-x="' + esc(r._id) + '" data-v="Rejected">Reject</button>' : r.s === 'Approved' && canAppr() ? '<button class="btn s" type="button" data-a="st" data-c="hr_exits" data-x="' + esc(r._id) + '" data-v="Closed">Exit completed</button>' : '') + '</td></tr>'), 'No resignations.');
@@ -618,46 +695,52 @@ const E_ = () => true;
 add('home', 'Home', 'Home', 'home', vHome);
 add('profile', 'Me', 'My profile', 'user', vProfile);
 add('attendance', 'Me', 'Attendance', 'clock', vAttendance);
-add('leave', 'Me', 'Leave', 'cal', vLeave, E_, () => mine(D.req).filter(r => r.kind === 'leave' && r.s === 'Pending').length);
-add('requests', 'Me', 'Attendance requests', 'req', vRequests);
+add('leave', 'Me', 'Leave', 'cal', vLeave, E_, () => mine(D.req).filter(r => r.kind === 'leave' && r.s !== 'Pending').map(r => ({ at: r.decidedAt })));
+add('requests', 'Me', 'Attendance requests', 'req', vRequests, E_, () => mine(D.req).filter(r => r.kind !== 'leave' && r.s !== 'Pending').map(r => ({ at: r.decidedAt })));
 add('payslips', 'Me', 'Payslips', 'pay', vPayslips);
-add('expenses', 'Me', 'Expenses', 'exp', vExpenses);
+add('expenses', 'Me', 'Expenses', 'exp', vExpenses, E_, () => mine(D.exp).filter(r => r.s !== 'Pending').map(r => ({ at: r.decidedAt })));
 add('goals', 'Me', 'Goals & reviews', 'goal', vGoals);
 add('learning', 'Me', 'Training', 'learn', vLearning);
-add('documents', 'Me', 'Documents', 'doc', vDocuments, E_, () => D.offer.filter(o => o._id === S.self && o.status === 'Released').length);
-add('helpdesk', 'Me', 'Ask HR', 'help', vHelpdesk);
-add('separation', 'Me', 'Resignation', 'exit', vSeparation);
+add('documents', 'Me', 'Documents', 'doc', vDocuments, E_, () => D.offer.filter(o => o._id === S.self && o.status === 'Released').map(o => ({ at: o.releasedAt })).concat(D.docs.filter(d => d.uid === S.self && d.s !== 'Submitted').map(d => ({ at: d.decidedAt }))));
+add('helpdesk', 'Me', 'HR tickets', 'help', vHelpdesk, E_, () => mine(D.help).map(r => ({ at: tkLast(r, 1) })));
+add('separation', 'Me', 'Resignation', 'exit', vSeparation, E_, () => mine(D.exits).filter(r => r.s !== 'Pending').map(r => ({ at: r.decidedAt })));
 V.push({ id: 'settings', g: 'Me', label: 'Settings', icon: 'cog', render: () => ph('Settings', 'Your password and sign-in.') + pwCard() + '<section class="card mt"><h2>' + svg('key') + ' Google sign-in</h2><p class="mute">Link a Google account to sign in with one tap.</p><a class="btn" href="../portal/#account">Open Google sign-in settings</a></section>', ok: () => true, hide: true });
 add('people', 'Company', 'People', 'people', vPeople);
 add('org', 'Company', 'Org chart', 'org', vOrg);
-add('announcements', 'Company', 'Announcements & holidays', 'mega', vAnnouncements);
+add('announcements', 'Company', 'Announcements & holidays', 'mega', vAnnouncements, E_, () => D.posts.filter(p => p.by !== S.uid).map(p => ({ at: p.at })));
 add('careers', 'Company', 'Careers', 'brief', vCareers);
+add('live', 'Overview', 'Live board', 'clock', vLive, canAdminView);
 add('hr-employees', 'HR', 'Employees', 'people', vHrEmployees, isHR);
-add('onboarding', 'HR', 'Onboarding', 'user', vOnboarding, isHR, () => pend().offers + pend().docs);
-add('team-attendance', 'HR', 'Team attendance', 'clock', vTeamAtt, isHR);
-add('approvals', 'HR', 'Leave & attendance approvals', 'check', vApprovals, isHR, () => pend().req);
+add('onboarding', 'HR', 'Onboarding', 'user', vOnboarding, isHR, () => D.docs.filter(d => d.s === 'Submitted').map(d => ({ at: d.at })));
+add('team-attendance', 'HR', 'Attendance register', 'cal', vTeamAtt, isHR);
+add('approvals', 'HR', 'Leave & attendance approvals', 'check', vApprovals, isHR, () => D.req.filter(r => r.s === 'Pending').map(r => ({ at: r.at })));
 add('payroll', 'HR', 'Payroll', 'pay', vPayroll, canSal);
-add('packages', 'HR', 'Package & offer letter', 'doc', vPackages, canSal, () => D.offer.filter(o => o.status === 'Released').length);
+add('packages', 'HR', 'Package & offer letter', 'doc', vPackages, canSal, () => D.offer.filter(o => o.status === 'Accepted').map(o => ({ at: o.acceptedAt })));
 add('recruitment', 'HR', 'Recruitment', 'brief', vRecruit, isHR);
 add('performance', 'HR', 'Performance', 'goal', vPerf, isHR);
 add('training-admin', 'HR', 'Training admin', 'learn', vTrainAdmin, isHR);
-add('hr-expenses', 'HR', 'Expense claims', 'exp', vHrExpenses, isHR, () => pend().exp);
-add('hr-helpdesk', 'HR', 'HR helpdesk', 'help', vHrHelp, isHR, () => pend().help);
-add('hr-exits', 'HR', 'Separations', 'exit', vHrExits, isHR, () => pend().exits);
+add('hr-expenses', 'HR', 'Expense claims', 'exp', vHrExpenses, isHR, () => D.exp.filter(r => r.s === 'Pending').map(r => ({ at: r.at })));
+add('hr-helpdesk', 'HR', 'HR tickets', 'help', vHrHelp, isHR, () => D.help.filter(r => r.s !== 'Resolved').map(r => ({ at: tkLast(r, 0) })));
+add('hr-exits', 'HR', 'Separations', 'exit', vHrExits, isHR, () => D.exits.filter(r => r.s === 'Pending').map(r => ({ at: r.at })));
 ext('Admin', 'Roles & access', 'key', '../portal/#access', isAdmin);
 
 ext('Apps', 'Control tower (portal)', 'tower', '../portal/', () => !S.roles.every(r => r === 'employee'));
+ext('Apps', 'SN Mail', 'mail', '../mail/', E_);
 ext('Apps', 'Website', 'home', '../', E_);
 
 /* ================= render ================= */
 function render() {
   resolvePeople();
-  const h = (location.hash.match(/^#\/([\w-]+)/) || [])[1] || 'home', vis = V.filter(v => v.id && v.ok()), cur = vis.find(v => v.id === h) || vis[0];
-  route = cur.id; $('#nav').innerHTML = navHtml();
-  const P = isHR() ? pend() : null, bn = P ? P.req + P.exp + P.help + P.exits : D.offer.filter(o => o._id === S.self && o.status === 'Released').length; $('#bellN').hidden = !bn; $('#bellN').textContent = bn;
+  const want = (location.hash.match(/^#\/([\w-]+)/) || [])[1], vis = V.filter(v => v.id && v.ok());
+  let cur = vis.find(v => v.id === want);
+  if (cur && sideOf(cur) !== 'both' && sideOf(cur) !== S.mode && !cur.hide) { S.mode = sideOf(cur); try { localStorage.setItem('hr.mode', S.mode); } catch (e) {} }
+  if (!cur) cur = vis.find(v => v.id === (S.mode === 'admin' ? 'live' : 'home')) || vis[0];
+  route = cur.id; markSeen(route); $('#nav').innerHTML = navHtml();
+  const ms = $('#modesw'); ms.hidden = !canAdminView(); ms.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === S.mode)));
+  const bn = vis.reduce((t, v) => t + badge(v), 0); $('#bellN').hidden = !bn; $('#bellN').textContent = bn;
   const ae = document.activeElement, keep = ae && ae.id && $('#main').contains(ae) ? [ae.id, ae.selectionStart] : null;
   try { $('#main').innerHTML = cur.render(); } catch (e) { console.error(e); $('#main').innerHTML = '<div class="empty">This page hit an error: ' + esc(e.message) + '</div>'; }
-  document.title = cur.label + ' · Movana People';
+  document.title = cur.label + ' · SN People';
   if (keep) { const el = document.getElementById(keep[0]); if (el) { el.focus(); try { el.setSelectionRange(keep[1], keep[1]); } catch (x) {} } }
 }
 render();
@@ -667,10 +750,13 @@ const busy = new Set();
 document.addEventListener('click', async ev => {
   const t = ev.target.closest('[data-a]');
   if (ev.target.closest('#burger')) { document.body.classList.toggle('navopen'); return; }
-  { const fb = ev.target.closest('[data-fold]'); if (fb) { const g = fb.dataset.fold, vis = V.filter(v => v.ok() && !v.hide); FOLD[g] = !folded(g, vis); try { localStorage.setItem('hr.fold', JSON.stringify(FOLD)); } catch (e) {} $('#nav').innerHTML = navHtml(); return; } }
+  { const fb = ev.target.closest('[data-fold]'); if (fb) { const g = fb.dataset.fold, vis = V.filter(v => v.ok() && !v.hide && onSide(v)); FOLD[g] = !folded(g, vis); try { localStorage.setItem('hr.fold', JSON.stringify(FOLD)); } catch (e) {} $('#nav').innerHTML = navHtml(); return; } }
   if (ev.target.closest('#who')) { const m = $('#menu'); m.innerHTML = '<div class="h"><b>' + esc(S.me.name) + '</b><span>' + esc(S.roles.map(roleName).join(' · ')) + '</span></div><a href="#/settings">' + svg('cog') + 'Settings</a><button type="button" class="out" id="logout">' + svg('exit') + 'Log out</button>'; m.hidden = !m.hidden; return; }
   if (ev.target.closest('#logout')) { window.MOVANA_FB.signOut(); return; }
-  if (ev.target.closest('#bell')) { go(isHR() ? 'approvals' : 'documents'); return; }
+  if (ev.target.closest('#bell')) { const nb = $('#notif'), L = V.filter(v => v.id && v.ok() && badge(v));
+    nb.innerHTML = '<div class="h">Notifications</div>' + (L.length ? L.map(v => '<a href="#/' + v.id + '">' + svg(v.icon) + '<span>' + esc(v.label) + (sideOf(v) === 'admin' ? ' <span class="mute small">· admin</span>' : '') + '</span><span class="n">' + badge(v) + '</span></a>').join('') : '<div class="e">You are all caught up.</div>'); nb.hidden = !nb.hidden; $('#menu').hidden = true; return; }
+  if (!ev.target.closest('#notif')) $('#notif').hidden = true; else if (ev.target.closest('a')) $('#notif').hidden = true;
+  { const mb = ev.target.closest('[data-mode]'); if (mb) { S.mode = mb.dataset.mode; try { localStorage.setItem('hr.mode', S.mode); } catch (e) {} go(S.mode === 'admin' ? 'live' : 'home'); return; } }
   if (!ev.target.closest('#menu')) $('#menu').hidden = true;
   const hit = ev.target.closest('[data-hit]'); if (hit) { S.open.person = hit.dataset.hit; $('#hits').hidden = true; $('#q').value = ''; go('people'); return; }
   if (!ev.target.closest('.search')) $('#hits').hidden = true;
@@ -687,10 +773,12 @@ async function act(a, x, t) {
       const O = { bp: num(val('pk-bp')) || 40, hp: num(val('pk-hp')) || 0, conv: num(val('pk-cv')) || 0 }, o = readPkg(e); S.pkgOpt = O; S.pkgCtc = A;
       Object.assign(o, ctcSplit(A, { bp: O.bp, hp: O.hp, conv: O.conv, pfPct: num(o.pfPct), grat: o.grat })); S.pkgDraft = o; render(); toast('Structure built for CTC ' + money(A)); return; }
     case 'pk-prev': { const e = empOf(S.pkgFor); if (!e) return; S.pkgDraft = readPkg(e); S.pkgPrev = !S.pkgPrev; render(); return; }
-    case 'pk-print': { const e = empOf(S.pkgFor); if (!e || !window.OfferLetter) return; OfferLetter.print(readPkg(e), { name: 'Movana Logistics' }); return; }
+    case 'pk-print': { const e = empOf(S.pkgFor); if (!e || !window.OfferLetter) return; OfferLetter.print(readPkg(e), { name: 'SN Logistics' }); return; }
     case 'pk-save': await savePkg(false); return;
     case 'pk-release': await savePkg(true); return;
     case 'pk-withdraw': { const o = D.offer.find(z => z._id === S.pkgFor); if (!o || !await ask('Withdraw this offer letter?', { ok: 'Withdraw', danger: 1 })) return; const b = Object.assign({}, o); delete b._id; b.status = 'Withdrawn'; b.updatedAt = now; b.by = S.uid; await save('punch_offer/' + o._id, b, 'Withdrawn'); return; }
+    case 'att-days': S.attOpen = S.attOpen === x ? null : x; render(); return;
+    case 'att-csv': attCsv(); return;
     case 'doc-view': await viewDoc(x); return;
     case 'doc-open': S.docFor = x; render(); window.scrollTo(0, 0); return;
     case 'doc-close': S.docFor = null; render(); return;
@@ -711,10 +799,10 @@ async function act(a, x, t) {
     case 'rv-send': { const cyc = val('rv-cycle'), id = 'rv_' + S.self + '_' + cyc.replace(/\s+/g, ''), old = D.reviews.find(r => r._id === id); if (old && old.s === 'Final') { toast('This review is already final.'); return; }
       await save('hr_reviews/' + id, Object.assign({}, base, { cycle: cyc, self: { rating: num(val('rv-rate')), text: val('rv-text') }, mgr: (old && old.mgr) || null, s: 'Submitted' }), 'Review submitted'); return; }
     case 'tr-join': { const c = D.train.find(z => z._id === x); await save('hr_enrol/' + x + '_' + S.self, Object.assign({}, base, { course: x, courseTitle: c ? c.title : '', s: 'Enrolled' }), 'Signed up'); return; }
-    case 'hd-send': { if (!val('hd-sub')) { toast('Write a subject.'); return; } await save('hr_help/' + newId('hd'), Object.assign({}, base, { cat: val('hd-cat'), subject: val('hd-sub'), detail: val('hd-text'), s: 'Open' }), 'Sent to HR'); return; }
+    case 'hd-send': { if (!val('hd-sub')) { toast('Write a subject.'); return; } if (!val('hd-text')) { toast('Describe the issue.'); return; } const id = newId('hd'), no = 'HR-' + String(now).slice(-6); if (await save('hr_help/' + id, Object.assign({}, base, { no, cat: val('hd-cat'), pri: val('hd-pri') || 'Normal', subject: val('hd-sub'), detail: val('hd-text'), msgs: [{ by: S.self, name: base.name, text: val('hd-text'), at: now }], s: 'Open' }), 'Ticket ' + no + ' raised')) { S.tkNew = false; S.tk = id; render(); } return; }
     case 'sx-send': { if (!val('sx-lwd')) { toast('Pick your last working day.'); return; } if (!await ask('Submit your resignation to HR?', { ok: 'Submit resignation', danger: 1 })) return; await save('hr_exits/' + newId('sx'), Object.assign({}, base, { lwdAsked: val('sx-lwd'), reason: val('sx-why'), text: val('sx-text'), s: 'Pending' }), 'Resignation submitted'); return; }
     case 'of-view': S.ofView = !S.ofView; render(); return;
-    case 'of-print': { const o = D.offer.find(z => z._id === S.self); if (o && window.OfferLetter) OfferLetter.print(o, { name: 'Movana Logistics' }); return; }
+    case 'of-print': { const o = D.offer.find(z => z._id === S.self); if (o && window.OfferLetter) OfferLetter.print(o, { name: 'SN Logistics' }); return; }
     case 'of-accept': { const o = D.offer.find(z => z._id === S.self); if (!o || !await ask('Accept this offer on the terms in the letter?', { ok: 'Accept offer' })) return; const b = Object.assign({}, o); delete b._id; b.status = 'Accepted'; b.acceptedAt = now; await save('punch_offer/' + S.self, b, 'Offer accepted'); return; }
     case 'em-new': S.edit = 'new'; render(); window.scrollTo(0, 0); return;
     case 'em-edit': S.edit = x; render(); window.scrollTo(0, 0); return;
@@ -734,7 +822,9 @@ async function act(a, x, t) {
       if (p && !p.noPunch) sb.puid = p._id;
       if (!(await save('staff/' + sid, sb))) return;
       if (p && !p.noPunch) { const raw = Object.assign({}, D.pemp.find(z => z._id === p._id) || {}); delete raw._id;
-        if (!(await save('punch_emp/' + p._id, Object.assign(raw, { name: f.name, eid: f.eid, desg: f.desg, grade: f.grade, cat: f.cat, join: f.join, mgr: f.mgr, wp: Object.assign({}, raw.wp, { name: f.hub }), updatedAt: now })))) return; }
+        const wp = Object.assign({}, raw.wp, { name: f.hub }), la = val('em-lat'), ln = val('em-lng'); if (la !== '' && ln !== '') { wp.lat = num(la); wp.lng = num(ln); }
+        const wo = $$('[data-wo]').filter(c => c.checked).map(c => +c.dataset.wo), extra = $('#em-radius') ? { radius: num(val('em-radius')) || 150, wo } : {};
+        if (!(await save('punch_emp/' + p._id, Object.assign(raw, { name: f.name, eid: f.eid, desg: f.desg, grade: f.grade, cat: f.cat, join: f.join, mgr: f.mgr, wp, updatedAt: now }, extra)))) return; }
       S.edit = null;
       if (!p && canAppr()) { toast('Employee added – creating the Punch login…'); const c = await makePunchLogin({ name: f.name, eid: f.eid, desg: f.desg, grade: f.grade, cat: f.cat, wp: { name: f.hub }, join: f.join, mgr: f.mgr, staffId: sid }); if (c) S.creds = [c]; render(); window.scrollTo(0, 0); return; }
       toast(p ? 'Saved – portal' + (p.noPunch ? '' : ' and Punch app') + ' updated' : 'Employee added'); render(); return; }
@@ -769,7 +859,16 @@ async function act(a, x, t) {
     case 'tr-complete': { for (const en of D.enrol.filter(z => z.course === x && z.s === 'Enrolled')) { const b = Object.assign({}, en); delete b._id; b.s = 'Completed'; await save('hr_enrol/' + en._id, b); } toast('Marked attended'); return; }
     case 'st': { const c = t.dataset.c, k = { hr_expenses: 'exp', hr_exits: 'exits', hr_help: 'help' }[c], r = D[k].find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; b.s = t.dataset.v; b.by = S.self; b.byName = S.me.name; b.decidedAt = now; await save(c + '/' + x, b, b.s); return; }
     case 'sx-ok': { const r = D.exits.find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; const l = document.querySelector('[data-lwd="' + x + '"]'); b.lwd = (l && l.value) || r.lwdAsked; b.s = 'Approved'; b.by = S.self; b.decidedAt = now; await save('hr_exits/' + x, b, 'Resignation accepted'); return; }
-    case 'hd-reply': { const r = D.help.find(z => z._id === x); if (!r) return; const b = Object.assign({}, r); delete b._id; b.reply = document.querySelector('[data-hr="' + x + '"]').value.trim(); if (!b.reply) { toast('Write a reply.'); return; } b.s = 'Resolved'; b.by = S.self; b.byName = S.me.name; b.decidedAt = now; await save('hr_help/' + x, b, 'Replied'); return; }
+    case 'tk-new': S.tkNew = !S.tkNew; S.tk = null; render(); return;
+    case 'tk-open': S.tk = S.tk === x ? null : x; S.tkNew = false; render(); window.scrollTo(0, 0); return;
+    case 'tk-close': S.tk = null; render(); return;
+    case 'tk-f': S.tkF = x; render(); return;
+    case 'tk-mine': case 'tk-reply': { const r = D.help.find(z => z._id === x); if (!r) return; const hr = isHR() && S.mode === 'admin', b = Object.assign({}, r); delete b._id; b.msgs = tkMsgs(r).slice(); b.no = tkNo(r);
+      if (a === 'tk-mine') { b.ass = S.uid; b.assName = S.me.name; if (b.s === 'Open') b.s = 'In progress'; await save('hr_help/' + x, b, 'Assigned to you'); return; }
+      const msg = val('tk-msg'); if (!msg) { toast('Write a message.'); return; }
+      b.msgs.push({ by: hr ? S.uid : S.self, name: S.me.name, text: msg, at: now, hr: hr ? 1 : 0 });
+      if (hr) { b.s = val('tk-st') || 'In progress'; if (!b.ass) { b.ass = S.uid; b.assName = S.me.name; } if (b.s === 'Resolved') { b.decidedAt = now; b.by = S.uid; b.byName = S.me.name; } } else if (b.s === 'Waiting for you') b.s = 'In progress';
+      await save('hr_help/' + x, b, hr ? 'Reply sent' : 'Message sent to HR'); return; }
   }
 }
 document.addEventListener('change', async ev => {
@@ -778,6 +877,7 @@ document.addEventListener('change', async ev => {
   if (t.dataset && t.dataset.up) { await uploadDoc(t); return; }
   if (t.id === 'ym' || t.id === 'ym-sel') { S.ym = t.value || ymNow(); render(); return; }
   if (t.dataset.gp) { const g = D.goals.find(z => z._id === t.dataset.gp); if (!g) return; const b = Object.assign({}, g); delete b._id; b.progress = Math.max(0, Math.min(100, num(t.value))); await save('hr_goals/' + g._id, b, 'Progress saved'); return; }
+  if (t.dataset.mark) { const [u, k] = t.dataset.mark.split('|'); await setMark(u, k, t.value); return; }
   if (t.dataset.mg) { if (!isHR()) return; const e = empOf(t.dataset.mg), m = t.value; if (!e) return;
     // no loops: the new manager must not report (directly or further down) to this person
     let x = m && D.emp.find(o => normN(o.name) === normN(m)), hop = 0; while (x && hop++ < 50) { if (x._id === e._id) { toast(m + ' reports to ' + e.name + ' – pick someone above them.'); render(); return; } x = mgrOf(x); }
@@ -789,6 +889,7 @@ document.addEventListener('input', ev => {
   if (t.id && /^pk-(basic|hra|conv|spl|pfPct|pt)$/.test(t.id)) { const e = empOf(S.pkgFor); if (e) { S.pkgDraft = readPkg(e); clearTimeout(S.pkT); S.pkT = setTimeout(render, 400); } return; }
   if (t.id === 'q-people') { S.q.people = t.value; render(); return; }
   if (t.id === 'q-emp') { S.q.emp = t.value; render(); return; }
+  if (t.id === 'q-tk') { S.q.tk = t.value; render(); return; }
   if (t.id === 'q') { const q = lc(t.value.trim()), h = $('#hits'); if (!q) { h.hidden = true; return; } const L = D.emp.filter(e => lc([e.name, e.eid, e.desg].join(' ')).includes(q)).slice(0, 8);
     h.innerHTML = L.length ? L.map(e => '<button type="button" data-hit="' + esc(e._id) + '"><span class="av">' + esc(ini(e.name)) + '</span><span><b>' + esc(e.name) + '</b><br><span class="mute small">' + esc([e.eid, e.desg].filter(Boolean).join(' · ')) + '</span></span></button>').join('') : '<div class="mute small" style="padding:10px">No one found</div>'; h.hidden = false; }
 });

@@ -1,4 +1,4 @@
-// Movana portal on Firebase: staff log in with username + password (Firebase Authentication),
+// SN Logistics portal on Firebase: staff log in with username + password (Firebase Authentication),
 // data lives in Cloud Firestore and is protected by firestore.rules on Google's servers.
 // This file gives the portal the same small data / user / download interface it had on claude.ai.
 (function () {
@@ -20,7 +20,9 @@
   const gate = document.createElement('div'); gate.id = 'fbGate'; gate.hidden = true;
   document.addEventListener('DOMContentLoaded', () => document.body.appendChild(gate));
   if (document.body) document.body.appendChild(gate);
-  const MARK = '<div class="mk" aria-hidden="true">ML</div>';
+  // SN Logistics logo, found next to this script wherever the page lives (/portal, /hr, /mail)
+  const LOGO = (() => { try { return new URL('../brand/sn-logo-120h.png', (document.currentScript || {}).src || location.href).href; } catch (e) { return '../brand/sn-logo-120h.png'; } })();
+  const MARK = '<img src="' + LOGO + '" alt="SN Logistics – Speed & Trust" style="height:56px;width:auto;max-width:100%;display:block">';
   function showGate(html) { gate.innerHTML = '<div class="box">' + MARK + html + '</div>'; gate.hidden = false; const f = gate.querySelector('input'); if (f) setTimeout(() => f.focus(), 50); }
 
   if (!CFG || !window.firebase) {
@@ -37,7 +39,7 @@
 
   function loginScreen(msg) {
     if (!msg && typeof GMSG === 'string' && GMSG) msg = GMSG;
-    showGate('<h1>' + (window.MOVANA_APP_TITLE || 'Staff login') + '</h1><p>' + (window.MOVANA_APP_SUB || 'Movana Logistics control tower') + '</p><form id="fbLogin" style="display:grid;gap:12px"><label>Username<input id="fbU" autocomplete="username" autocapitalize="none" spellcheck="false" required></label><label>Password<input id="fbP" type="password" autocomplete="current-password" required></label><div class="err" id="fbErr" role="alert">' + esc(msg || '') + '</div><button type="submit" id="fbGo">Sign in</button></form><button type="button" id="fbGoogle" class="gbtn"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Sign in with Google</button><button class="link" type="button" id="fbForgot">Forgot password?</button>');
+    showGate('<h1>' + (window.MOVANA_APP_TITLE || 'Staff login') + '</h1><p>' + (window.MOVANA_APP_SUB || 'SN Logistics control tower') + '</p><form id="fbLogin" style="display:grid;gap:12px"><label>Username<input id="fbU" autocomplete="username" autocapitalize="none" spellcheck="false" required></label><label>Password<input id="fbP" type="password" autocomplete="current-password" required></label><div class="err" id="fbErr" role="alert">' + esc(msg || '') + '</div><button type="submit" id="fbGo">Sign in</button></form><button type="button" id="fbGoogle" class="gbtn"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Sign in with Google</button><button class="link" type="button" id="fbForgot">Forgot password?</button>');
   }
   function setupScreen() {
     showGate('<h1>Create the admin login</h1><p>First time here. This account becomes the owner and Super admin of the portal. Choose a strong password you do not use anywhere else.</p><form id="fbSetup" style="display:grid;gap:12px"><label>Your name<input id="fbN" autocomplete="name" required></label><label>Username<input id="fbU" value="admin" autocomplete="username" autocapitalize="none" spellcheck="false" required></label><label>Password (8+ characters)<input id="fbP" type="password" autocomplete="new-password" required></label><label>Password again<input id="fbP2" type="password" autocomplete="new-password" required></label><div class="err" id="fbErr" role="alert"></div><button type="submit" id="fbGo">Create admin and open portal</button></form>');

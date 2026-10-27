@@ -117,6 +117,19 @@ service cloud.firestore {
       allow delete: if hrOwnColl(coll) && (hrAll() || (signedIn() && resource.data.uid == request.auth.uid && !(resource.data.get('s', '') in closedSt())));
     }
 
+    // ----- Movana Mail (internal mail at /mail) -----
+    // Only the sender and the recipients can read a message. Nobody can change what was sent; each person can only
+    // change their own read / starred / trash flags (st.<their uid>). Messages are never deleted for everyone.
+    match /mail/{id} {
+      allow read: if signedIn() && (resource.data.from == request.auth.uid || request.auth.uid in resource.data.rcpt);
+      allow create: if isMember() && request.resource.data.from == request.auth.uid
+        && request.resource.data.rcpt is list && request.resource.data.rcpt.size() > 0 && request.resource.data.rcpt.size() <= 50 && request.resource.data.st is map;
+      allow update: if signedIn() && (resource.data.from == request.auth.uid || request.auth.uid in resource.data.rcpt)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['st'])
+        && request.resource.data.st.diff(resource.data.st).affectedKeys().hasOnly([request.auth.uid]);
+      allow delete: if false;
+    }
+
     // "Is the portal set up yet?" – readable before login so the first screen knows what to show.
     match /public/{d} {
       allow read: if true;
@@ -175,9 +188,9 @@ service cloud.firestore {
     // Everything else: shipments, pickups, trips, invoices, payments, staff, leave, payroll, tickets …
     // Punch employees are kept out of all of this; Punch data has its own rules above.
     match /{coll}/{id} {
-      allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*');
+      allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*') && coll != 'mail';
       allow write: if canWrite() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*')
-        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail']);
+        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail']);
     }
   }
 }

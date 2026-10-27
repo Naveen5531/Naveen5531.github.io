@@ -1,5 +1,5 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="../brand/sn-icon-64.png"><link rel="apple-touch-icon" href="../brand/sn-apple-180.png"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}
 /* ===== Punch live home ===== */
 .live-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
 .live-dot { display: inline-flex; align-items: center; gap: 7px; font-size: .78rem; font-weight: 600; color: var(--good); background: var(--good-bg); padding: 4px 10px; border-radius: 999px; }
@@ -37,7 +37,7 @@ button.who:hover { background: var(--surface-2); }
 @media (max-width: 520px) { .hike-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 .offer-edit { padding: 6px 2px 10px; } .offer-edit .section-title { margin: 12px 0 6px; }
 </style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><title>Movana Control Tower</title></head><body>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="../brand/sn-icon-64.png"><link rel="apple-touch-icon" href="../brand/sn-apple-180.png"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><title>SN Control Tower</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Outfit:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&display=swap">
@@ -425,11 +425,11 @@ tr.click { cursor: pointer; }
 <div class="shell">
   <aside class="side" id="side" aria-label="Modules">
     <div class="brand">
-      <div class="brand-mark" aria-hidden="true">ML</div>
-      <div><div class="brand-name" id="brandName">Movana Logistics</div><div class="brand-sub">Control tower</div></div>
+      <img src="../brand/sn-icon-64.png" alt="SN Logistics" width="38" height="38" style="width:38px;height:38px;border-radius:11px;display:block;flex:none;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)">
+      <div><div class="brand-name" id="brandName">SN Logistics</div><div class="brand-sub">Control tower</div></div>
     </div>
     <nav class="nav" id="nav"></nav>
-    <div class="side-foot"><span class="brand-sub">Movana · Punch</span><div id="skinrow" hidden></div></div>
+    <div class="side-foot"><span class="brand-sub">SN Logistics · Punch</span><div id="skinrow" hidden></div></div>
   </aside>
   <div class="navscrim" data-act="nav-close"></div>
   <div class="main">
@@ -485,7 +485,7 @@ function toast(msg) { let t = $('.toast'); if (!t) { t = document.createElement(
 
 // ================= settings =================
 const DEFAULT_SETTINGS = {
-  company: 'Movana Logistics', gstin: '', state: 'Telangana', address: '',
+  company: 'SN Logistics', gstin: '', state: 'Telangana', address: '',
   volDivisor: 5000, fuelPct: 12, docket: 50, codPct: 2, codMin: 50, gstPct: 18, minCharge: 150, roundTo: 0.5,
   rLocal: 18, rRegional: 24, rMetro: 30, rNational: 38, rSpecial: 55,
   tLocal: 1, tRegional: 2, tMetro: 3, tNational: 5, tSpecial: 7,
@@ -561,7 +561,7 @@ const EXPENSE_ACCTS = COA.filter(a => a[1] === 'Expense').map(a => a[0]);
 
 // ================= state =================
 const COLLS = ['shipments', 'pickups', 'trips', 'drs', 'returns', 'invoices', 'payments', 'vendorbills', 'journal', 'tickets', 'assets', 'access', 'approvals', 'staff', 'attendance', 'vehicles', 'vtypes', 'maintenance', 'fuel', 'customers', 'hubs', 'rates', 'settings', 'audit', 'pins', 'leaves', 'payroll', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer'];
-const S = { mod: 'punch', tab: {}, data: {}, loaded: {}, q: {}, filt: {}, sel: {}, db: null, me: null, canWrite: true, readonly: false, dbState: 'connecting', downloads: null, users: null,
+const S = { mod: 'dashboard', tab: {}, data: {}, loaded: {}, q: {}, filt: {}, sel: {}, db: null, me: null, canWrite: true, readonly: false, dbState: 'connecting', downloads: null, users: null,
   from: addDays(today(), -29), to: today(), month: today().slice(0, 7), attDate: today(), attHub: '' };
 COLLS.forEach(k => { S.data[k] = []; S.q[k] = ''; S.filt[k] = 'All'; S.sel[k] = new Set(); });
 const SET = () => Object.assign({}, DEFAULT_SETTINGS, (S.data.settings.find(d => d._id === 'main') || {}));
@@ -572,7 +572,7 @@ const writable = k => S.dbState === 'ok' && S.canWrite && !S.readonly && lvl(COL
 async function boot() {
   try { const v = JSON.parse(localStorage.getItem('movana.nav') || 'null'); if (v && v.mod) { S.mod = v.mod; S.tab = v.tab || {}; } } catch (e) {}
   const h = location.hash.slice(1), hm = NAV.find(m => m.id === h && m.href); if (hm) { location.replace(hm.href); return; } if (h && NAV.some(m => m.id === h)) S.mod = h;
-  if ((NAV.find(m => m.id === S.mod) || {}).href) S.mod = 'punch';
+  if ((NAV.find(m => m.id === S.mod) || {}).href) S.mod = 'dashboard';
   render();
   const use = window.claude && window.claude.use ? window.claude.use.bind(window.claude) : null;
   if (!use) { S.dbState = 'none'; render(); return; }
@@ -2817,7 +2817,7 @@ async function makePayslips() {
 function payslipHtml(r) {
   const st = SET(); const row = (a, b) => '<tr><td>' + esc(a) + '</td><td style="text-align:right">' + money(b) + '</td></tr>';
   return '<!doctype html><html><head><meta charset="utf-8"><title>Payslip ' + esc(r.employee) + ' ' + esc(r.month) + '</title><style>body{font:14px system-ui,sans-serif;max-width:720px;margin:30px auto;padding:0 16px;color:#111}h1{font-size:20px;margin:0}table{width:100%;border-collapse:collapse;margin:14px 0}td,th{padding:7px 8px;border-bottom:1px solid #ddd;text-align:left}.g{display:grid;grid-template-columns:1fr 1fr;gap:24px}.net{font-size:18px;font-weight:700;background:#f6f1e4;padding:12px;border-radius:8px}</style></head><body>' +
-    '<h1>' + esc(st.company || 'Movana Logistics') + '</h1><div>' + esc(st.address || '') + '</div><h2>Payslip – ' + esc(r.month) + '</h2><table><tr><td>Employee</td><td><b>' + esc(r.employee) + '</b></td><td>Payslip no</td><td>' + esc(r.no) + '</td></tr><tr><td>Designation</td><td>' + esc(r.role || '') + '</td><td>Payable days</td><td>' + r.payable + ' / ' + r.days + '</td></tr></table>' +
+    '<h1>' + esc(st.company || 'SN Logistics') + '</h1><div>' + esc(st.address || '') + '</div><h2>Payslip – ' + esc(r.month) + '</h2><table><tr><td>Employee</td><td><b>' + esc(r.employee) + '</b></td><td>Payslip no</td><td>' + esc(r.no) + '</td></tr><tr><td>Designation</td><td>' + esc(r.role || '') + '</td><td>Payable days</td><td>' + r.payable + ' / ' + r.days + '</td></tr></table>' +
     '<div class="g"><table><tr><th>Earnings</th><th></th></tr>' + row('Salary for payable days', r.gross) + row('Incentive / OT', r.incentive) + '<tr><th>Total</th><th style="text-align:right">' + money(num(r.gross) + num(r.incentive)) + '</th></tr></table><table><tr><th>Deductions</th><th></th></tr>' + row('Provident fund', r.pf) + row('ESI', r.esi) + row('Professional tax', r.pt) + row('Advance recovery', r.advance) + row('TDS', r.tds) + '<tr><th>Total</th><th style="text-align:right">' + money(num(r.pf) + num(r.esi) + num(r.pt) + num(r.advance) + num(r.tds)) + '</th></tr></table></div>' +
     '<p class="net">Net pay: ' + money(r.net) + '</p><p style="color:#666;font-size:12px">Status: ' + esc(stageOf('payroll', r)) + '. Computer generated payslip.</p></body></html>';
 }
@@ -3116,7 +3116,7 @@ const OF_F = [['desg', 'Designation'], ['grade', 'Grade'], ['cat', 'Department']
 const OF_P = [['basic', 'Basic / month (₹)'], ['hra', 'HRA / month (₹)'], ['conv', 'Conveyance / month (₹)'], ['spl', 'Special allowance / month (₹)'], ['pfPct', 'PF % of Basic'], ['pt', 'Professional tax / month (₹)']];
 const OF_T = [['prob', 'Probation (months)'], ['pnotice', 'Notice in probation (days)'], ['notice', 'Notice after confirmation (days)'], ['hrs', 'Working hours / day'], ['wdays', 'Working days / week']];
 const pOffer = uid => (S.data.punch_offer || []).find(o => o._id === uid);
-const offerCompany = () => ({ name: SET().company || 'Movana Logistics' });
+const offerCompany = () => ({ name: SET().company || 'SN Logistics' });
 /** The offer record for an employee: saved offer, else built from their Punch profile and salary set-up. */
 function offerOf(e) {
   const o = pOffer(e._id), v = pPay(e._id) || {};
@@ -3346,7 +3346,7 @@ document.addEventListener('change', async e => {
 });
 
 const NAV = [
-  { id: 'punch', label: 'Team live', icon: 'clock', dept: 'hr', top: true, sub: () => 'Live attendance from the Punch app · ' + fmtDate(today()),
+  { id: 'punch', label: 'Team live', icon: 'clock', dept: 'hr', top: true, hidden: true, href: '../hr/#/live', sub: () => 'Live attendance from the Punch app · ' + fmtDate(today()),
     get tabs() { return [{ id: 'live', label: 'Live', view: punchLive }, { id: 'reg', label: 'Attendance register', view: punchRegister }]
       .concat(pCan(P_SALV) ? [{ id: 'sal', label: 'Salary', view: punchSalary }, { id: 'offer', label: 'Package & offer letter', view: punchOffers, n: () => (S.data.punch_offer || []).filter(o => o.status === 'Released').length }] : []).concat([{ id: 'emp', label: 'Employees', view: punchEmployees }]); } },
   { id: 'dashboard', label: 'Dashboard', icon: 'dash', dept: 'overview', sub: () => 'Everything at a glance · ' + fmtDate(today()), tabs: [{ id: 'main', label: 'Overview', view: dashboard }] },
@@ -3390,11 +3390,11 @@ const NAV = [
   { id: 'access', label: 'Roles & access', icon: 'key', dept: 'adm', sub: () => 'Who can see and change each department', tabs: [
     { id: 'team', label: 'People & roles', view: teamView, n: () => (S.data.joinreq || []).filter(q => q.status === 'Pending').length },
     { id: 'roles', label: 'Roles & permissions', view: rolesView }] },
-  { id: 'people', label: 'Employees', icon: 'people', dept: 'hr', href: '../hr/#/hr-employees', sub: () => 'Employee records and daily attendance', tabs: [
+  { id: 'people', label: 'Employees', icon: 'people', dept: 'hr', hidden: true, href: '../hr/#/hr-employees', sub: () => 'Employee records and daily attendance', tabs: [
     { id: 'staff', label: 'Employees', view: L('staff'), n: () => S.data.staff.filter(s => stageOf('staff', s) !== 'Left').length }, { id: 'att', label: 'Attendance', view: attendanceView }] },
-  { id: 'leave', label: 'Leave & approvals', icon: 'cal', dept: 'hr', href: '../hr/#/approvals', sub: () => 'Apply, approve, balances – approved leave marks attendance', tabs: [
+  { id: 'leave', label: 'Leave & approvals', icon: 'cal', dept: 'hr', hidden: true, href: '../hr/#/approvals', sub: () => 'Apply, approve, balances – approved leave marks attendance', tabs: [
     { id: 'req', label: 'Leave requests', view: L('leaves'), n: () => S.data.leaves.filter(l => stageOf('leaves', l) === 'Applied').length }, { id: 'bal', label: 'Balances', view: leaveBalances }] },
-  { id: 'payroll', label: 'Payroll', icon: 'pay', dept: 'hr', href: '../hr/#/payroll', sub: () => 'Monthly payroll from attendance and leave, PF / ESI / PT, payslips', tabs: [
+  { id: 'payroll', label: 'Payroll', icon: 'pay', dept: 'hr', hidden: true, href: '../hr/#/payroll', sub: () => 'Monthly payroll from attendance and leave, PF / ESI / PT, payslips', tabs: [
     { id: 'run', label: 'Payroll run', view: payrollRun }, { id: 'slips', label: 'Payslips', view: L('payroll'), n: () => S.data.payroll.filter(p => stageOf('payroll', p) !== 'Paid').length }] },
   { id: 'fleet', label: 'Fleet', icon: 'bus', dept: 'ops', sub: () => 'Vehicles, papers, maintenance and fuel mileage', tabs: [
     { id: 'vehicles', label: 'Vehicles', view: L('vehicles') }, { id: 'vtypes', label: 'Vehicle types', view: vtypesView, n: () => S.data.vtypes.length }, { id: 'mnt', label: 'Maintenance', view: L('maintenance') }, { id: 'fuel', label: 'Fuel log', view: L('fuel') }] },
@@ -3437,6 +3437,7 @@ function renderNav() {
       (isOpen ? '<div class="subs">' + tabsOf(m).map(t => { const c = t.n ? t.n() : 0; return '<button type="button" class="sub" data-go="' + m.id + '" data-gotab="' + t.id + '"' + (m.id === cm.id && cur.id === t.id ? ' aria-current="page"' : '') + '><span>' + esc(t.label) + '</span>' + (c ? '<span class="n">' + c + '</span>' : '') + '</button>'; }).join('') + '</div>' : '');
   };
   const w = whoAmI();
+  if (w.role !== '_loading' && (w.roles || []).length && w.roles.every(r => r === 'employee')) { location.replace('../hr/'); return; }
   const tops = NAV.filter(m => m.top && !m.hidden && anyLvl(m.id) >= 1);
   $('#nav').innerHTML = (tops.length ? '<div class="dept overview">' + tops.map(modHtml).join('') + '</div>' : '') + DEPTS.map(d => {
     const ms = NAV.filter(m => m.dept === d.id && !m.top && !m.hidden && anyLvl(m.id) >= 1);
@@ -3446,7 +3447,7 @@ function renderNav() {
     const n = ms.reduce((a, m) => a + cnt(m), 0);
     return '<div class="dept' + (isCur ? ' cur' : '') + '"><button type="button" class="dept-h" data-dept="' + d.id + '" aria-expanded="' + !!isOpen + '">' + svg(d.icon) + '<span>' + esc(d.label) + '</span>' + (n && !isOpen ? '<span class="count">' + n + '</span>' : '') + chev + '</button>' +
       (isOpen ? '<div class="dept-b">' + ms.map(modHtml).join('') + '</div>' : '') + '</div>';
-  }).join('') + (w.role !== '_loading' ? '<div class="dept overview"><a class="mod" href="../hr/" style="text-decoration:none">' + svg('people') + '<span>Movana People (HR)</span></a></div>' : '') + (w.role !== '_loading' ? '<button type="button" class="role-chip" data-go="me" data-gotab="main"><span class="mini">Signed in as</span><b>' + esc(roleById(w.role).name) + '</b></button>' : '');
+  }).join('') + (w.role !== '_loading' ? '<div class="dept overview"><a class="mod" href="../hr/" style="text-decoration:none">' + svg('people') + '<span>SN People (HR)</span></a><a class="mod" href="../mail/" style="text-decoration:none">' + svg('mail' in ICON ? 'mail' : 'ticket') + '<span>SN Mail</span></a></div>' : '') + (w.role !== '_loading' ? '<button type="button" class="role-chip" data-go="me" data-gotab="main"><span class="mini">Signed in as</span><b>' + esc(roleById(w.role).name) + '</b></button>' : '');
 }
 function appearanceView() {
   const sk = currentSkin();
@@ -3463,7 +3464,7 @@ function render() {
   document.body.dataset.skin = currentSkin();
   $('#title').textContent = tabsOf(m).length > 1 ? t.label : m.label;
   const dp = DEPTS.find(d => d.id === m.dept); $('#crumb').textContent = (dp && dp.id !== 'overview' ? dp.label + ' › ' : '') + (tabsOf(m).length > 1 ? m.label : m.sub());
-  $('#brandName').textContent = SET().company || 'Movana Logistics';
+  $('#brandName').textContent = SET().company || 'SN Logistics';
 
   let html = '';
   if (S.dbState === 'none') html += '<div class="banner">Shared data is not available in this view. Open this page in the Claude app or on claude.ai while signed in.</div>';
@@ -3700,4 +3701,10 @@ document.addEventListener('pointermove', e => {
 boot();
 
 })();
-</script></body></html>
+</script><script>
+/* Employee-only logins use SN People (HR); the control tower is for staff with other roles. */
+(async () => { try { if (!window.claude || !window.claude.use || !window.firebase) return; await window.claude.use('user'); const u = firebase.auth().currentUser; if (!u) return;
+  const [m, o] = await Promise.all([firebase.firestore().doc('members/' + u.uid).get(), firebase.firestore().doc('settings/owner').get().catch(() => null)]);
+  if (o && o.exists && o.data().uid === u.uid) return; if (m.exists) { const d = m.data(), r = [d.role].concat(d.roles || []).filter(Boolean); if (r.length && r.every(x => x === 'employee')) location.replace('../hr/'); } } catch (e) {} })();
+</script>
+</body></html>
