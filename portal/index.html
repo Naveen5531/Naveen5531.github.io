@@ -37,6 +37,7 @@ button.who:hover { background: var(--surface-2); }
 @media (max-width: 520px) { .hike-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 .offer-edit { padding: 6px 2px 10px; } .offer-edit .section-title { margin: 12px 0 6px; }
 .kv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px 14px;margin:6px 0 10px}.kv-grid>div>div{font-weight:600}
+#pback:not([hidden]){display:grid!important;place-items:center}
 </style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="../brand/sn-icon-64.png"><link rel="apple-touch-icon" href="../brand/sn-apple-180.png"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><title>SN Control Tower</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -435,6 +436,7 @@ tr.click { cursor: pointer; }
   <div class="navscrim" data-act="nav-close"></div>
   <div class="main">
     <header class="topbar gut">
+      <button class="burger" type="button" id="pback" aria-label="Back" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
       <button class="burger" type="button" data-act="nav-open" aria-label="Open menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
       <div class="titles"><div class="crumb" id="crumb"></div><h1 id="title">Dashboard</h1></div>
       <form class="track" id="trackForm" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -1152,7 +1154,7 @@ function listView(k, opts) {
 // ---------- drawer ----------
 let D = null;
 function closeDrawer() { D = null; $('#layer').innerHTML = ''; }
-function openDrawer(state) { D = state; drawDrawer(); }
+function openDrawer(state) { const was = !!D; D = state; drawDrawer(); if (!was && !NAVPOP) { try { history.pushState({ p: 1, mod: S.mod, tab: S.tab[S.mod] || null, dr: 1 }, ''); NAVD++; } catch (e) {} } navBtn(); }
 function refreshDrawer() { if (D && D.mode === 'view' && rec(D.k, D.id)) drawDrawer(true); }
 const SECTIONS = {
   pickups: [['Client', ['no', 'customer', 'date', 'slot', 'ref']], ['From', ['from', 'fromPin', 'fromCity', 'fromState', 'fromAddress']], ['To', ['to', 'toPin', 'toCity', 'toState', 'toAddress']], ['Cargo & L×B×H', ['pieces', 'l', 'b', 'h', 'weight', 'material']], ['Vehicle & driver', ['vtype', 'vehicle', 'driver', 'driverPhone']], ['Cost & GST', ['km', 'vendor', 'vendorRate', 'clientRate']], ['Notes', ['notes']]],
@@ -3503,10 +3505,23 @@ const curTab = () => { const m = curMod(), ts = tabsOf(m); return ts.find(t => t
 function go(mod, tab) {
   const hm = NAV.find(m => m.id === mod && m.href); if (hm) { location.href = hm.href; return; }
   if (lvl(mod) < 1) { toast('Your role does not include ' + ((NAV.find(m => m.id === mod) || {}).label || 'that screen') + '.'); return; }
+  const same = S.mod === mod && (!tab || S.tab[mod] === tab);
   S.mod = mod; if (tab) S.tab[mod] = tab; closeDrawer();
   try { localStorage.setItem('movana.nav', JSON.stringify({ mod: S.mod, tab: S.tab })); } catch (e) {}
-  render(); window.scrollTo(0, 0);
+  if (!NAVPOP && !same) { try { history.pushState({ p: 1, mod: S.mod, tab: S.tab[S.mod] || null }, ''); NAVD++; } catch (e) {} }
+  render(); window.scrollTo(0, 0); navBtn();
 }
+/* ---- back navigation: screens, tabs and open records are steps in the phone's history, so the phone's Back and the
+   ← button at the top go back one step (record → list → screen → dashboard) instead of leaving the portal ---- */
+let NAVPOP = false, NAVD = 0;   // NAVD: steps taken inside the portal, so Back never leaves it
+function navBtn() { const b = document.getElementById('pback'); if (b) b.hidden = !D && S.mod === 'dashboard'; }
+addEventListener('popstate', e => { const st = e.state; if (!st || !st.p) return; NAVPOP = true; NAVD = Math.max(0, NAVD - 1);
+  try { if (D && !st.dr) { closeDrawer(); render(); } else if (st.mod) { S.mod = st.mod; if (st.tab) S.tab[st.mod] = st.tab; closeDrawer(); render(); window.scrollTo(0, 0); } } finally { NAVPOP = false; navBtn(); } });
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-act="close"]'); if (c && D && history.state && history.state.dr && NAVD > 0) { e.stopImmediatePropagation(); e.preventDefault(); history.back(); return; }
+  const b = e.target.closest('#pback'); if (!b) return; e.preventDefault();
+  if (NAVD > 0) history.back(); else if (D) { closeDrawer(); render(); navBtn(); } else if (S.mod !== 'dashboard') go('dashboard');
+}, true);
 const SKINS = [
   { id: 'punch', name: 'Punch', note: 'Same look as the Punch app: light, white rounded cards, green and orange', sw: ['#ffffff', '#ffffff', '#0c9b76', '#f2f3f7'] },
   { id: 'midnight', name: 'Midnight Glass', note: 'Dark control-room look, glass cards, cyan and violet glow', sw: ['#060a16', '#0f1630', '#22d3ee', '#a78bfa'] },
@@ -3552,6 +3567,8 @@ function renderWho() {
   w.innerHTML = '<img alt="" src="' + esc(S.me.avatarUrl) + '"><span></span>'; w.querySelector('span').textContent = S.me.name || 'You';
 }
 function render() {
+  if (!render._nav) { render._nav = 1; try { history.replaceState({ p: 1, mod: S.mod, tab: S.tab[S.mod] || null }, ''); } catch (e) {} }
+  setTimeout(navBtn, 0);
   renderNav();
   const m = curMod(), t = curTab();
   document.body.dataset.skin = currentSkin();
@@ -3657,7 +3674,7 @@ document.addEventListener('click', async e => {
   if (ds.skinDefault) { const cur = S.data.settings.find(d => d._id === 'main') || {}; const body = Object.assign({}, cur, { skin: ds.skinDefault }); delete body._id; if (await setDoc('settings', 'main', body)) toast('Default design set to ' + SKINS.find(x => x.id === ds.skinDefault).name); return; }
   if (ds.template) { templateCSV(ds.template); return; }
   if (ds.go) { if (ds.chipset) S.filt.shipments = ds.chipset; S.collapsed = false; go(ds.go, ds.gotab); document.body.classList.remove('navopen'); return; }
-  if (ds.tab) { S.tab[S.mod] = ds.tab; go(S.mod, ds.tab); return; }
+  if (ds.tab) { go(S.mod, ds.tab); return; }
   if (ds.open) { const [k, id] = ds.open.split('|'); openDrawer({ mode: 'view', k, id }); return; }
   if (ds.new) { openDrawer({ mode: 'new', k: ds.new, draft: ds.new === 'shipments' && S.calcDraft ? S.calcDraft : newDraft(ds.new) || null }); S.calcDraft = null; setTimeout(() => { const f = $('#recForm input:not([placeholder="Auto"]), #recForm select'); if (f) f.focus(); }, 30); return; }
   if (ds.import) { IMPORT = null; openDrawer({ mode: 'import', k: ds.import }); return; }

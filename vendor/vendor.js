@@ -65,9 +65,18 @@ function watchVendor(id) {
   V.un.push(q.onSnapshot(s => { V.pk = s.docs.map(d => Object.assign({ _id: d.id }, d.data())).sort((a, b) => (+b.createdAt || 0) - (+a.createdAt || 0)); render(); }, () => {}));
 }
 
+/* ---------- back: every tab is a step in the phone's history; ← at the top goes back one step ---------- */
+let vnPop = false, vnLast = null;
+function vnTrack() { const k = (V.v ? V.v._id : '') + '|' + V.tab; const b = $('#vback'); if (b) b.hidden = V.tab === 'home' && !(V.admin && V.v);
+  if (k === vnLast) return; const st = { vt: V.tab, vid: V.admin && V.v ? V.v._id : null };
+  if (vnLast === null) history.replaceState(st, ''); else if (!vnPop) history.pushState(st, ''); vnLast = k; vnPop = false; }
+addEventListener('popstate', e => { const st = e.state; if (!st || $('#app').hidden) return; vnPop = true; V.tab = st.vt || 'home';
+  if (V.admin && !st.vid && V.v) { V.un.splice(1).forEach(f => f()); V.v = null; V.pk = []; } render(); scrollTo(0, 0); });
+document.addEventListener('click', e => { if (!e.target.closest('#vback')) return; if (history.state && vnLast !== null && history.length > 1) history.back(); else { V.tab = 'home'; render(); } });
 /* ---------- screens ---------- */
 function render() {
   if ($('#app').hidden) return;
+  try { vnTrack(); } catch (e) {}
   if (V.admin && !V.v) { $('#bar').innerHTML = ''; $('#main').innerHTML = '<div class="ph"><div><h1>Vendor portal · admin preview</h1><p>Open any vendor to see exactly what they see.</p></div></div>' + (V.all.length ? V.all.map(v => '<button class="pk" type="button" data-pv="' + esc(v._id) + '"><div class="t"><b>' + esc(v.name) + '</b><span class="st" style="--c:' + (VST[v.status] || '#6b7280') + '">' + esc(v.status || 'Draft') + '</span></div><div class="m">' + esc([v.code, v.city, v.uid ? 'login: ' + v.username : 'no login'].filter(Boolean).join(' · ')) + '</div></button>').join('') : '<div class="card mute">No vendors yet.</div>'); return; }
   const v = V.v; if (!v) { $('#main').innerHTML = '<div class="card mute">Loading…</div>'; return; }
   const ok = v.status === 'Verified';

@@ -78,6 +78,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <script src="../portal/firebase-config.js"></script>
 </head><body>
 <header class="top">
+  <button class="ib" type="button" id="hback" aria-label="Back" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M15 18l-6-6 6-6"/></svg></button>
   <button class="ib burger" type="button" id="burger" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <a class="brand" href="#/home"><img src="../brand/sn-icon-64.png" alt="SN Logistics" width="38" height="38" style="width:38px;height:38px;border-radius:11px;display:block;flex:none;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)"><span><b>SN People</b><small>HR · SN Logistics</small></span></a>
   <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search people by name or employee ID" autocomplete="off" aria-label="Search people"><div class="hits" id="hits" hidden></div></div>
@@ -957,5 +958,13 @@ document.addEventListener('input', ev => {
 });
 addEventListener('keydown', ev => { if (ev.key === 'Escape') { $('#menu').hidden = true; $('#hits').hidden = true; document.body.classList.remove('navopen'); } });
 })();
+</script>
+<script>
+/* Back button at the top: hidden on the home screen; elsewhere it steps back one screen, like the phone's Back */
+(function () { const b = document.getElementById('hback'), HOME = /^(#\/?|#\/(home|inbox|dashboard|live))?$/, stack = [location.hash];
+  const upd = () => { if (b) b.hidden = HOME.test(location.hash); };
+  addEventListener('hashchange', () => { const h = location.hash; if (stack.length > 1 && stack[stack.length - 2] === h) stack.pop(); else stack.push(h); upd(); });
+  b && b.addEventListener('click', () => { if (stack.length > 1) history.back(); else location.hash = '#/'; });
+  upd(); })();
 </script>
 </body></html>

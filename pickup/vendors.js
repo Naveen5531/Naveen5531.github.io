@@ -106,6 +106,7 @@ P.vendorsView = () => { if (VS.open === 'new') return '<button class="btn sm" ty
   const v = VS.open && S.vendors.find(x => x._id === VS.open); return v ? detailHtml(v) : listHtml(); };
 P.vendorsReset = () => { VS.open = null; };
 P.openVendor = id => { VS.open = id; };
+P.vendorOpen = () => VS.open;
 
 /* ---------- live checks while typing ---------- */
 let chkT;

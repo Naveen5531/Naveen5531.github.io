@@ -77,7 +77,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-l
 </div>
 
 <div id="app" hidden>
-  <header class="top"><img src="../brand/sn-icon-64.png" alt=""><div><b>SN Pickup</b><small id="who"></small></div><span class="sp"></span><span class="pill" id="net">● Online</span>
+  <header class="top"><button class="ib" type="button" id="nback" aria-label="Back" hidden><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><img src="../brand/sn-icon-64.png" alt=""><div><b>SN Pickup</b><small id="who"></small></div><span class="sp"></span><a class="pill" id="toPortal" href="../portal/" hidden style="text-decoration:none">← Portal</a><span class="pill" id="net">● Online</span>
     <button class="ib" id="out" aria-label="Sign out"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg></button></header>
   <main id="main"></main>
   <nav class="bar" id="bar" aria-label="Main"></nav>
@@ -376,8 +376,30 @@ function shipHtml(s) {
 }
 
 /* ================= render ================= */
+/* ---- back navigation: every screen is a step in the phone's history, so Back (on screen or the phone's own)
+   goes to the previous screen – detail → list → main screen – instead of leaving the app ---- */
+const navKey = () => JSON.stringify([S.tab, S.open ? S.open.k + ':' + (S.open.id || '') : '', SNP.vendorOpen ? SNP.vendorOpen() || '' : '', S.edit || '']);
+let navLast = null, navPop = false;
+const atHome = () => S.tab === 'mine' && !S.open && !(SNP.vendorOpen && SNP.vendorOpen());
+function navTrack() {
+  const k = navKey(); if (k === navLast) return;
+  const st = { k, tab: S.tab, open: S.open || null, vo: SNP.vendorOpen ? SNP.vendorOpen() || null : null };
+  if (navLast === null) history.replaceState(st, ''); else if (!navPop) history.pushState(st, '');
+  navLast = k; navPop = false; const b = $('#nback'); if (b) b.hidden = atHome();
+}
+addEventListener('popstate', e => { const st = e.state; if (!st || $('#app').hidden) return; navPop = true;
+  S.tab = st.tab || 'mine'; S.open = st.open || null; S.edit = null; if (SNP.openVendor) { if (st.vo) SNP.openVendor(st.vo); else SNP.vendorsReset && SNP.vendorsReset(); }
+  S.force = true; render(); scrollTo(0, 0); });
+/* the in-page "← Back" / "← Vendors" buttons step back through history too, like the phone's Back */
+document.addEventListener('click', e => { const b = e.target.closest('[data-act="back"],[data-v="back"]'); if (!b || !history.state || history.length < 2) return;
+  const prev = history.state; e.stopImmediatePropagation(); e.preventDefault(); history.back();
+  setTimeout(() => { if (history.state === prev) { S.open = null; SNP.vendorsReset && SNP.vendorsReset(); S.force = true; render(); } }, 350); }, true);
+document.addEventListener('click', e => { if (!e.target.closest('#nback')) return;
+  if (history.state && history.length > 1 && navLast !== null) history.back(); else { S.tab = 'mine'; S.open = null; SNP.vendorsReset && SNP.vendorsReset(); S.force = true; render(); } });
+try { if (/\/portal\//.test(document.referrer)) sessionStorage.setItem('snp.fromPortal', '1'); if (sessionStorage.getItem('snp.fromPortal') && !HHT) $('#toPortal').hidden = false; } catch (e) {}
 function render() {
   if ($('#app').hidden) return;
+  try { navTrack(); } catch (e) {}
   const keep = document.activeElement && document.activeElement.closest && document.activeElement.closest('form') && !S.force;
   $('#bar').innerHTML = navHtml();
   if (keep) return;            // never redraw a form while someone is typing in it
@@ -609,5 +631,5 @@ async function receive(btn, short) {
 }
 })();
 </script>
-<script src="vendors.js?v=8"></script>
+<script src="vendors.js?v=9"></script>
 </body></html>
