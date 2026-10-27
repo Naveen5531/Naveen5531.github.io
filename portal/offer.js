@@ -111,6 +111,7 @@ function ensureCss() { if (document.getElementById('offerCss')) return; const s 
     '#offerPrint .slip.off .pg:last-child{break-after:auto;page-break-after:auto}#offerPrint .slip.off .lf{left:16mm!important;right:16mm!important;bottom:8mm!important}}'; document.head.appendChild(s); }
 window.OfferLetter = {
   ctc,
+  lh(short, company) { COMPANY = company || {}; ensureCss(); return __lh(short); },
   html(e, company) { COMPANY = company || {}; ensureCss(); return '<div class="slip off">' + letter(e) + '</div>'; },
   print(e, company) { COMPANY = company || {}; ensureCss(); let p = document.getElementById('offerPrint'); if (!p) { p = document.createElement('div'); p.id = 'offerPrint'; p.style.display = 'none'; document.body.appendChild(p); }
     p.innerHTML = '<div class="slip off">' + letter(e) + '</div>'; document.body.classList.add('printing-offer');

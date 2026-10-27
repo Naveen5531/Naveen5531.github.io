@@ -471,6 +471,15 @@ const fmtTime = ms => ms ? new Date(ms).toLocaleString('en-IN', { day: '2-digit'
 const dayOf = ms => ms ? iso(ms) : '';
 const uniq = a => Array.from(new Set(a.filter(x => x !== '' && x != null)));
 const sum = (a, f) => a.reduce((s, x) => s + num(f ? f(x) : x), 0);
+/** In-page dialog instead of the browser's confirm box: ask(text, {ok, danger}) -> true / false. */
+function ask(msg, o) { o = o || {}; return new Promise(res => {
+  let m = document.getElementById('askDlg'); if (!m) { m = document.createElement('div'); m.id = 'askDlg'; document.body.appendChild(m);
+    const st = document.createElement('style'); st.textContent = '#askDlg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:grid;place-items:center;z-index:200;padding:16px}#askDlg[hidden]{display:none}#askDlg .askbox{background:#fff;color:#111827;border-radius:20px;padding:22px;max-width:420px;width:100%;box-shadow:0 30px 80px -20px rgba(0,0,0,.5)}#askDlg p{margin:10px 0 16px;font-weight:600;line-height:1.5}#askDlg .acts{display:flex;gap:8px;justify-content:flex-end}'; document.head.appendChild(st); }
+  m.innerHTML = '<div class="askbox" role="dialog" aria-modal="true"><p>' + esc(msg) + '</p><div class="acts"><button class="btn" type="button" id="askNo">Cancel</button><button class="btn ' + (o.danger ? 'danger' : 'primary') + '" type="button" id="askOk">' + esc(o.ok || 'OK') + '</button></div></div>';
+  m.hidden = false; setTimeout(() => $('#askOk').focus(), 30);
+  const done = v => { m.hidden = true; m.innerHTML = ''; document.removeEventListener('keydown', key, true); res(v); };
+  const key = e => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } };
+  document.addEventListener('keydown', key, true); $('#askNo').onclick = () => done(false); $('#askOk').onclick = () => done(true); m.onclick = e => { if (e.target === m) done(false); }; }); }
 let toastTimer;
 function toast(msg) { let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = msg; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.remove(), 3200); }
 
@@ -2523,7 +2532,7 @@ function myOfferPanel() {
 document.addEventListener('click', async ev => { const t = ev.target.closest('[data-myof]'); if (!t || !S.myOffer) return; const a = t.dataset.myof;
   if (a === 'view') { S.myOfView = !S.myOfView; render(); return; }
   if (a === 'print') { if (window.OfferLetter) OfferLetter.print(S.myOffer, offerCompany()); return; }
-  if (a === 'accept') { if (!confirm('Accept this offer on the terms in the letter?')) return; const b = Object.assign({}, S.myOffer); delete b._id; b.status = 'Accepted'; b.acceptedAt = Date.now();
+  if (a === 'accept') { if (!await ask('Accept this offer on the terms in the letter?', { ok: 'Accept offer' })) return; const b = Object.assign({}, S.myOffer); delete b._id; b.status = 'Accepted'; b.acceptedAt = Date.now();
     try { await S.db.collection('punch_offer').doc(S.me.id).set(b); S.myOffer = Object.assign({ _id: S.me.id }, b); audit('punch_offer', 'Offer accepted by ' + (S.me.name || '')); toast('Offer accepted'); render(); } catch (e) { toast('Could not accept. Try again.'); } }
 });
 function accountView() {
@@ -2865,7 +2874,7 @@ document.addEventListener('click', async e => {
     case 'mem-add': { if (!S.memPick) return; const role = $('#mem-role').value, staff = $('#mem-staff').value; if (await saveMember(S.memPick, { role, staff, status: 'Active' })) { toast(nameOf(S.memPick) + ' → ' + roleById(role).name); S.memPick = null; render(); } return; }
     case 'dir-open': { S.dirSel = x; render(); window.scrollTo(0, 0); return; }
     case 'dir-close': { S.dirSel = null; render(); return; }
-    case 'req-revoke': { if (!D || !confirm('Revoke this request?')) return; await setStage(D.k, D.id, 'Cancelled', 'Revoked by the person who raised it'); toast('Request revoked'); return; }
+    case 'req-revoke': { if (!D || !await ask('Revoke this request?', { ok: 'Revoke', danger: 1 })) return; await setStage(D.k, D.id, 'Cancelled', 'Revoked by the person who raised it'); toast('Request revoked'); return; }
     case 'perm-tabs': { S.permOpen = S.permOpen || {}; S.permOpen[x] = !S.permOpen[x]; render(); return; }
     case 'mem-rdel': { const m = memberOf(x), rr = t.dataset.r; if (!m || rr === m.role) return; await saveMember(x, { roles: rolesOfMember(m).filter(y => y !== rr) }); toast(roleById(rr).name + ' removed'); return; }
     case 'mem-susp': { const m = memberOf(x); if (m) await saveMember(x, { status: m.status === 'Suspended' ? 'Active' : 'Suspended' }); return; }
@@ -3145,7 +3154,7 @@ document.addEventListener('click', async ev => {
   const b = readOffer(x), now = Date.now(), by = S.me && S.me.id;
   if (a === 'save' || a === 'release') {
     if (!(num(b.basic) > 0)) { toast('Enter the Basic salary'); return; }
-    if (a === 'release') { if (!b.join) { toast('Enter the date of joining'); return; } if (!confirm('Release the offer letter to ' + b.name + '? They can see and accept it in the portal.')) return; b.status = 'Released'; b.releasedAt = now; b.releasedBy = by; }
+    if (a === 'release') { if (!b.join) { toast('Enter the date of joining'); return; } if (!await ask('Release the offer letter to ' + b.name + '? They can see and accept it in the portal.', { ok: 'Release' })) return; b.status = 'Released'; b.releasedAt = now; b.releasedBy = by; }
     b.uid = x; b.updatedAt = now; b.by = by;
     if (!(await pSet('punch_offer', x, b))) return;
     // the package sets the monthly salary used by Punch and HR
@@ -3153,7 +3162,7 @@ document.addEventListener('click', async ev => {
     await pSet('punch_pay', x, v);
     const e = Object.assign({}, (S.data.punch_emp || []).find(z => z._id === x) || {}); delete e._id; ['desg', 'grade', 'cat', 'join'].forEach(k => { if (b[k]) e[k] = b[k]; }); e.updatedAt = now; await pSet('punch_emp', x, e);
     audit('punch_offer', (a === 'release' ? 'Offer letter released to ' : 'Package saved for ') + b.name); toast(a === 'release' ? 'Offer letter released' : 'Package saved'); render(); return; }
-  if (a === 'withdraw') { if (!confirm('Withdraw this offer letter?')) return; const o = Object.assign({}, pOffer(x)); delete o._id; o.status = 'Withdrawn'; o.updatedAt = now; o.by = by; if (await pSet('punch_offer', x, o)) { audit('punch_offer', 'Offer letter withdrawn for ' + o.name); toast('Withdrawn'); } return; }
+  if (a === 'withdraw') { if (!await ask('Withdraw this offer letter?', { ok: 'Withdraw', danger: 1 })) return; const o = Object.assign({}, pOffer(x)); delete o._id; o.status = 'Withdrawn'; o.updatedAt = now; o.by = by; if (await pSet('punch_offer', x, o)) { audit('punch_offer', 'Offer letter withdrawn for ' + o.name); toast('Withdrawn'); } return; }
 });
 /** Live home: who is in or out right now, requests to decide, this month per person – updates as the app syncs. */
 function punchLive() {
@@ -3265,7 +3274,7 @@ function pReadEmp(e) { const o = Object.assign({}, e); delete o._id; o.wp = Obje
 document.addEventListener('click', async e => {
   const t = e.target.closest('[data-pa]'); if (!t) return; const a = t.dataset.pa, x = t.dataset.x;
   if (a === 'day') { S.pOpen = S.pOpen === x ? null : x; render(); return; }
-  if (a === 'ok' || a === 'no') { if (a === 'no' && !confirm('Reject this request?')) return; t.disabled = true; await pDecide(x, a === 'ok'); return; }
+  if (a === 'ok' || a === 'no') { if (a === 'no' && !await ask('Reject this request?', { ok: 'Reject', danger: 1 })) return; t.disabled = true; await pDecide(x, a === 'ok'); return; }
   if (a === 'sal') { S.pSal = S.pSal === x ? null : x; render(); return; }
   if (a === 'salsave') { const v = Object.assign({}, pPay(x) || {}); delete v._id; $$('[data-ps]').forEach(i => { v[i.dataset.ps] = i.tagName === 'SELECT' ? i.value : (i.value === '' ? 0 : num(i.value)); });
     const hk = {}; $$('[data-ph]').forEach(i => { const [n, f] = i.dataset.ph.split('|'); (hk[n] = hk[n] || {})[f] = f === 'p' ? num(i.value) : i.value; }); v.hikes = Object.values(hk).filter(h => h.p && h.f);
@@ -3274,7 +3283,7 @@ document.addEventListener('click', async e => {
   if (a === 'empclose') { S.pEmp = null; render(); return; }
   if (a === 'empsave') { const cur = (S.data.punch_emp || []).find(e => e._id === x) || { _id: x }, o = pReadEmp(cur); if (!o.name) { toast('Enter the full name'); return; } o.updatedAt = Date.now();
     if (await pSet('punch_emp', x, o)) { audit('punch_emp', 'Punch details saved for ' + o.name); toast('Saved'); S.pEmp = null; render(); } return; }
-  if (a === 'empdel') { if (!confirm('Remove this person from Punch? Their login stays; their attendance history stays.')) return; try { await S.db.collection('punch_emp').doc(x).delete(); S.pEmp = null; toast('Removed from Punch'); } catch (err) { toast('Your role is not allowed to do this.'); } return; }
+  if (a === 'empdel') { if (!await ask('Remove this person from Punch? Their login stays; their attendance history stays.', { ok: 'Remove', danger: 1 })) return; try { await S.db.collection('punch_emp').doc(x).delete(); S.pEmp = null; toast('Removed from Punch'); } catch (err) { toast('Your role is not allowed to do this.'); } return; }
   if (a === 'add') { S.pAdd = 'new'; S.pEmp = null; S.pAddPre = null; S.pAddPw = Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 8).toUpperCase(); render(); return; }
   if (a === 'link') { S.pAdd = 'link'; S.pEmp = null; render(); return; }
   if (a === 'addclose') { S.pAdd = null; S.pAddPre = null; render(); return; }
@@ -3300,7 +3309,7 @@ document.addEventListener('click', async e => {
   if (a === 'copyatt') { const ym = pMonth(), staff = S.data.staff || [], byDate = {}; let n = 0;
     pEmps().forEach(e => { const st = staff.find(s => lc(s.name) === lc(e.name)); if (!st) return; n++; pDays(e, ym).forEach(d => { if (d.code) (byDate[d.k] = byDate[d.k] || {})[st.name] = d.code; }); });
     if (!n) { toast('No Punch employee matches a name in Employees › Staff.'); return; }
-    if (!confirm('Copy ' + ym + ' attendance of ' + n + ' employee(s) into Employees › Attendance? Existing marks for them on those dates are replaced.')) return;
+    if (!await ask('Copy ' + ym + ' attendance of ' + n + ' employee(s) into Employees › Attendance? Existing marks for them on those dates are replaced.', { ok: 'Copy' })) return;
     for (const k of Object.keys(byDate)) { const doc = (S.data.attendance || []).find(d => d._id === k), marks = Object.assign({}, (doc && doc.marks) || {}, byDate[k]); await setDoc('attendance', k, { marks }); }
     toast('Copied into Employees › Attendance'); return; }
 });
@@ -3314,7 +3323,7 @@ document.addEventListener('click', async e => {
   const t = e.target.closest('[data-gm]'); if (!t || !window.MOVANA_FB) return; const msg = document.getElementById('gm-msg'); t.disabled = true;
   try {
     if (t.dataset.gm === 'add') { const em = await window.MOVANA_FB.gmailSet($('#gm-em').value, $('#gm-rl').value, $('#gm-nm').value); audit('members', 'Gmail sign-in approved: ' + em + ' as ' + $('#gm-rl').value); toast('Approved ' + em); $('#gm-em').value = ''; $('#gm-nm').value = ''; }
-    else { if (!confirm('Remove ' + t.dataset.em + ' from Gmail sign-in? Anyone already signed in with it keeps their login until you change their role in Logins & roles.')) { t.disabled = false; return; } await window.MOVANA_FB.gmailDel(t.dataset.em); toast('Removed'); }
+    else { if (!await ask('Remove ' + t.dataset.em + ' from Gmail sign-in? Anyone already signed in with it keeps their login until you change their role in Logins & roles.', { ok: 'Remove', danger: 1 })) { t.disabled = false; return; } await window.MOVANA_FB.gmailDel(t.dataset.em); toast('Removed'); }
     if (msg) msg.textContent = ''; await gmailRefresh();
   } catch (err) { if (msg) msg.textContent = err && err.message || String(err); }
   t.disabled = false;
@@ -3324,7 +3333,7 @@ document.addEventListener('click', async e => {
   t.disabled = true;
   try {
     if (t.dataset.gl === 'link') { const em = await window.MOVANA_FB.linkGoogle(); audit('members', 'Google account linked: ' + em); toast('Google account linked: ' + em); }
-    else { if (!confirm('Unlink Google from this login? You can still sign in with your username and password.')) { t.disabled = false; return; } await window.MOVANA_FB.unlinkGoogle(); toast('Google unlinked'); }
+    else { if (!await ask('Unlink Google from this login? You can still sign in with your username and password.', { ok: 'Unlink', danger: 1 })) { t.disabled = false; return; } await window.MOVANA_FB.unlinkGoogle(); toast('Google unlinked'); }
     render();
   } catch (err) { t.disabled = false; if (msg) msg.textContent = err && err.code === 'auth/credential-already-in-use' ? 'That Google account is already used by another login.' : err && err.code === 'auth/popup-blocked' ? 'Allow pop-ups for this site, then try again.' : err && err.code === 'auth/popup-closed-by-user' ? '' : 'Could not link: ' + ((err && err.code) || err); }
 });

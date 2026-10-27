@@ -24,10 +24,10 @@ h1,h2,h3{font-family:var(--disp);font-weight:800;letter-spacing:-.02em;margin:0;
 .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 .78rem var(--body);flex:none;background:linear-gradient(135deg,#7c3aed,#c026d3)}.av.lg{width:64px;height:64px;font-size:1.2rem;border-radius:20px;background:linear-gradient(135deg,var(--in2),var(--in))}
 .menu{position:absolute;right:14px;top:58px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 50px -20px rgba(0,0,0,.35);padding:6px;min-width:230px;display:grid;gap:2px;z-index:30}
 .menu .h{padding:10px 12px;border-bottom:1px solid var(--line);margin-bottom:4px}.menu .h span{display:block;font-size:.76rem;color:var(--mute)}
-.menu a,.menu button{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;border:0;background:none;text-decoration:none;color:var(--ink);font-weight:600;text-align:left}.menu a:hover,.menu button:hover{background:var(--soft)}.menu .out{color:var(--bad)}
+.menu a,.menu button{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;border:0;background:none;text-decoration:none;color:var(--ink);font-weight:600;text-align:left}.menu a:hover,.menu button:hover{background:var(--soft)}.menu svg{width:18px;height:18px;flex:none}.menu .out{color:var(--bad)}
 .shell{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:calc(100vh - 57px)}
 .nav{position:sticky;top:57px;height:calc(100vh - 57px);overflow:auto;padding:14px 10px 30px;border-right:1px solid var(--line);background:var(--card)}
-.nav .g{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:16px 10px 6px}.nav .g:first-child{margin-top:2px}
+.nav .g{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:16px 10px 6px}.nav .g:first-child{margin-top:2px}.nav button.g{display:flex;align-items:center;width:calc(100% - 20px);border:0;background:none;cursor:pointer;padding:0;font-family:inherit}.nav button.g svg{width:14px;height:14px;margin-left:auto;transition:transform .15s}.nav button.g[aria-expanded="false"] svg{transform:rotate(-90deg)}.nav button.g .gn{margin-left:8px;background:var(--bad,#d33);color:#fff;border-radius:99px;padding:0 6px;font-size:.62rem;letter-spacing:0}
 .nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;color:var(--ink2);text-decoration:none;font-weight:600}.nav a svg{width:18px;height:18px;flex:none;color:var(--mute)}
 .nav a:hover{background:var(--soft)}.nav a[aria-current="page"]{background:color-mix(in srgb,var(--in) 12%,transparent);color:var(--in)}.nav a[aria-current="page"] svg{color:var(--in)}.nav a .n{margin-left:auto;background:var(--out);color:#fff;border-radius:9px;font-size:.7rem;padding:0 6px}
 .nav a.ext::after{content:"↗";margin-left:auto;color:var(--mute);font-size:.8rem}
@@ -55,7 +55,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 .cal .P{background:color-mix(in srgb,var(--in) 16%,var(--soft))}.cal .A{background:color-mix(in srgb,var(--bad) 13%,var(--soft))}.cal .H{background:color-mix(in srgb,#f59e0b 20%,var(--soft))}.cal .L{background:color-mix(in srgb,var(--info) 15%,var(--soft))}.cal .O{background:var(--card);color:var(--mute)}
 .kan{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,1fr);gap:12px;overflow-x:auto;padding-bottom:6px}.kan .col{background:var(--soft);border-radius:16px;padding:10px;display:grid;gap:8px;align-content:start}.kan .col h3{font-size:.85rem;display:flex;justify-content:space-between}
 .kc{background:var(--card);border-radius:12px;padding:10px;box-shadow:var(--sh);display:grid;gap:4px;font-size:.84rem}.kc select{border:1px solid var(--line);border-radius:8px;padding:4px;background:var(--soft)}
-.org{display:grid;gap:8px}.org ul{list-style:none;margin:0;padding-left:22px;border-left:2px solid var(--line);display:grid;gap:8px}.org>ul{border:0;padding:0}.oc{display:inline-flex;gap:10px;align-items:center;background:var(--card);box-shadow:var(--sh);border-radius:14px;padding:8px 12px}.oc span{display:block;font-size:.76rem;color:var(--mute)}
+.org{display:grid;gap:8px}.org ul{list-style:none;margin:0;padding-left:22px;border-left:2px solid var(--line);display:grid;gap:8px}.org>ul{border:0;padding:0}.oc{display:inline-flex;gap:10px;align-items:center;background:var(--card);box-shadow:var(--sh);border-radius:14px;padding:8px 12px}.oc>div>span{display:block;font-size:.76rem;color:var(--mute)}.oc .av{display:grid}.org .rt{font-size:.72rem;color:var(--mute);margin:2px 0 0 4px}
 .bar{height:8px;border-radius:5px;background:var(--line);overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--in2),var(--in));border-radius:5px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:60;font-weight:600;max-width:calc(100% - 32px)}
 .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(190px,100%),1fr));gap:10px}.kv div{background:var(--soft);border-radius:12px;padding:10px 12px;display:grid;gap:2px}.kv span{font-size:.74rem;color:var(--mute)}
@@ -63,6 +63,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 @media (max-width:900px){.shell{grid-template-columns:minmax(0,1fr)}.nav{position:fixed;left:0;top:57px;bottom:0;width:min(280px,86vw);z-index:25;transform:translateX(-105%);transition:transform .2s;box-shadow:var(--sh)}body.navopen .nav{transform:none}.burger{display:grid}.brand small{display:none}.search{max-width:none}}
 @media (max-width:560px){.brand b{display:none}#whoName{display:none}}
 @media print{.top,.nav,.noprint{display:none!important}.shell{display:block}main{padding:0}.card{box-shadow:none;border:1px solid #ddd}}
+.askbg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:grid;place-items:center;z-index:100;padding:16px}.askbg[hidden]{display:none}.askbox{background:var(--card);border-radius:20px;padding:22px;max-width:420px;width:100%;box-shadow:0 30px 80px -20px rgba(0,0,0,.5)}.askbox p{margin:10px 0 12px;font-weight:600;line-height:1.5}.askic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--in) 14%,transparent);color:var(--in)}.askic svg{width:22px;height:22px}
 </style>
 <script>window.MOVANA_APP_TITLE = 'Movana People'; window.MOVANA_APP_SUB = 'HR for Movana Logistics · same login as the staff portal and Punch';</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -80,7 +81,8 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <div class="menu" id="menu" role="menu" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="People"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <script src="../portal/fb.js?v=20261026q"></script>
-<script src="../portal/offer.js?v=3"></script>
+<script src="../portal/offer.js?v=4"></script>
+<script src="../portal/payslip.js?v=2"></script>
 <script>
 (async function () {
 'use strict';
@@ -102,6 +104,17 @@ const hm = ms => { const m = Math.floor(num(ms) / 6e4); return Math.floor(m / 60
 const MN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const ymLabel = ym => MN[+ym.slice(5) - 1] + ' ' + ym.slice(0, 4);
 const ini = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+/** In-page dialog (instead of the browser's confirm/prompt box). ask(text, {ok, input, value, danger}) -> true/false, or the typed text / null. */
+function ask(msg, o) { o = o || {}; return new Promise(res => {
+  let m = document.getElementById('askDlg'); if (!m) { m = document.createElement('div'); m.id = 'askDlg'; m.className = 'askbg'; document.body.appendChild(m); }
+  m.innerHTML = '<div class="askbox" role="dialog" aria-modal="true" aria-labelledby="askT"><div class="askic">' + svg(o.danger ? 'exit' : 'check') + '</div><p id="askT">' + esc(msg).replace(/\n/g, '<br>') + '</p>' + (o.input ? '<input id="askIn" class="btn" style="width:100%;text-align:left" value="' + esc(o.value || '') + '">' : '') +
+    '<div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn" type="button" id="askNo">Cancel</button><button class="btn ' + (o.danger ? 'd' : 'p') + '" type="button" id="askOk">' + esc(o.ok || 'OK') + '</button></div></div>';
+  m.hidden = false; const inp = document.getElementById('askIn'); setTimeout(() => (inp || document.getElementById('askOk')).focus(), 30);
+  const done = v => { m.hidden = true; m.innerHTML = ''; document.removeEventListener('keydown', key, true); res(v); };
+  const key = e => { if (e.key === 'Escape') { e.stopPropagation(); done(o.input ? null : false); } else if (e.key === 'Enter') { e.preventDefault(); done(o.input ? inp.value.trim() : true); } };
+  document.addEventListener('keydown', key, true);
+  document.getElementById('askNo').onclick = () => done(o.input ? null : false); document.getElementById('askOk').onclick = () => done(o.input ? inp.value.trim() : true);
+  m.onclick = e => { if (e.target === m) done(o.input ? null : false); }; }); }
 let toastT; const toast = m => { let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); } t.textContent = m; clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 3000); };
 const I = { home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   cal: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>', pay: '<rect x="2" y="6" width="20" height="13" rx="3"/><path d="M2 11h20M6 15h4"/>', req: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
@@ -119,33 +132,34 @@ const HR_ALL = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_exec', 
 const HR_APPR = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_tl', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
 const SAL_V = ['superadmin', 'admin_head', 'hr_head', 'hr_manager', 'hr_am', 'hr_srm', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
 const ADMIN = ['superadmin', 'admin_head'];
+const SAL_E = ['superadmin', 'admin_head', 'hr_head', 'hr_gm', 'hr_sgm', 'hr_avp', 'hr_vp', 'hr_svp'];
 const S = { uid: null, self: null, me: {}, roles: [], d: {}, open: {}, q: {}, ym: ymNow(), f: {} };
 const has = list => S.roles.some(r => list.includes(r));
-const isHR = () => has(HR_ALL), canAppr = () => has(HR_APPR), canSal = () => has(SAL_V), isAdmin = () => has(ADMIN);
+const isHR = () => has(HR_ALL), canAppr = () => has(HR_APPR), canSal = () => has(SAL_V), canSalE = () => has(SAL_E), isAdmin = () => has(ADMIN);
 
 /* ================= sign in (shared with the portal) ================= */
 await window.claude.use('user');
 const auth = firebase.auth(), fs = firebase.firestore(), U = auth.currentUser;
 S.uid = U.uid; S.self = U.uid;
 { const [m, o, u] = await Promise.all([fs.doc('members/' + U.uid).get().catch(() => null), fs.doc('settings/owner').get().catch(() => null), fs.doc('users/' + U.uid).get().catch(() => null)]);
-  const md = m && m.exists ? m.data() : null, owner = o && o.exists && o.data().uid === U.uid;
+  const md = m && m.exists ? m.data() : null, owner = o && o.exists && o.data().uid === U.uid; S.ownerUid = o && o.exists ? o.data().uid : '';
   S.roles = owner ? ['superadmin'] : (md && md.status !== 'Suspended' ? [md.role].concat(md.roles || []).filter(Boolean) : ['none']);
   S.me = { name: (u && u.exists && u.data().name) || String(U.email || '').split('@')[0], email: U.email }; }
 $('#whoAv').textContent = ini(S.me.name); $('#whoName').textContent = S.me.name;
 
 /* ================= live data ================= */
-const D = S.d; ['emp', 'pemp', 'staff', 'att', 'mark', 'req', 'bal', 'pay', 'offer', 'users', 'posts', 'hol', 'jobs', 'cands', 'train', 'enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => D[k] = []);
+const D = S.d; ['emp', 'pemp', 'staff', 'att', 'mark', 'req', 'bal', 'pay', 'offer', 'users', 'posts', 'hol', 'jobs', 'cands', 'train', 'enrol', 'goals', 'reviews', 'exp', 'exits', 'help', 'docs', 'members', 'pexp'].forEach(k => D[k] = []);
 let rq = false; const later = () => { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); }); };
 const live = (k, q) => q.onSnapshot(s => { D[k] = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); later(); }, () => { later(); });
 const liveDoc = (k, ref) => ref.onSnapshot(d => { D[k] = d.exists ? [Object.assign({ _id: d.id }, d.data())] : []; later(); }, () => { D[k] = []; later(); });
 const col = n => fs.collection(n), mineQ = n => col(n).where('uid', '==', S.uid);
 live('pemp', col('punch_emp')); live('staff', col('staff')); live('users', col('users')); live('posts', col('hr_posts')); live('hol', col('hr_holidays')); live('jobs', col('hr_jobs')); live('train', col('hr_training'));
-if (isHR()) { live('att', col('punch_att')); live('mark', col('punch_mark')); live('req', col('punch_req')); live('bal', col('punch_bal')); live('cands', col('hr_cands'));
+if (isHR()) { live('members', col('members')); live('docs', col('hr_docs')); live('att', col('punch_att')); live('mark', col('punch_mark')); live('req', col('punch_req')); live('bal', col('punch_bal')); live('cands', col('hr_cands'));
   ['enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => live(k, col({ enrol: 'hr_enrol', goals: 'hr_goals', reviews: 'hr_reviews', exp: 'hr_expenses', exits: 'hr_exits', help: 'hr_help' }[k]))); }
-else { live('att', mineQ('punch_att')); live('mark', mineQ('punch_mark')); live('req', mineQ('punch_req')); liveDoc('bal', fs.doc('punch_bal/' + S.uid));
+else { live('docs', mineQ('hr_docs')); live('att', mineQ('punch_att')); live('mark', mineQ('punch_mark')); live('req', mineQ('punch_req')); liveDoc('bal', fs.doc('punch_bal/' + S.uid));
   ['enrol', 'goals', 'reviews', 'exp', 'exits', 'help'].forEach(k => live(k, mineQ({ enrol: 'hr_enrol', goals: 'hr_goals', reviews: 'hr_reviews', exp: 'hr_expenses', exits: 'hr_exits', help: 'hr_help' }[k]))); }
-if (canSal()) { live('pay', col('punch_pay')); live('offer', col('punch_offer')); }
-else { liveDoc('pay', fs.doc('punch_pay/' + S.uid)); liveDoc('offer', fs.doc('punch_offer/' + S.uid)); }
+if (canSal()) { live('pexp', col('punch_exp')); live('pay', col('punch_pay')); live('offer', col('punch_offer')); }
+else { liveDoc('pexp', fs.doc('punch_exp/' + S.uid)); liveDoc('pay', fs.doc('punch_pay/' + S.uid)); liveDoc('offer', fs.doc('punch_offer/' + S.uid)); }
 /** One list of people: every Punch employee, plus everyone onboarded in the portal (Employees) who has no Punch login yet.
  *  The same person is never listed twice – matched by Punch link, then employee ID, then name. */
 const normN = v => lc(String(v || '').replace(/\s*\(@[^)]*\)\s*$/, '').replace(/\s+/g, ' ').trim());
@@ -165,9 +179,9 @@ function resolvePeople() {
   if (!D.emp.some(p => p._id === S.uid) && isHR()) { const m = D.emp.filter(p => !p.noPunch && normN(p.name) === normN(S.me.name)); if (m.length === 1) S.self = m[0]._id; }
 }
 const nextEmpId = () => { const used = new Set(D.staff.map(r => r.empId).concat(D.pemp.map(e => e.eid)).map(v => String(v || '').trim()).filter(v => /^\d{8}$/.test(v)).map(Number)); let n = 10000000; while (used.has(n)) n++; return String(n); };
-/** Every new Punch login starts with this password; the employee then sets their own (Me › My profile, or the banner on Home). */
+/** Every new Punch login starts with this password; the employee then sets their own (profile menu › Settings, or the banner on Home). */
 const DEFAULT_PW = 'Welcome@123';
-const loginOf = uid => { const u = D.users.find(x => x._id === uid); return u ? String(u.username || '').replace(/@staff\.movana\.app$/, '') : ''; };
+const loginOf = uid => { const u = D.users.find(x => x._id === uid), n = u ? String(u.username || '').replace(/@staff\.movana\.app$/, '') : ''; return n.includes('@') ? '' : n; };
 const onDefaultPw = () => { const u = D.users.find(x => x._id === S.uid); return !!(u && u.pwDefault); };
 /** Create the Punch app login for someone in the employee list: Punch ID = employee ID, password Welcome@123.
  *  Writes the login, the Punch profile and links the portal record, so the person shows "On Punch" everywhere. */
@@ -189,12 +203,14 @@ async function makePunchLogin(p) {
   return { name: p.name, user: eid, uid };
 }
 const credCard = () => { const c = S.creds; if (!c || !c.length) return '';
-  const txt = c.map(x => x.name + '\nPunch ID: ' + x.user + '\nPassword: ' + DEFAULT_PW).join('\n\n') + '\n\nInstall Punch: https://naveen5531.github.io/Punch.apk\nSign in with your Punch ID and password, then set your own password at https://naveen5531.github.io/hr/#/profile';
+  const txt = c.map(x => x.name + '\nPunch ID: ' + x.user + '\nPassword: ' + DEFAULT_PW).join('\n\n') + '\n\nInstall Punch: https://naveen5531.github.io/Punch.apk\nSign in with your Punch ID and password, then set your own password at https://naveen5531.github.io/hr/#/settings';
   return '<section class="card" style="margin-bottom:14px;border:2px solid var(--in)"><h2>Punch login' + (c.length > 1 ? 's' : '') + ' created</h2><p class="mute small">Punch ID is the employee ID. Everyone starts with the password <b>' + DEFAULT_PW + '</b> and is asked to set their own after signing in.</p>' +
     tbl(['Employee', 'Punch ID', 'Password'], c.map(x => '<tr><td>' + esc(x.name) + '</td><td><b>' + esc(x.user) + '</b></td><td>' + DEFAULT_PW + '</td></tr>')) +
     '<div class="row mt"><button class="btn p" type="button" data-a="cr-copy">Copy</button><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(txt) + '">Share on WhatsApp</a><button class="btn" type="button" data-a="cr-done">Done</button></div><textarea id="cr-txt" hidden>' + esc(txt) + '</textarea></section>'; };
 const pwCard = () => '<section class="card" id="pwcard"><h2>' + svg('key') + ' Set your own password</h2>' + (onDefaultPw() ? '<p class="mute">You are still on the starting password. Choose your own – it works for the Punch app and this site.</p>' : '<p class="mute small">Changes the password for the Punch app and this site.</p>') +
   '<div class="form">' + fld('pw-old', 'Current password', 'password') + fld('pw-n1', 'New password', 'password') + fld('pw-n2', 'New password again', 'password') + '</div><div class="row mt"><button class="btn p" type="button" data-a="pw-set">Save password</button></div></section>';
+/** Super admins (and the owner) are exempt from the mandatory employee details and joining documents. */
+const isSuperP = id => { if (id === S.ownerUid) return true; const m = D.members.find(x => x._id === id) || (id === S.uid ? { role: S.roles[0], roles: S.roles } : null); return !!m && [m.role].concat(m.roles || []).includes('superadmin'); };
 const mine = arr => arr.filter(x => x.uid === S.self);
 const empOf = uid => D.emp.find(e => e._id === uid);
 const meEmp = () => empOf(S.self) || { _id: S.self, name: S.me.name, wo: [0] };
@@ -222,6 +238,13 @@ const daysIn = ym => new Date(+ym.slice(0, 4), +ym.slice(5), 0).getDate();
 const monthDays = (e, ym) => Array.from({ length: daysIn(ym) }, (_, i) => dayOf(e, ym, i + 1));
 function monthSum(e, ym) { const D2 = monthDays(e, ym), c = f => D2.filter(f).length; return { p: c(d => d.c === 'P'), h: c(d => d.c === 'H'), a: c(d => d.c === 'A'), l: c(d => /^Leave/.test(d.st)), co: c(d => d.st === 'Comp off'), wo: c(d => d.st === 'Week off'), hol: c(d => d.st === 'Holiday'), ms: D2.reduce((t, d) => t + d.ms, 0), D: D2 }; }
 /** One month's pay from the salary set-up and attendance (days up to today only for the current month) – same rules as the portal and Punch. */
+/** Personal deductions the employee entered in Punch (one-time or repeating), falling in a month – same as Punch's exOcc. */
+const EXSTEP = { M: 1, Q: 3, H: 6, Y: 12 }, exStep = x => x.f === 'X' ? Math.max(1, parseInt(x.ev) || 1) : (EXSTEP[x.f] || 0);
+function exOcc(uid, a, z) { const L = ((D.pexp.find(x => x._id === uid) || {}).exp) || [], out = [], idx = k => (+k.slice(0, 4)) * 12 + (+k.slice(5, 7)) - 1;
+  L.forEach(x => { const st = exStep(x); if (!x.d) return; if (!st) { if (x.d >= a && x.d <= z) out.push(Object.assign({}, x, { o: x.d })); return; }
+    const si = idx(x.d), ai = idx(a), zi = idx(z), ei = x.en ? idx(x.en + '-01') : 1e9; let i = si; if (ai > si) i = si + Math.ceil((ai - si) / st) * st;
+    for (; i <= zi && i <= ei; i += st) { const y = Math.floor(i / 12), m = i % 12, dim = new Date(y, m + 1, 0).getDate(), dd = Math.min(+x.d.slice(8, 10), dim), o = y + '-' + pad(m + 1) + '-' + pad(dd); if (o >= a && o <= z) out.push(Object.assign({}, x, { o })); } });
+  return out; }
 function payslip(e, v, ym) {
   if (!v) return null;
   const hf = (v.hikes || []).filter(h => num(h.p) && h.f && ym >= h.f).reduce((f, h) => f * (1 + num(h.p) / 100), 1), amt = k => num(v[k]) * hf;
@@ -230,8 +253,10 @@ function payslip(e, v, ym) {
   let pd = x.p + x.h / 2 + x.co + (v.leavePaid === false ? 0 : x.D.filter(d => /^Leave/.test(d.st) && !/LOP/.test(d.st)).length) + (v.holPaid === false ? 0 : x.hol) + (basis === 'cal' || basis === '30' ? x.wo : 0);
   if (basis === '26' || basis === '30') pd = Math.min(pd, base);
   const k = base ? pd / base : 0, E = { basic: r2(full.b * k), hra: r2(full.h * k), conv: r2(full.c * k), spl: r2(full.s * k) }, gross = r2(E.basic + E.hra + E.conv + E.spl);
-  const pf = v.pfMode === 'fix' ? num(v.pf) : Math.round(E.basic * num(v.pfPct == null ? 12 : v.pfPct) / 100), ded = { pf, pt: num(v.pt), vpf: num(v.vpf), esi: num(v.esi), oth: num(v.oth) }, td = r2(Object.values(ded).reduce((a, b) => a + b, 0));
-  return { sal: r2(sal), pd: r2(pd), base, E, gross, ded, td, net: r2(gross - td), x };
+  const pf = v.pfMode === 'fix' ? num(v.pf) : Math.round(E.basic * num(v.pfPct == null ? 12 : v.pfPct) / 100), ded = { pf, pt: num(v.pt), vpf: num(v.vpf), esi: num(v.esi), oth: num(v.oth) };
+  const g = {}; exOcc(e._id, ym + '-01', ym + '-31').forEach(o => { const k = String((o.c && o.c !== 'Other' ? o.c : '') || o.n || o.c || 'Expenses').trim().replace(/[<>&"]/g, ''); g[k] = r2((g[k] || 0) + num(o.a)); });
+  const ex = Object.keys(g).length ? Object.entries(g) : [['Expenses', 0]], td = r2(Object.values(ded).reduce((a, b) => a + b, 0) + ex.reduce((t, r) => t + r[1], 0));
+  return { sal: r2(sal), pd: r2(pd), base, E, gross, ded, ex, td, net: r2(gross - td), x };
 }
 
 /* ================= navigation (only what the person's roles allow) ================= */
@@ -241,9 +266,14 @@ const ext = (g, label, icon, href, ok) => V.push({ id: null, g, label, icon, hre
 let route = '';
 function go(h) { location.hash = '#/' + h; }
 addEventListener('hashchange', () => { document.body.classList.remove('navopen'); render(); window.scrollTo(0, 0); });
+let FOLD = {}; try { FOLD = JSON.parse(localStorage.getItem('hr.fold') || '{}') || {}; } catch (e) {}
+const folded = (g, vis) => FOLD[g] != null ? FOLD[g] : !vis.some(v => v.g === g && v.id === route) && g !== 'Home';
 function navHtml() {
-  const vis = V.filter(v => v.ok()); let g0 = '';
-  return vis.map(v => { const gh = v.g !== g0 ? '<div class="g">' + esc(v.g) + '</div>' : ''; g0 = v.g; const n = v.n ? v.n() : 0;
+  const vis = V.filter(v => v.ok() && !v.hide); let g0 = '';
+  const chev = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  return vis.map(v => { const f = folded(v.g, vis); let gh = '';
+    if (v.g !== g0) { const gn = vis.filter(w => w.g === v.g).reduce((t, w) => t + (w.n ? w.n() : 0), 0); gh = '<button type="button" class="g" data-fold="' + esc(v.g) + '" aria-expanded="' + !f + '">' + esc(v.g) + (f && gn ? '<span class="gn">' + gn + '</span>' : '') + chev + '</button>'; }
+    g0 = v.g; if (f) return gh; const n = v.n ? v.n() : 0;
     return gh + (v.href ? '<a class="ext" href="' + esc(v.href) + '">' + svg(v.icon) + '<span>' + esc(v.label) + '</span></a>' : '<a href="#/' + v.id + '"' + (v.id === route ? ' aria-current="page"' : '') + '>' + svg(v.icon) + '<span>' + esc(v.label) + '</span>' + (n ? '<span class="n">' + n + '</span>' : '') + '</a>'); }).join('');
 }
 const ph = (t, sub, act) => '<div class="ph"><div><h1>' + esc(t) + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (act ? '<div class="act">' + act + '</div>' : '') + '</div>';
@@ -257,7 +287,7 @@ const val = id => { const el = document.getElementById(id); return el ? el.value
 function vHome() {
   const e = meEmp(), ym = ymNow(), at = attDoc(S.self, ym), dd = today().slice(8), d = at && at.days && at.days[dd], open = at && at.open && iso(new Date(at.open.t)) === today() ? at.open : null, b = balOf(S.self), h = new Date().getHours();
   const st = open ? 'Checked in at ' + tm(open.t) : d && d.a ? 'Today ' + tm(d.a) + ' – ' + (d.b ? tm(d.b) : '…') + ' · ' + hm(d.ms) : 'Not checked in yet today';
-  const pwNote = onDefaultPw() ? '<section class="card" style="margin-bottom:14px;border:2px solid var(--warn,#e8a33d)"><div class="row"><b>You are using the starting password.</b><span class="mute">Set your own – it is used for the Punch app too.</span><a class="btn s p" href="#/profile" style="margin-left:auto">Set password</a></div></section>' : '';
+  const pwNote = onDefaultPw() ? '<section class="card" style="margin-bottom:14px;border:2px solid var(--warn,#e8a33d)"><div class="row"><b>You are using the starting password.</b><span class="mute">Set your own – it is used for the Punch app too.</span><a class="btn s p" href="#/settings" style="margin-left:auto">Set password</a></div></section>' : '';
   let x = pwNote + '<div class="grid g2"><section class="card hero"><div class="row" style="align-items:center;gap:14px"><span class="av lg" style="background:rgba(255,255,255,.2)">' + esc(ini(e.name)) + '</span><div><h1 style="color:#fff">Good ' + (h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening') + ', ' + esc(String(e.name || S.me.name).split(' ')[0]) + '</h1><p>' + esc([e.desg, e.eid].filter(Boolean).join(' · ') || 'Welcome to Movana People') + '</p></div></div>' +
     '<div class="tiles mt"><a class="t" href="#/attendance"><span>Today</span><b style="font-size:1rem">' + esc(st) + '</b></a>' + (b ? ['PL', 'SL', 'CL'].map(t => '<a class="t" href="#/leave"><span>' + { PL: 'Privilege', SL: 'Sick', CL: 'Casual' }[t] + ' leave</span><b>' + r2((b.lv || {})[t] ? b.lv[t].b : 0) + '</b></a>').join('') + '<a class="t" href="#/leave"><span>Comp off</span><b>' + r2((b.co || {}).b) + '</b></a>' : '<a class="t" href="#/leave"><span>Leave balance</span><b style="font-size:1rem">Open Punch once to load it</b></a>') + '</div></section>';
   x += '<section class="card"><h2>Quick actions</h2><div class="qa">' + [['leave', 'cal', 'Apply leave'], ['requests', 'req', 'Attendance request'], ['payslips', 'pay', 'Payslips'], ['expenses', 'exp', 'Claim expense'], ['helpdesk', 'help', 'Ask HR'], ['documents', 'doc', 'My documents'], ['goals', 'goal', 'My goals'], ['learning', 'learn', 'Training']].map(([r, i, l]) => '<a href="#/' + r + '">' + svg(i) + l + '</a>').join('') + '</div></section></div>';
@@ -271,13 +301,13 @@ function vHome() {
     '<section class="card"><h2>' + svg('people') + ' People</h2><div class="list">' + nj.map(o => '<div class="li"><span class="av">' + esc(ini(o.name)) + '</span><div class="g1"><b>' + esc(o.name) + '</b><span>Joined ' + esc(fmtD(o.join)) + (o.desg ? ' · ' + esc(o.desg) : '') + '</span></div>' + pill('New joiner', 'good') + '</div>').join('') + ann.map(o => '<div class="li"><span class="av">' + esc(ini(o.name)) + '</span><div class="g1"><b>' + esc(o.name) + '</b><span>Work anniversary · ' + esc(fmtD(today().slice(0, 4) + o.join.slice(4))) + '</span></div>' + pill((+today().slice(0, 4) - +o.join.slice(0, 4)) + ' yr', 'info') + '</div>').join('') + (nj.length || ann.length ? '' : '<div class="empty">No new joiners or anniversaries coming up.</div>') + '</div></section></div></div>';
   return x;
 }
-function pend() { return { req: D.req.filter(r => r.s === 'Pending').length, exp: D.exp.filter(r => r.s === 'Pending').length, help: D.help.filter(r => r.s === 'Open').length, exits: D.exits.filter(r => r.s === 'Pending').length, cands: D.cands.filter(c => !['Hired', 'Rejected'].includes(c.stage)).length, offers: D.offer.filter(o => o.status === 'Released').length }; }
+function pend() { return { docs: D.docs.filter(d => d.s === 'Submitted').length, req: D.req.filter(r => r.s === 'Pending').length, exp: D.exp.filter(r => r.s === 'Pending').length, help: D.help.filter(r => r.s === 'Open').length, exits: D.exits.filter(r => r.s === 'Pending').length, cands: D.cands.filter(c => !['Hired', 'Rejected'].includes(c.stage)).length, offers: D.offer.filter(o => o.status === 'Released').length }; }
 
 /* ================= Me ================= */
 function vProfile() {
   const e = meEmp(), u = D.users.find(x => x._id === S.self) || {};
   return ph('My profile', 'Kept by HR. Ask HR through the helpdesk to change anything.') + '<section class="card"><div class="row" style="gap:16px;margin-bottom:14px"><span class="av lg">' + esc(ini(e.name)) + '</span><div><h2>' + esc(e.name || S.me.name) + '</h2><div class="mute">' + esc([e.desg, e.grade && 'Grade ' + e.grade].filter(Boolean).join(' · ')) + '</div><div class="row mt">' + S.roles.map(r => pill(roleName(r), 'info')).join('') + '</div></div></div>' +
-    '<div class="kv">' + [['Employee ID', e.eid], ['Designation', e.desg], ['Grade', e.grade], ['Department', e.cat], ['Workplace', (e.wp || {}).name], ['Date of joining', fmtD(e.join)], ['Weekly off', (e.wo || []).map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ')], ['Login', u.username || S.me.email]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>' + '<div class="mt"></div>' + pwCard();
+    '<div class="kv">' + [['Employee ID', e.eid], ['Designation', e.desg], ['Grade', e.grade], ['Department', e.cat], ['Workplace', (e.wp || {}).name], ['Date of joining', fmtD(e.join)], ['Weekly off', (e.wo || []).map(i => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]).join(', ')], ['Login', u.username || S.me.email]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>';
 }
 const ROLE_N = { superadmin: 'Super admin', admin_head: 'Admin head', hr_head: 'HR head', hr_manager: 'HR manager', hr_exec: 'HR executive', employee: 'Employee', none: 'No role yet' };
 const roleName = r => ROLE_N[r] || r.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -309,19 +339,29 @@ function vRequests() {
   const R = mine(D.req).filter(r => r.kind !== 'leave').sort((a, b) => num(b.at) - num(a.at));
   return ph('Attendance requests', 'Missed a check-in or need a day corrected? HR approves it and your Punch app updates.') + '<div class="grid g2"><section class="card"><h2>New request</h2><div class="form">' + fld('ar-v', 'Mark the day(s) as', 'select:Present|Week off|Holiday|Holiday + Present|Absent') + fld('ar-a', 'From', 'date', today()) + fld('ar-b', 'To', 'date', today()) + fld('ar-why', 'Reason', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="ar-send">Send to HR</button></div></section><section class="card"><h2>My requests</h2>' + reqList(R) + '</section></div>';
 }
-function slipHtml(e, p, ym) {
-  return '<div class="card" id="slipCard"><div class="row" style="justify-content:space-between;align-items:flex-start"><div class="row"><span class="mk" style="width:44px;height:44px">ML</span><div><h2>Movana Logistics</h2><div class="mute small">Salary slip · ' + ymLabel(ym) + '</div></div></div><button class="btn s noprint" type="button" data-a="print">Print / PDF</button></div>' +
-    '<div class="kv mt">' + [['Name', e.name], ['Employee ID', e.eid], ['Designation', e.desg], ['Paid days', p.pd + ' of ' + p.base]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div>' +
-    '<div class="grid g2 mt"><div>' + tbl(['Earnings', '#Amount'], [['Basic', p.E.basic], ['HRA', p.E.hra], ['Conveyance', p.E.conv], ['Special allowance', p.E.spl]].filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="n">' + money(r[1]) + '</td></tr>').concat(['<tr><td><b>Gross</b></td><td class="n"><b>' + money(p.gross) + '</b></td></tr>'])) + '</div><div>' +
-    tbl(['Deductions', '#Amount'], [['Provident Fund', p.ded.pf], ['Professional tax', p.ded.pt], ['VPF', p.ded.vpf], ['ESI', p.ded.esi], ['Other', p.ded.oth]].filter(r => r[1]).map(r => '<tr><td>' + r[0] + '</td><td class="n">' + money(r[1]) + '</td></tr>').concat(['<tr><td><b>Total deductions</b></td><td class="n"><b>' + money(p.td) + '</b></td></tr>'])) + '</div></div>' +
-    '<div class="t mt" style="background:color-mix(in srgb,var(--in) 12%,var(--soft))"><span>Net pay</span><b>' + money(p.net) + '</b></div><p class="mute small mt">Worked out from your salary set-up and attendance. ' + (ym === ymNow() ? 'This month counts days up to today. ' : '') + 'Your Punch app has the full payslip.</p></div>';
+/** The payslip, exactly as the Punch app prints it (same rows, wording, YTD and leave balance). */
+const SLIP_E = [['Basic', 'basic'], ['HRA', 'hra'], ['Conveyance', 'conv'], ['Special allowance', 'spl']], SLIP_D = [['PF (employee)', 'pf'], ['VPF', 'vpf'], ['ESI', 'esi'], ['Professional tax', 'pt'], ['Other deduction', 'oth']];
+function slipData(e, v, ym, employeeView) {
+  const p = payslip(e, v, ym); if (!p) return null;
+  const [y, m] = ym.split('-').map(Number), fy = (m >= 4 ? y : y - 1) + '-04', jm = (e.join || '').slice(0, 7), Y = {};
+  for (let k = fy; k <= ym; ) { if (!(jm && k < jm)) { const q = k === ym ? p : payslip(e, v, k); if (q && q.pd > 0) { SLIP_E.forEach(([l, f]) => Y[l] = r2((Y[l] || 0) + q.E[f])); SLIP_D.forEach(([l, f]) => Y[l] = r2((Y[l] || 0) + q.ded[f])); q.ex.forEach(([l, a]) => Y[l] = r2((Y[l] || 0) + a)); Y['Gross pay'] = r2((Y['Gross pay'] || 0) + q.gross); Y['Total deductions'] = r2((Y['Total deductions'] || 0) + q.td); Y['Net pay (take home)'] = r2((Y['Net pay (take home)'] || 0) + q.net); } }
+    const d = new Date(+k.slice(0, 4), +k.slice(5), 1); k = d.getFullYear() + '-' + pad(d.getMonth() + 1); }
+  const b = balOf(e._id), x = p.x;
+  return { company: { name: 'Movana Logistics' }, employee: employeeView, month: ym, emp: { name: e.name, eid: e.eid, desg: e.desg, grade: e.grade, cat: e.cat, join: e.join, loc: (e.wp || {}).name },
+    earn: SLIP_E.map(([l, f]) => [l, p.E[f]]), ded: SLIP_D.map(([l, f]) => [l, p.ded[f]]).concat(p.ex), gross: p.gross, tded: p.td, net: p.net, payDays: p.pd, baseDays: p.base, worked: x.p + x.h / 2, wo: x.wo, hol: x.hol, lop: x.a + x.h / 2, ytd: Y,
+    leave: b ? ['PL', 'SL', 'CL', 'ML', 'PT', 'MR', 'BL', 'LOP'].concat(Object.keys(b.lv || {}).filter(t => !['PL', 'SL', 'CL', 'ML', 'PT', 'MR', 'BL', 'LOP'].includes(t))).filter(t => (b.lv || {})[t] || ['PL', 'SL', 'CL', 'LOP'].includes(t)).map(t => [(((b.lv || {})[t] || {}).name || { PL: 'Privilege leave', SL: 'Sick leave', CL: 'Casual leave', LOP: 'Loss of pay (unpaid)' }[t] || t) + ' (' + t + ')', ((b.lv || {})[t] || {}).b || 0]).concat([['Comp off', (b.co || {}).b || 0]]) : null };
+}
+function slipHtml(e, v, ym, employeeView) {
+  const d = slipData(e, v, ym, employeeView); if (!d) return '<div class="empty">Salary not set up.</div>';
+  S.slipD = d;
+  return '<div class="row" style="margin-bottom:10px"><button class="btn p" type="button" data-a="slip-print">Print / Save as PDF</button>' + (ym === ymNow() ? '<span class="mute small">This month counts days up to today.</span>' : '') + '</div>' + (window.Payslip ? Payslip.html(d) : '<div class="empty">Payslip layout did not load. Reload the page.</div>');
 }
 function vPayslips() {
   const e = meEmp(), v = payOf(S.self);
   if (!v) return ph('Payslips') + '<div class="empty">Your salary is not set up yet. HR sets it in the package.</div>';
   const start = (e.join || ymNow()).slice(0, 7), list = []; for (let d = new Date(ymNow() + '-01T00:00:00'); iso(d).slice(0, 7) >= start && list.length < 24; d.setMonth(d.getMonth() - 1)) list.push(iso(d).slice(0, 7));
   if (!list.includes(S.ym)) S.ym = list[0];
-  return ph('Payslips', 'Select a month.', '<select id="ym-sel" class="btn">' + list.map(m => '<option value="' + m + '"' + (m === S.ym ? ' selected' : '') + '>' + ymLabel(m) + '</option>').join('') + '</select>') + slipHtml(e, payslip(e, v, S.ym), S.ym);
+  return ph('Payslips', 'Select a month.', '<select id="ym-sel" class="btn">' + list.map(m => '<option value="' + m + '"' + (m === S.ym ? ' selected' : '') + '>' + ymLabel(m) + '</option>').join('') + '</select>') + slipHtml(e, v, S.ym, true);
 }
 function vExpenses() {
   const R = mine(D.exp).sort((a, b) => num(b.at) - num(a.at));
@@ -345,9 +385,42 @@ function vLearning() {
   return ph('Training', 'Sign up for training sessions run by HR.') + (T.length ? '<div class="grid g3">' + T.map(t => { const en = me.find(x => x.course === t._id), cnt = D.enrol.filter(x => x.course === t._id).length;
     return '<section class="card"><h2>' + esc(t.title) + '</h2><p class="mute small">' + esc([fmtD(t.date), t.mode, t.trainer].filter(Boolean).join(' · ')) + '</p><p>' + esc(t.desc || '') + '</p><div class="row mt">' + (en ? stPill(en.s) + (en.s === 'Enrolled' ? '<button class="btn s d" type="button" data-a="own-del" data-c="hr_enrol" data-x="' + esc(en._id) + '">Withdraw</button>' : '') : '<button class="btn p s" type="button" data-a="tr-join" data-x="' + esc(t._id) + '">Sign up</button>') + (isHR() ? '<span class="mute small">' + cnt + (t.seats ? ' / ' + t.seats : '') + ' signed up</span>' : '') + '</div></section>'; }).join('') + '</div>' : '<div class="empty">No training scheduled.</div>');
 }
+/* ================= onboarding documents ================= */
+const REQ_DOCS = [['photo', 'Passport-size photo', 1], ['aadhaar', 'Aadhaar card', 1], ['pan', 'PAN card', 1], ['bank', 'Bank passbook / cancelled cheque', 1], ['edu', 'Highest education certificate', 1], ['addr', 'Address proof', 1],
+  ['relieve', 'Relieving letter (previous employer)', 0], ['prevslip', 'Last 3 payslips (previous employer)', 0]];
+const docsOf = id => D.docs.filter(d => d.uid === id);
+const docOf = (id, t) => D.docs.find(d => d.uid === id && d.type === t);
+const docPill = d => !d ? pill('Not uploaded', 'warn') : d.s === 'Approved' ? pill('Verified', 'good') : d.s === 'Re-upload' ? pill('Re-upload', 'bad') : pill('Waiting for HR', 'info');
+function docStat(id) { const R = isSuperP(id) ? [] : REQ_DOCS.filter(r => r[2]), up = R.filter(r => docOf(id, r[0])).length, ok = R.filter(r => (docOf(id, r[0]) || {}).s === 'Approved').length, re = docsOf(id).filter(d => d.s === 'Re-upload').length, wait = docsOf(id).filter(d => d.s === 'Submitted').length; return { n: R.length, up, ok, re, wait }; }
+/** Checklist with upload buttons. who = person id; hr = HR is looking (verify buttons). */
+function docList(who, hr) {
+  return '<div class="list">' + REQ_DOCS.map(([t, label, req]) => { const d = docOf(who, t), lock = d && d.s === 'Approved' && !hr;
+    return '<div class="li" style="align-items:flex-start;flex-wrap:wrap"><div class="g1"><b>' + esc(label) + (req ? '' : ' <span class="mute small">(if you worked before)</span>') + '</b><span>' + (d ? esc(d.fname || 'File') + ' · ' + esc(fmtT(d.at)) + (d.note ? ' · HR: ' + esc(d.note) : '') : req && !isSuperP(who) ? 'Required' : 'Optional') + '</span></div>' + (d || (req && !isSuperP(who)) ? docPill(d) : pill('Optional')) +
+      '<div class="row" style="gap:6px">' + (d ? '<button class="btn s" type="button" data-a="doc-view" data-x="' + esc(d._id) + '">View</button>' : '') +
+      (lock ? '' : '<label class="btn s' + (d ? '' : ' p') + '" style="cursor:pointer">' + (d ? 'Replace' : 'Upload') + '<input type="file" accept="image/*,application/pdf" data-up="' + esc(t) + '" data-who="' + esc(who) + '" hidden></label>') +
+      (hr && d && d.s !== 'Approved' ? '<button class="btn s p" type="button" data-a="doc-ok" data-x="' + esc(d._id) + '">Verify</button><button class="btn s d" type="button" data-a="doc-re" data-x="' + esc(d._id) + '">Ask to re-upload</button>' : '') + '</div></div>'; }).join('') + '</div>';
+}
+/** Photos are shrunk to fit; PDFs up to 700 KB. Stored in Firestore (file in hr_files, details in hr_docs). */
+function readDoc(f) { return new Promise((res, rej) => {
+  if (/^image\//.test(f.type)) { const r = new FileReader(); r.onload = () => { const im = new Image(); im.onload = () => { let w = im.width, h = im.height, k = Math.min(1, 1600 / Math.max(w, h)); const c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      let q = .8, u = c.toDataURL('image/jpeg', q); while (u.length > 650000 && q > .3) { q -= .1; u = c.toDataURL('image/jpeg', q); } u.length > 900000 ? rej(new Error('big')) : res({ data: u, mime: 'image/jpeg' }); }; im.onerror = () => rej(new Error('read')); im.src = r.result; }; r.onerror = () => rej(new Error('read')); r.readAsDataURL(f); return; }
+  if (f.type === 'application/pdf') { if (f.size > 700 * 1024) { rej(new Error('big')); return; } const r = new FileReader(); r.onload = () => res({ data: r.result, mime: f.type }); r.onerror = () => rej(new Error('read')); r.readAsDataURL(f); return; }
+  rej(new Error('type')); }); }
+async function uploadDoc(inp) {
+  const f = inp.files && inp.files[0], t = inp.dataset.up, who = inp.dataset.who; if (!f) return; inp.value = '';
+  if (who !== S.self && !isHR()) return; const p = empOf(who) || meEmp(), label = (REQ_DOCS.find(r => r[0] === t) || [, 'Document'])[1];
+  toast('Uploading ' + label + '…'); let x;
+  try { x = await readDoc(f); } catch (e) { toast(e.message === 'big' ? 'File too large – PDFs up to 700 KB; photos are shrunk automatically.' : e.message === 'type' ? 'Upload a photo or a PDF.' : 'Could not read that file.'); return; }
+  const id = who.replace(/[^\w-]/g, '_') + '_' + t, now = Date.now(), base = { uid: who, name: p.name, eid: p.eid || '', type: t, label, at: now };
+  if (!(await save('hr_files/' + id, Object.assign({}, base, { data: x.data, mime: x.mime, s: 'Submitted' })))) return;
+  await save('hr_docs/' + id, Object.assign({}, base, { fname: f.name, mime: x.mime, size: Math.round(x.data.length * .75), s: isHR() && who !== S.self ? 'Approved' : 'Submitted', by: S.uid }), label + ' uploaded');
+}
+async function viewDoc(id) { try { const d = await fs.doc('hr_files/' + id).get(); if (!d.exists) { toast('File not found.'); return; } const v = d.data(), bin = atob(v.data.split(',')[1]), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([u8], { type: v.mime })), w = window.open(url, '_blank'); if (!w) toast('Allow pop-ups to view the file.'); setTimeout(() => URL.revokeObjectURL(url), 60000); } catch (e) { toast('Could not open the file.'); } }
 function vDocuments() {
   const o = D.offer.find(x => x._id === S.self), ok = o && ['Released', 'Accepted'].includes(o.status);
-  return ph('My documents') + '<div class="grid g2"><section class="card"><h2>Offer letter</h2>' + (ok ? '<p>' + (o.status === 'Accepted' ? 'You accepted this offer on ' + esc(fmtT(o.acceptedAt)) + '.' : 'Released by HR. Please read and accept it.') + '</p><div class="row"><button class="btn" type="button" data-a="of-view">' + (S.ofView ? 'Hide' : 'View') + '</button><button class="btn" type="button" data-a="of-print">Print / PDF</button>' + (o.status === 'Released' ? '<button class="btn p" type="button" data-a="of-accept">Accept offer</button>' : '') + '</div>' : '<div class="empty">No offer letter released to you.</div>') + '</section>' +
+  const ds = docStat(S.self);
+  return ph('My documents', 'Upload the joining documents HR needs. Photos or PDFs.') + '<section class="card" style="margin-bottom:14px"><h2>' + svg('doc') + ' Joining documents<span class="more mute">' + (ds.n ? ds.ok + ' of ' + ds.n + ' verified' : 'optional for super admin') + '</span></h2>' + docList(S.self, false) + '</section><div class="grid g2"><section class="card"><h2>Offer letter</h2>' + (ok ? '<p>' + (o.status === 'Accepted' ? 'You accepted this offer on ' + esc(fmtT(o.acceptedAt)) + '.' : 'Released by HR. Please read and accept it.') + '</p><div class="row"><button class="btn" type="button" data-a="of-view">' + (S.ofView ? 'Hide' : 'View') + '</button><button class="btn" type="button" data-a="of-print">Print / PDF</button>' + (o.status === 'Released' ? '<button class="btn p" type="button" data-a="of-accept">Accept offer</button>' : '') + '</div>' : '<div class="empty">No offer letter released to you.</div>') + '</section>' +
     '<section class="card"><h2>Payslips</h2><p>Monthly salary slips worked out from your attendance.</p><a class="btn" href="#/payslips">Open payslips</a></section></div>' + (ok && S.ofView && window.OfferLetter ? '<div class="card mt" style="overflow-x:auto">' + OfferLetter.html(o, { name: 'Movana Logistics' }) + '</div>' : '');
 }
 function vHelpdesk() {
@@ -366,15 +439,30 @@ function vSeparation() {
 function vPeople() {
   const q = lc(S.q.people || ''), E = D.emp.filter(e => !q || lc([e.name, e.eid, e.desg, e.cat].join(' ')).includes(q)).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), cur = S.open.person && empOf(S.open.person);
   return ph('People', D.emp.length + ' employees', '<input id="q-people" type="search" class="btn" placeholder="Name, ID or designation" value="' + esc(S.q.people || '') + '" style="min-width:min(260px,100%)">') +
-    (cur ? '<section class="card" style="margin-bottom:14px"><div class="row" style="gap:14px"><span class="av lg">' + esc(ini(cur.name)) + '</span><div><h2>' + esc(cur.name) + '</h2><div class="mute">' + esc([cur.desg, cur.grade].filter(Boolean).join(' · ')) + '</div></div><button class="btn s" type="button" data-a="pp-close" style="margin-left:auto">Close</button></div><div class="kv mt">' + [['Employee ID', cur.eid], ['Department', cur.cat], ['Workplace', (cur.wp || {}).name], ['Reporting manager', cur.mgr], ['Date of joining', fmtD(cur.join)]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>' : '') +
+    (cur ? '<section class="card" style="margin-bottom:14px"><div class="row" style="gap:14px"><span class="av lg">' + esc(ini(cur.name)) + '</span><div><h2>' + esc(cur.name) + '</h2><div class="mute">' + esc([cur.desg, cur.grade].filter(Boolean).join(' · ')) + '</div></div><button class="btn s" type="button" data-a="pp-close" style="margin-left:auto">Close</button></div><div class="kv mt">' + [['Employee ID', cur.eid], ['Department', cur.cat], ['Workplace', (cur.wp || {}).name], ['Reports to', cur.mgr], ['Team', teamOf(cur).map(o => o.name).join(', ')], ['Date of joining', fmtD(cur.join)]].map(([l, v]) => '<div><span>' + l + '</span><b>' + esc(v || '—') + '</b></div>').join('') + '</div></section>' : '') +
     '<div class="grid g3">' + E.map(e => '<button type="button" class="card li" style="border:0;text-align:left;background:var(--card)" data-a="pp-open" data-x="' + esc(e._id) + '"><span class="av">' + esc(ini(e.name)) + '</span><div class="g1"><b>' + esc(e.name) + '</b><span>' + esc([e.eid, e.desg].filter(Boolean).join(' · ')) + '</span></div></button>').join('') + '</div>';
 }
+const mgrOf = e => e.mgr ? D.emp.find(o => o._id !== e._id && normN(o.name) === normN(e.mgr)) : null;
+const teamOf = e => D.emp.filter(o => o._id !== e._id && o.mgr && normN(o.mgr) === normN(e.name));
 function vOrg() {
-  const E = D.emp.slice(), byName = n => E.find(e => lc(e.name) === lc(n)), kids = {}, roots = [];
-  E.forEach(e => { const m = e.mgr && byName(e.mgr); if (m && m._id !== e._id) (kids[m._id] = kids[m._id] || []).push(e); else roots.push(e); });
-  const node = (e, seen) => seen.has(e._id) ? '' : (seen.add(e._id), '<li><div class="oc"><span class="av">' + esc(ini(e.name)) + '</span><div><b>' + esc(e.name) + '</b><span>' + esc([e.desg, e.cat].filter(Boolean).join(' · ')) + '</span></div></div>' + (kids[e._id] ? '<ul>' + kids[e._id].map(k => node(k, seen)).join('') + '</ul>' : '') + '</li>');
+  const E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), kids = {}, roots = [];
+  E.forEach(e => { const m = mgrOf(e); if (m) (kids[m._id] = kids[m._id] || []).push(e); else roots.push(e); });
+  const node = (e, seen) => seen.has(e._id) ? '' : (seen.add(e._id), '<li><div class="oc"><span class="av">' + esc(ini(e.name)) + '</span><div><b>' + esc(e.name) + '</b><span>' + esc([e.desg, e.cat].filter(Boolean).join(' · ')) + '</span>' + (kids[e._id] ? '<span>' + kids[e._id].length + ' direct report' + (kids[e._id].length > 1 ? 's' : '') + '</span>' : '') + '</div></div>' + (kids[e._id] ? '<ul>' + kids[e._id].map(k => node(k, seen)).join('') + '</ul>' : '') + '</li>');
   const depts = {}; roots.forEach(r => (depts[r.cat || 'Other'] = depts[r.cat || 'Other'] || []).push(r)); const seen = new Set();
-  return ph('Org chart', 'Built from each employee\'s reporting manager and department (set in the package / offer).') + (E.length ? '<div class="grid g2">' + Object.keys(depts).sort().map(d => '<section class="card"><h2>' + esc(d) + '</h2><div class="org"><ul>' + depts[d].map(r => node(r, seen)).join('') + '</ul></div></section>').join('') + '</div>' : '<div class="empty">No employees yet.</div>');
+  const noMgr = E.filter(e => !mgrOf(e)).length;
+  return ph('Org chart', 'Who reports to whom. ' + (isHR() ? 'Set reporting managers below.' : 'HR sets reporting managers.')) +
+    (E.length ? '<div class="grid g2">' + Object.keys(depts).sort().map(d => '<section class="card"><h2>' + esc(d) + '</h2><div class="org"><ul>' + depts[d].map(r => node(r, seen)).join('') + '</ul></div></section>').join('') + '</div>' : '<div class="empty">No employees yet.</div>') +
+    (isHR() && E.length ? '<section class="card mt"><h2>' + svg('org') + ' Reporting managers' + (noMgr ? '<span class="more mute">' + noMgr + ' without a manager</span>' : '') + '</h2><p class="mute small">Pick who each person reports to. Saved to the employee record and the Punch app profile.</p>' +
+      tbl(['Employee', 'Designation', 'Department', 'Reports to', '#Team'], E.map(e => '<tr><td><b>' + esc(e.name) + '</b><div class="mute small">' + esc(e.eid || '') + '</div></td><td class="w" style="min-width:140px">' + esc([e.desg, e.grade].filter(Boolean).join(' · ')) + '</td><td>' + esc(e.cat || '') + '</td><td><select data-mg="' + esc(e._id) + '" aria-label="Reports to" class="btn s" style="min-width:180px"><option value="">— No manager (top) —</option>' +
+        E.filter(o => o._id !== e._id).map(o => '<option value="' + esc(o.name) + '"' + (mgrOf(e) === o ? ' selected' : '') + '>' + esc(o.name) + (o.desg ? ' · ' + esc(o.desg) : '') + '</option>').join('') + '</select></td><td class="n">' + teamOf(e).length + '</td></tr>')) + '</section>' : '');
+}
+/** Change some fields of a person in both places: the portal employee record and (when on Punch) the Punch profile. */
+async function patchEmp(p, f) {
+  const now = Date.now(), sid = p.staffId || (p.noPunch ? null : 'p_' + p._id);
+  if (sid) { const cur = Object.assign({ stage: 'Active', createdAt: now, name: p.name, empId: p.eid || '', role: p.desg || '' }, D.staff.find(z => z._id === sid) || {}); delete cur._id;
+    if (!p.noPunch) cur.puid = p._id; if (!(await save('staff/' + sid, Object.assign(cur, f, { updatedAt: now })))) return false; }
+  if (!p.noPunch) { const raw = Object.assign({}, D.pemp.find(z => z._id === p._id) || {}); delete raw._id; if (!(await save('punch_emp/' + p._id, Object.assign(raw, f, { updatedAt: now })))) return false; }
+  return true;
 }
 function vAnnouncements() {
   const P = D.posts.slice().sort((a, b) => num(b.at) - num(a.at)), H = D.hol.slice().sort((a, b) => a.date < b.date ? -1 : 1);
@@ -396,7 +484,7 @@ function empForm() {
   return '<section class="card" style="margin-bottom:14px"><h2>' + (id === 'new' ? 'New employee' : 'Edit ' + esc(e.name)) + '</h2><div class="form">' + fld('em-name', 'Full name', 'text', e.name) + fld('em-eid', 'Employee ID', 'text', e.eid) + fld('em-desg', 'Designation', 'text', e.desg) +
     '<label>Grade<select id="em-grade">' + opt(GRADES, e.grade) + '</select></label><label>Department<select id="em-cat">' + opt(DEPTS_HR, e.cat) + '</select></label>' + fld('em-hub', 'Workplace', 'text', (e.wp || {}).name) + fld('em-join', 'Date of joining', 'date', e.join) +
     '<label>Reporting manager<select id="em-mgr">' + opt(D.emp.filter(o => o._id !== id).map(o => o.name).sort(), e.mgr) + '</select></label>' + fld('em-phone', 'Mobile', 'tel', e.phone) + '</div>' +
-    '<p class="mute small mt">' + (id === 'new' ? (canAppr() ? 'Saving also creates the Punch app login: Punch ID = employee ID, password ' + DEFAULT_PW + '.' : 'Saved to the employee list. HR team lead and above create the Punch login.') : 'Saved to the portal\'s employee list' + (e.noPunch ? '' : ' and this person\'s Punch app profile') + ' at the same time.') + '</p><div class="row mt"><button class="btn p" type="button" data-a="em-save">Save</button><button class="btn" type="button" data-a="em-cancel">Cancel</button></div></section>';
+    (id !== 'new' && isSuperP(id) ? '<p class="mute small mt">Super admin: only the name and employee ID are required.</p>' : '<p class="mute small mt"><b>All fields are required.</b></p>') + '<p class="mute small mt">' + (id === 'new' ? (canAppr() ? 'Saving also creates the Punch app login: Punch ID = employee ID, password ' + DEFAULT_PW + '.' : 'Saved to the employee list. HR team lead and above create the Punch login.') : 'Saved to the portal\'s employee list' + (e.noPunch ? '' : ' and this person\'s Punch app profile') + ' at the same time.') + '</p><div class="row mt"><button class="btn p" type="button" data-a="em-save">Save</button><button class="btn" type="button" data-a="em-cancel">Cancel</button></div></section>';
 }
 function vHrEmployees() {
   const q = lc(S.q.emp || ''), E = D.emp.filter(e => !q || lc([e.name, e.eid, e.desg, e.cat].join(' ')).includes(q)).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = ymNow(), np = D.emp.filter(e => e.noPunch).length;
@@ -407,10 +495,13 @@ function vHrEmployees() {
         '<td style="white-space:nowrap;position:sticky;right:0;background:var(--card)"><button class="btn s" type="button" data-a="em-edit" data-x="' + esc(e._id) + '">Edit</button> <button class="btn s d" type="button" data-a="em-left" data-x="' + esc(e._id) + '">Mark left</button></td></tr>'; }), 'No employees match.');
 }
 function vOnboarding() {
-  const E = D.emp.filter(e => e.noPunch || !e.join || e.join >= iso(new Date(Date.now() - 90 * 864e5))).sort((a, b) => String(b.join) < String(a.join) ? -1 : 1);
-  return ph('Onboarding', 'New joiners in the last 90 days and upcoming joiners, with their offer letter status.', '<a class="btn p" href="#/hr-employees">＋ New employee</a>') +
-    tbl(['Name', 'ID', 'Designation', 'Joining', 'Offer letter', 'Punch app'], E.map(e => { const o = D.offer.find(x => x._id === e._id), at = D.att.some(a => a.uid === e._id); return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (o ? stPill(o.status) : pill('Not prepared')) + '</td><td>' + (e.noPunch ? '<a href="#/hr-employees" class="pill warn">Create Punch login</a>' : at ? pill('Using', 'good') : pill('Not yet', 'warn')) + '</td></tr>'; }), 'No new joiners.') +
-    '<p class="mute small mt">Packages and offer letters are prepared and released in the portal: Team live › Package &amp; offer letter.</p>';
+  const E = D.emp.filter(e => e.noPunch || !e.join || e.join >= iso(new Date(Date.now() - 90 * 864e5)) || docStat(e._id).ok < docStat(e._id).n).sort((a, b) => String(b.join) < String(a.join) ? -1 : 1), cur = S.docFor && empOf(S.docFor);
+  return ph('Onboarding', 'New joiners: offer letter, Punch login and the required joining documents.', '<a class="btn p" href="#/hr-employees">＋ New employee</a>') +
+    (cur ? '<section class="card" style="margin-bottom:14px" id="docRev"><h2>' + svg('doc') + ' Documents · ' + esc(cur.name) + '<button class="btn s more" type="button" data-a="doc-close">Close</button></h2><p class="mute small">Verify each document, ask for a re-upload, or upload it for them.</p>' + docList(cur._id, true) + '</section>' : '') +
+    tbl(['Name', 'ID', 'Joining', 'Offer letter', 'Punch app', 'Documents', ''], E.map(e => { const o = D.offer.find(x => x._id === e._id), at = D.att.some(a => a.uid === e._id), st = docStat(e._id);
+      return '<tr><td><b>' + esc(e.name) + '</b><div class="mute small">' + esc(e.desg || '') + '</div></td><td>' + esc(e.eid || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (o ? stPill(o.status) : pill('Not prepared')) + '</td><td>' + (e.noPunch ? '<a href="#/hr-employees" class="pill warn">Create Punch login</a>' : at ? pill('Using', 'good') : pill('Not yet', 'warn')) + '</td>' +
+        '<td>' + (!st.n ? pill('Not required (super admin)') : st.ok === st.n ? pill('All ' + st.n + ' verified', 'good') : pill(st.up + '/' + st.n + ' uploaded' + (st.wait ? ' · ' + st.wait + ' to verify' : ''), st.wait ? 'info' : 'warn')) + '</td><td><button class="btn s" type="button" data-a="doc-open" data-x="' + esc(e._id) + '">Documents</button></td></tr>'; }), 'No new joiners.') +
+    '<p class="mute small mt">Packages and CTC offer letters: HR › Package &amp; offer letter.</p>';
 }
 function vTeamAtt() {
   const E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = S.ym, dd = today().slice(8);
@@ -434,9 +525,61 @@ async function decide(id, ok) {
 function vPayroll() {
   if (!canSal()) return ph('Payroll') + '<div class="empty">Payroll is for HR manager, HR head and admins.</div>';
   const E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), rows = E.map(e => ({ e, p: payslip(e, payOf(e._id), S.ym) })), T = k => rows.reduce((t, r) => t + (r.p ? num(k(r.p)) : 0), 0);
-  return ph('Payroll', ymLabel(S.ym) + (S.ym === ymNow() ? ' · days up to today' : ''), monthPick('ym', S.ym) + '<a class="btn" href="../portal/#payroll">Payroll runs (portal)</a>') +
+  return ph('Payroll', ymLabel(S.ym) + (S.ym === ymNow() ? ' · days up to today' : ''), monthPick('ym', S.ym)) +
     '<div class="tiles" style="margin-bottom:14px"><div class="t"><span>Employees paid</span><b>' + rows.filter(r => r.p).length + '</b></div><div class="t"><span>Gross</span><b>' + money(T(p => p.gross)) + '</b></div><div class="t"><span>Deductions</span><b>' + money(T(p => p.td)) + '</b></div><div class="t"><span>Net pay</span><b>' + money(T(p => p.net)) + '</b></div></div>' +
-    tbl(['Name', 'ID', '#Paid days', '#Monthly salary', '#Gross', '#PF', '#PT', '#Other', '#Net pay'], rows.map(({ e, p }) => p ? '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td class="n">' + p.pd + ' / ' + p.base + '</td><td class="n">' + money(p.sal) + '</td><td class="n">' + money(p.gross) + '</td><td class="n">' + money(p.ded.pf) + '</td><td class="n">' + money(p.ded.pt) + '</td><td class="n">' + money(p.ded.vpf + p.ded.esi + p.ded.oth) + '</td><td class="n"><b>' + money(p.net) + '</b></td></tr>' : '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td colspan="7" class="mute">' + (e.noPunch ? 'No Punch login yet – create it, then set the package' : 'Salary not set up – set the package in the portal') + '</td></tr>'));
+    tbl(['Name', 'ID', '#Paid days', '#Monthly salary', '#Gross', '#PF', '#PT', '#Other', '#Net pay', ''], rows.map(({ e, p }) => p ? '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td class="n">' + p.pd + ' / ' + p.base + '</td><td class="n">' + money(p.sal) + '</td><td class="n">' + money(p.gross) + '</td><td class="n">' + money(p.ded.pf) + '</td><td class="n">' + money(p.ded.pt) + '</td><td class="n">' + money(r2(p.td - p.ded.pf - p.ded.pt)) + '</td><td class="n"><b>' + money(p.net) + '</b></td><td><button class="btn s" type="button" data-a="slip-open" data-x="' + esc(e._id) + '">Payslip</button></td></tr>' : '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td colspan="8" class="mute">' + (e.noPunch ? 'No Punch login yet – create it, then set the package' : 'Salary not set up – set the package in the portal') + '</td></tr>')) + (S.slipFor && empOf(S.slipFor) && payOf(S.slipFor) ? '<section class="card mt" id="hrSlip"><h2>Payslip · ' + esc(empOf(S.slipFor).name) + ' · ' + ymLabel(S.ym) + '<button class="btn s more" type="button" data-a="slip-close">Close</button></h2>' + slipHtml(empOf(S.slipFor), payOf(S.slipFor), S.ym, false) + '</section>' : '');
+}
+/* ================= Package & CTC offer letter ================= */
+/** Split an annual CTC into the monthly structure Punch uses, so that CTC on the letter = the CTC entered.
+ *  Basic = % of CTC, HRA = % of Basic, Conveyance fixed, PF (employer) = PF % of Basic, Gratuity 4.81% of Basic, Special allowance = the balance. */
+function ctcSplit(A, o) {
+  const M = r2(A / 12), b = Math.round(M * o.bp / 100), pf = Math.round(b * o.pfPct / 100), gr = o.grat ? r2(b * 0.0481) : 0;
+  let h = Math.round(b * o.hp / 100), c = Math.min(o.conv, Math.max(0, Math.round(M - b - h - pf - gr))), spl = r2(M - b - h - c - pf - gr);
+  if (spl < 0) { h = Math.max(0, Math.round(h + spl)); spl = r2(M - b - h - c - pf - gr); }
+  return { basic: b, hra: h, conv: c, spl: Math.max(0, spl) };
+}
+const OFF_J = [['desg', 'Designation'], ['grade', 'Grade'], ['cat', 'Department'], ['loc', 'Work location'], ['join', 'Date of joining', 'date'], ['mgr', 'Reporting manager'], ['mob', 'Mobile', 'tel'], ['email', 'Email', 'email'], ['addr', 'Address', 'textarea']];
+const OFF_P = [['basic', 'Basic / month'], ['hra', 'HRA / month'], ['conv', 'Conveyance / month'], ['spl', 'Special allowance / month'], ['pfPct', 'PF % of Basic'], ['pt', 'Professional tax / month']];
+const OFF_T = [['prob', 'Probation (months)'], ['pnotice', 'Notice in probation (days)'], ['notice', 'Notice after confirmation (days)'], ['hrs', 'Working hours / day'], ['wdays', 'Working days / week']];
+function offerFor(e) { const o = D.offer.find(x => x._id === e._id), v = payOf(e._id) || {};
+  return Object.assign({ pfPct: 12, pt: 200, grat: true, prob: 6, pnotice: 15, notice: 30, hrs: 9, wdays: 6, status: 'Draft' },
+    { name: e.name, eid: e.eid, desg: e.desg, grade: e.grade, cat: e.cat, loc: (e.wp || {}).name, join: e.join, mgr: e.mgr, mob: e.phone, basic: v.basicAmt, hra: v.hraAmt, conv: v.convAmt, spl: v.splAmt, pfPct: v.pfPct == null ? 12 : v.pfPct, pt: v.pt == null ? 200 : v.pt }, o || {}, { name: e.name, eid: e.eid }); }
+const ctcOf = o => window.OfferLetter ? OfferLetter.ctc(o) : { gross: 0, m: 0, y: 0, net: 0 };
+function readPkg(e) { const o = Object.assign({}, S.pkgDraft || offerFor(e)); delete o._id;
+  OFF_J.forEach(([k]) => { const el = document.getElementById('pk-' + k); if (el) o[k] = el.value.trim(); });
+  OFF_P.concat(OFF_T).forEach(([k]) => { const el = document.getElementById('pk-' + k); if (el) o[k] = el.value === '' ? 0 : num(el.value); });
+  const g = document.getElementById('pk-grat'); if (g) o.grat = g.value === '1'; return o; }
+function vPackages() {
+  if (!canSal()) return ph('Package & offer letter') + '<div class="empty">For HR manager, HR head and admins.</div>';
+  const ed = canSalE(), E = D.emp.slice().sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), cur = S.pkgFor && empOf(S.pkgFor);
+  let x = ph('Package & offer letter', 'Enter the annual CTC – the salary structure and the CTC offer letter are built for you. Saving also sets the monthly salary in Punch.');
+  if (cur && !cur.noPunch) { const o = S.pkgDraft || offerFor(cur), k = ctcOf(o), dis = ed ? '' : ' disabled', B = S.pkgOpt || { bp: 40, hp: 40, conv: 1600 };
+    const nf = ([k2, l]) => '<label>' + esc(l) + '<input id="pk-' + k2 + '" type="number" step="0.01" value="' + esc(o[k2] == null ? '' : o[k2]) + '"' + dis + '></label>';
+    x += '<section class="card" style="margin-bottom:14px" id="pkCard"><h2>' + svg('pay') + ' ' + esc(cur.name) + ' · ' + esc(cur.eid || '') + ' ' + stPill(o.status) + '<button class="btn s more" type="button" data-a="pk-close">Close</button></h2>' +
+      (ed ? '<div class="card" style="background:var(--soft);box-shadow:none;margin:10px 0"><h3 style="margin:0 0 8px">Build from CTC</h3><div class="form"><label>Annual CTC (₹)<input id="pk-ctc" type="number" step="1000" value="' + esc(S.pkgCtc || (k.y ? Math.round(k.y) : '')) + '" placeholder="e.g. 600000"></label><label>Basic % of CTC<input id="pk-bp" type="number" value="' + B.bp + '"></label><label>HRA % of Basic<input id="pk-hp" type="number" value="' + B.hp + '"></label><label>Conveyance / month<input id="pk-cv" type="number" value="' + B.conv + '"></label></div>' +
+        '<div class="row mt"><button class="btn p" type="button" data-a="pk-build">Build structure</button><span class="mute small">Special allowance takes the balance, so the CTC matches exactly. PF and gratuity below are included in the CTC.</span></div></div>' : '') +
+      '<h3>Salary structure</h3><div class="form">' + OFF_P.map(nf).join('') + '<label>Gratuity in CTC<select id="pk-grat"' + dis + '><option value="1"' + (o.grat ? ' selected' : '') + '>Yes (4.81% of Basic)</option><option value="0"' + (o.grat ? '' : ' selected') + '>No</option></select></label></div>' +
+      '<div class="tiles mt"><div class="t"><span>Gross / month</span><b>' + money(k.gross) + '</b></div><div class="t"><span>Take-home / month</span><b>' + money(k.net) + '</b></div><div class="t"><span>CTC / month</span><b>' + money(k.m) + '</b></div><div class="t"><span>CTC / year</span><b>' + money(k.y) + '</b></div></div>' +
+      tbl(['Component', '#Monthly', '#Annual'], [['Basic', k.b], ['HRA', k.h], ['Conveyance', k.c], ['Special allowance', k.sp], ['Gross salary', k.gross, 1], ['PF – employer', k.pfR], ['Gratuity', k.gr], ['Cost to company (CTC)', k.m, 1], ['Less: PF – employee', -k.pfE], ['Less: Professional tax', -k.pt], ['Take-home (approx.)', k.net, 1]].map(([l, v, b]) => '<tr><td>' + (b ? '<b>' + l + '</b>' : l) + '</td><td class="n">' + (b ? '<b>' + money(v) + '</b>' : money(v)) + '</td><td class="n">' + (b ? '<b>' + money(v * 12) + '</b>' : money(v * 12)) + '</td></tr>')) +
+      '<h3 class="mt">Joining details <span class="mute small">(all required to release)</span></h3><div class="form">' + OFF_J.map(([k2, l, t]) => k2 === 'mgr' ? '<label>' + l + '<select id="pk-mgr"' + dis + '><option value=""></option>' + D.emp.filter(z => z._id !== cur._id).map(z => '<option' + (normN(z.name) === normN(o.mgr) ? ' selected' : '') + '>' + esc(z.name) + '</option>').join('') + '</select></label>' : k2 === 'grade' ? '<label>' + l + '<select id="pk-grade"' + dis + '><option value=""></option>' + GRADES.concat(o.grade && !GRADES.includes(o.grade) ? [o.grade] : []).map(g => '<option' + (g === o.grade ? ' selected' : '') + '>' + esc(g) + '</option>').join('') + '</select></label>' : fld('pk-' + k2, l, t || 'text', o[k2], dis)).join('') + '</div>' +
+      '<h3 class="mt">Terms</h3><div class="form">' + OFF_T.map(nf).join('') + '</div>' +
+      '<div class="row mt">' + (ed ? '<button class="btn p" type="button" data-a="pk-save">Save package</button>' : '') + '<button class="btn" type="button" data-a="pk-prev">' + (S.pkgPrev ? 'Hide letter' : 'Preview CTC offer letter') + '</button><button class="btn" type="button" data-a="pk-print">Print / PDF</button>' +
+        (ed && !['Released', 'Accepted'].includes(o.status) ? '<button class="btn p" type="button" data-a="pk-release">Release offer letter</button>' : '') + (ed && o.status === 'Released' ? '<button class="btn d" type="button" data-a="pk-withdraw">Withdraw</button>' : '') + '</div>' +
+      (S.pkgPrev && window.OfferLetter ? '<div class="mt" style="overflow-x:auto">' + OfferLetter.html(o, { name: 'Movana Logistics' }) + '</div>' : '') + '</section>'; }
+  return x + tbl(['Name', 'ID', 'Designation', '#Gross / month', '#CTC / year', 'Offer letter', ''], E.map(e => { if (e.noPunch) return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td colspan="3" class="mute">Create the Punch login first (Employees)</td><td></td></tr>';
+    const o = offerFor(e), k = ctcOf(o); return '<tr><td><b>' + esc(e.name) + '</b></td><td>' + esc(e.eid || '') + '</td><td>' + esc(o.desg || '') + '</td><td class="n">' + money(k.gross) + '</td><td class="n">' + money(k.y) + '</td><td>' + stPill(o.status) + '</td><td><button class="btn s' + (S.pkgFor === e._id ? ' p' : '') + '" type="button" data-a="pk-open" data-x="' + esc(e._id) + '">' + (ed ? 'Package' : 'View') + '</button></td></tr>'; }), 'No employees.');
+}
+async function savePkg(release) {
+  const e = empOf(S.pkgFor); if (!e || !canSalE()) return; const o = readPkg(e), now = Date.now();
+  if (!(num(o.basic) > 0)) { toast('Build the structure from the CTC (or enter Basic).'); return; }
+  if (release) { const miss = OFF_J.filter(([k]) => k !== 'addr' && k !== 'email' && !o[k]).map(x => x[1]); if (!isSuperP(e._id) && miss.length) { toast('Fill in: ' + miss.join(', ')); return; }
+    if (!await ask('Release the CTC offer letter to ' + e.name + ' (CTC ' + money(ctcOf(o).y) + ' a year)? They can read and accept it in Movana People.', { ok: 'Release' })) return; o.status = 'Released'; o.releasedAt = now; o.releasedBy = S.uid; }
+  o.uid = e._id; o.updatedAt = now; o.by = S.uid;
+  if (!(await save('punch_offer/' + e._id, o))) return;
+  const v = Object.assign({}, payOf(e._id) || {}); delete v._id; Object.assign(v, { basicAmt: num(o.basic), hraAmt: num(o.hra), convAmt: num(o.conv), splAmt: num(o.spl), pfPct: num(o.pfPct), pfMode: 'pct', pt: num(o.pt), v2: 1, updatedAt: now, by: S.uid });
+  await save('punch_pay/' + e._id, v);
+  await patchEmp(e, { desg: o.desg, grade: o.grade, cat: o.cat, join: o.join, mgr: o.mgr });
+  S.pkgDraft = null; toast(release ? 'Offer letter released' : 'Package saved – monthly salary updated in Punch'); render();
 }
 const STG = ['Applied', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
 function vRecruit() {
@@ -484,15 +627,17 @@ add('learning', 'Me', 'Training', 'learn', vLearning);
 add('documents', 'Me', 'Documents', 'doc', vDocuments, E_, () => D.offer.filter(o => o._id === S.self && o.status === 'Released').length);
 add('helpdesk', 'Me', 'Ask HR', 'help', vHelpdesk);
 add('separation', 'Me', 'Resignation', 'exit', vSeparation);
+V.push({ id: 'settings', g: 'Me', label: 'Settings', icon: 'cog', render: () => ph('Settings', 'Your password and sign-in.') + pwCard() + '<section class="card mt"><h2>' + svg('key') + ' Google sign-in</h2><p class="mute">Link a Google account to sign in with one tap.</p><a class="btn" href="../portal/#account">Open Google sign-in settings</a></section>', ok: () => true, hide: true });
 add('people', 'Company', 'People', 'people', vPeople);
 add('org', 'Company', 'Org chart', 'org', vOrg);
 add('announcements', 'Company', 'Announcements & holidays', 'mega', vAnnouncements);
 add('careers', 'Company', 'Careers', 'brief', vCareers);
 add('hr-employees', 'HR', 'Employees', 'people', vHrEmployees, isHR);
-add('onboarding', 'HR', 'Onboarding', 'user', vOnboarding, isHR, () => pend().offers);
+add('onboarding', 'HR', 'Onboarding', 'user', vOnboarding, isHR, () => pend().offers + pend().docs);
 add('team-attendance', 'HR', 'Team attendance', 'clock', vTeamAtt, isHR);
 add('approvals', 'HR', 'Leave & attendance approvals', 'check', vApprovals, isHR, () => pend().req);
 add('payroll', 'HR', 'Payroll', 'pay', vPayroll, canSal);
+add('packages', 'HR', 'Package & offer letter', 'doc', vPackages, canSal, () => D.offer.filter(o => o.status === 'Released').length);
 add('recruitment', 'HR', 'Recruitment', 'brief', vRecruit, isHR);
 add('performance', 'HR', 'Performance', 'goal', vPerf, isHR);
 add('training-admin', 'HR', 'Training admin', 'learn', vTrainAdmin, isHR);
@@ -500,7 +645,7 @@ add('hr-expenses', 'HR', 'Expense claims', 'exp', vHrExpenses, isHR, () => pend(
 add('hr-helpdesk', 'HR', 'HR helpdesk', 'help', vHrHelp, isHR, () => pend().help);
 add('hr-exits', 'HR', 'Separations', 'exit', vHrExits, isHR, () => pend().exits);
 ext('Admin', 'Roles & access', 'key', '../portal/#access', isAdmin);
-ext('Admin', 'Package & offer letters', 'doc', '../portal/#punch', canSal);
+
 ext('Apps', 'Control tower (portal)', 'tower', '../portal/', () => !S.roles.every(r => r === 'employee'));
 ext('Apps', 'Website', 'home', '../', E_);
 
@@ -522,7 +667,8 @@ const busy = new Set();
 document.addEventListener('click', async ev => {
   const t = ev.target.closest('[data-a]');
   if (ev.target.closest('#burger')) { document.body.classList.toggle('navopen'); return; }
-  if (ev.target.closest('#who')) { const m = $('#menu'); m.innerHTML = '<div class="h"><b>' + esc(S.me.name) + '</b><span>' + esc(S.roles.map(roleName).join(' · ')) + '</span></div><a href="#/profile">' + svg('user') + 'My profile</a><a href="../portal/#account">' + svg('cog') + 'Settings (password, Google)</a><button type="button" class="out" id="logout">' + svg('exit') + 'Log out</button>'; m.hidden = !m.hidden; return; }
+  { const fb = ev.target.closest('[data-fold]'); if (fb) { const g = fb.dataset.fold, vis = V.filter(v => v.ok() && !v.hide); FOLD[g] = !folded(g, vis); try { localStorage.setItem('hr.fold', JSON.stringify(FOLD)); } catch (e) {} $('#nav').innerHTML = navHtml(); return; } }
+  if (ev.target.closest('#who')) { const m = $('#menu'); m.innerHTML = '<div class="h"><b>' + esc(S.me.name) + '</b><span>' + esc(S.roles.map(roleName).join(' · ')) + '</span></div><a href="#/settings">' + svg('cog') + 'Settings</a><button type="button" class="out" id="logout">' + svg('exit') + 'Log out</button>'; m.hidden = !m.hidden; return; }
   if (ev.target.closest('#logout')) { window.MOVANA_FB.signOut(); return; }
   if (ev.target.closest('#bell')) { go(isHR() ? 'approvals' : 'documents'); return; }
   if (!ev.target.closest('#menu')) $('#menu').hidden = true;
@@ -535,22 +681,41 @@ async function act(a, x, t) {
   const now = Date.now(), e = meEmp(), base = { uid: S.self, name: e.name || S.me.name, eid: e.eid || '', at: now };
   switch (a) {
     case 'print': window.print(); return;
+    case 'pk-open': S.pkgFor = S.pkgFor === x ? null : x; S.pkgDraft = null; S.pkgCtc = ''; S.pkgPrev = false; render(); setTimeout(() => { const c = $('#pkCard'); if (c) c.scrollIntoView({ behavior: 'smooth' }); }, 40); return;
+    case 'pk-close': S.pkgFor = null; S.pkgDraft = null; render(); return;
+    case 'pk-build': { const e = empOf(S.pkgFor); if (!e) return; const A = num(val('pk-ctc')); if (!(A >= 12000)) { toast('Enter the annual CTC in rupees, e.g. 600000.'); return; }
+      const O = { bp: num(val('pk-bp')) || 40, hp: num(val('pk-hp')) || 0, conv: num(val('pk-cv')) || 0 }, o = readPkg(e); S.pkgOpt = O; S.pkgCtc = A;
+      Object.assign(o, ctcSplit(A, { bp: O.bp, hp: O.hp, conv: O.conv, pfPct: num(o.pfPct), grat: o.grat })); S.pkgDraft = o; render(); toast('Structure built for CTC ' + money(A)); return; }
+    case 'pk-prev': { const e = empOf(S.pkgFor); if (!e) return; S.pkgDraft = readPkg(e); S.pkgPrev = !S.pkgPrev; render(); return; }
+    case 'pk-print': { const e = empOf(S.pkgFor); if (!e || !window.OfferLetter) return; OfferLetter.print(readPkg(e), { name: 'Movana Logistics' }); return; }
+    case 'pk-save': await savePkg(false); return;
+    case 'pk-release': await savePkg(true); return;
+    case 'pk-withdraw': { const o = D.offer.find(z => z._id === S.pkgFor); if (!o || !await ask('Withdraw this offer letter?', { ok: 'Withdraw', danger: 1 })) return; const b = Object.assign({}, o); delete b._id; b.status = 'Withdrawn'; b.updatedAt = now; b.by = S.uid; await save('punch_offer/' + o._id, b, 'Withdrawn'); return; }
+    case 'doc-view': await viewDoc(x); return;
+    case 'doc-open': S.docFor = x; render(); window.scrollTo(0, 0); return;
+    case 'doc-close': S.docFor = null; render(); return;
+    case 'doc-ok': case 'doc-re': { const d = D.docs.find(z => z._id === x); if (!d || !isHR()) return; let note = '';
+      if (a === 'doc-re') { note = (await ask('What should they fix? (shown to the employee)', { input: 1, value: 'Photo not clear', ok: 'Ask to re-upload' })) || ''; if (!note) return; }
+      const b = Object.assign({}, d); delete b._id; b.s = a === 'doc-ok' ? 'Approved' : 'Re-upload'; b.note = note; b.by = S.uid; b.decidedAt = now; await save('hr_docs/' + x, b, a === 'doc-ok' ? 'Verified' : 'Asked to re-upload'); return; }
+    case 'slip-print': if (S.slipD && window.Payslip) Payslip.print(S.slipD); return;
+    case 'slip-open': S.slipFor = x; render(); setTimeout(() => { const el = document.getElementById('hrSlip'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 50); return;
+    case 'slip-close': S.slipFor = null; render(); return;
     case 'lv-send': { const tn = val('lv-t'), tc = (LT.find(l => l[1] === tn) || ['PL'])[0], A = val('lv-a'), B = val('lv-b'), days = rangeDays(A, B, e.wo || [0]); if (!days.length) { toast('Pick valid dates (week offs are skipped).'); return; }
       const id = String(now); if (await save('punch_req/' + id, Object.assign({}, base, { kind: 'leave', t: tc, a: A, b: B, n: days.length, days, why: val('lv-why'), s: 'Pending' }), 'Leave request sent to HR')) render(); return; }
     case 'ar-send': { const vn = val('ar-v'), v = { Present: 'present', 'Week off': 'weekoff', Holiday: 'holiday', 'Holiday + Present': 'holpresent', Absent: 'absent' }[vn], days = rangeDays(val('ar-a'), val('ar-b'), []); if (!days.length) { toast('Pick valid dates.'); return; }
       await save('punch_req/' + now, Object.assign({}, base, { kind: 'att', v, days, why: val('ar-why'), s: 'Pending' }), 'Request sent to HR'); return; }
-    case 'req-cancel': { const r = D.req.find(z => z._id === x); if (!r || !confirm('Cancel this request?')) return; const b = Object.assign({}, r); delete b._id; await save('punch_req/' + x, Object.assign(b, { s: 'Cancelled', updatedAt: now }), 'Cancelled'); return; }
+    case 'req-cancel': { const r = D.req.find(z => z._id === x); if (!r || !await ask('Cancel this request?', { ok: 'Cancel request', danger: 1 })) return; const b = Object.assign({}, r); delete b._id; await save('punch_req/' + x, Object.assign(b, { s: 'Cancelled', updatedAt: now }), 'Cancelled'); return; }
     case 'ex-send': { if (!(num(val('ex-amt')) > 0)) { toast('Enter the amount.'); return; } await save('hr_expenses/' + newId('ex'), Object.assign({}, base, { date: val('ex-date'), cat: val('ex-cat'), amount: num(val('ex-amt')), note: val('ex-note'), s: 'Pending' }), 'Claim submitted'); return; }
-    case 'own-del': { if (!confirm('Withdraw this?')) return; if (await del(t.dataset.c + '/' + x)) toast('Withdrawn'); return; }
+    case 'own-del': { if (!await ask('Withdraw this?', { ok: 'Withdraw', danger: 1 })) return; if (await del(t.dataset.c + '/' + x)) toast('Withdrawn'); return; }
     case 'gl-add': { if (!val('gl-title')) { toast('Write the goal.'); return; } await save('hr_goals/' + newId('gl'), Object.assign({}, base, { title: val('gl-title'), metric: val('gl-metric'), target: val('gl-target'), weight: num(val('gl-weight')), due: val('gl-due'), progress: 0, s: 'Active' }), 'Goal added'); return; }
     case 'rv-send': { const cyc = val('rv-cycle'), id = 'rv_' + S.self + '_' + cyc.replace(/\s+/g, ''), old = D.reviews.find(r => r._id === id); if (old && old.s === 'Final') { toast('This review is already final.'); return; }
       await save('hr_reviews/' + id, Object.assign({}, base, { cycle: cyc, self: { rating: num(val('rv-rate')), text: val('rv-text') }, mgr: (old && old.mgr) || null, s: 'Submitted' }), 'Review submitted'); return; }
     case 'tr-join': { const c = D.train.find(z => z._id === x); await save('hr_enrol/' + x + '_' + S.self, Object.assign({}, base, { course: x, courseTitle: c ? c.title : '', s: 'Enrolled' }), 'Signed up'); return; }
     case 'hd-send': { if (!val('hd-sub')) { toast('Write a subject.'); return; } await save('hr_help/' + newId('hd'), Object.assign({}, base, { cat: val('hd-cat'), subject: val('hd-sub'), detail: val('hd-text'), s: 'Open' }), 'Sent to HR'); return; }
-    case 'sx-send': { if (!val('sx-lwd')) { toast('Pick your last working day.'); return; } if (!confirm('Submit your resignation to HR?')) return; await save('hr_exits/' + newId('sx'), Object.assign({}, base, { lwdAsked: val('sx-lwd'), reason: val('sx-why'), text: val('sx-text'), s: 'Pending' }), 'Resignation submitted'); return; }
+    case 'sx-send': { if (!val('sx-lwd')) { toast('Pick your last working day.'); return; } if (!await ask('Submit your resignation to HR?', { ok: 'Submit resignation', danger: 1 })) return; await save('hr_exits/' + newId('sx'), Object.assign({}, base, { lwdAsked: val('sx-lwd'), reason: val('sx-why'), text: val('sx-text'), s: 'Pending' }), 'Resignation submitted'); return; }
     case 'of-view': S.ofView = !S.ofView; render(); return;
     case 'of-print': { const o = D.offer.find(z => z._id === S.self); if (o && window.OfferLetter) OfferLetter.print(o, { name: 'Movana Logistics' }); return; }
-    case 'of-accept': { const o = D.offer.find(z => z._id === S.self); if (!o || !confirm('Accept this offer on the terms in the letter?')) return; const b = Object.assign({}, o); delete b._id; b.status = 'Accepted'; b.acceptedAt = now; await save('punch_offer/' + S.self, b, 'Offer accepted'); return; }
+    case 'of-accept': { const o = D.offer.find(z => z._id === S.self); if (!o || !await ask('Accept this offer on the terms in the letter?', { ok: 'Accept offer' })) return; const b = Object.assign({}, o); delete b._id; b.status = 'Accepted'; b.acceptedAt = now; await save('punch_offer/' + S.self, b, 'Offer accepted'); return; }
     case 'em-new': S.edit = 'new'; render(); window.scrollTo(0, 0); return;
     case 'em-edit': S.edit = x; render(); window.scrollTo(0, 0); return;
     case 'em-cancel': S.edit = null; render(); return;
@@ -558,9 +723,12 @@ async function act(a, x, t) {
       if (!isHR()) return; const id = S.edit, p = id && id !== 'new' ? empOf(id) : null;
       const f = { name: val('em-name'), eid: val('em-eid'), desg: val('em-desg'), grade: val('em-grade'), cat: val('em-cat'), hub: val('em-hub'), join: val('em-join'), mgr: val('em-mgr'), phone: val('em-phone') };
       if (!f.name) { toast('Enter the name.'); return; }
+      if (!(p && isSuperP(p._id))) { const miss = [['desg', 'Designation'], ['grade', 'Grade'], ['cat', 'Department'], ['hub', 'Workplace'], ['join', 'Date of joining'], ['mgr', 'Reporting manager'], ['phone', 'Mobile']].filter(([k]) => !f[k]).map(x => x[1]);
+        if (miss.length) { toast('Fill in: ' + miss.join(', ')); const el = document.getElementById('em-' + ['desg', 'grade', 'cat', 'hub', 'join', 'mgr', 'phone'].find(k => !f[k])); if (el) el.focus(); return; }
+        if (!/^[6-9]\d{9}$/.test(f.phone.replace(/\D/g, '').slice(-10))) { toast('Enter a 10-digit mobile number.'); return; } }
       if (!/^\d{8}$/.test(f.eid)) { toast('Employee ID is 8 digits, from 10000000.'); return; }
       const clash = D.emp.find(o => o._id !== (p && p._id) && String(o.eid || '') === f.eid); if (clash) { toast('ID ' + f.eid + ' already belongs to ' + clash.name + '.'); return; }
-      const twin = D.emp.find(o => o._id !== (p && p._id) && normN(o.name) === normN(f.name)); if (twin && !confirm(twin.name + ' (' + (twin.eid || 'no ID') + ') is already in the list. Add another person with the same name?')) return;
+      const twin = D.emp.find(o => o._id !== (p && p._id) && normN(o.name) === normN(f.name)); if (twin && !await ask(twin.name + ' (' + (twin.eid || 'no ID') + ') is already in the list. Add another person with the same name?', { ok: 'Add anyway' })) return;
       const sid = (p && p.staffId) || (p && !p.noPunch ? 'p_' + p._id : newId('st')), cur = Object.assign({}, D.staff.find(z => z._id === sid) || {}); delete cur._id;
       const sb = Object.assign({ stage: 'Active', createdAt: now }, cur, { name: f.name, empId: f.eid, role: f.desg, grade: f.grade, dept: f.cat, hub: f.hub, joined: f.join, mgr: f.mgr, phone: f.phone, updatedAt: now });
       if (p && !p.noPunch) sb.puid = p._id;
@@ -572,7 +740,7 @@ async function act(a, x, t) {
       toast(p ? 'Saved – portal' + (p.noPunch ? '' : ' and Punch app') + ' updated' : 'Employee added'); render(); return; }
     case 'pl-one': case 'pl-all': {
       const L = a === 'pl-one' ? [empOf(x)].filter(Boolean) : D.emp.filter(o => o.noPunch); if (!L.length) return;
-      if (!confirm('Create Punch login' + (L.length > 1 ? 's' : '') + ' for ' + L.map(o => o.name).join(', ') + '?\nPunch ID = employee ID, password ' + DEFAULT_PW + '.')) return;
+      if (!await ask('Create Punch login' + (L.length > 1 ? 's' : '') + ' for ' + L.map(o => o.name).join(', ') + '?\nPunch ID = employee ID, password ' + DEFAULT_PW + '.', { ok: 'Create login' + (L.length > 1 ? 's' : '') })) return;
       const out = []; for (const o of L) { const c = await makePunchLogin(o); if (c) out.push(c); }
       if (out.length) { S.creds = out; toast(out.length + ' Punch login' + (out.length > 1 ? 's' : '') + ' created'); } render(); window.scrollTo(0, 0); return; }
     case 'cr-copy': { const v = ($('#cr-txt') || {}).value || ''; try { await navigator.clipboard.writeText(v); toast('Copied'); } catch (e) { toast('Copy failed – select and copy by hand.'); } return; }
@@ -582,15 +750,15 @@ async function act(a, x, t) {
       try { await MOVANA_FB.changePassword(o, n1); } catch (e) { toast(e && (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') ? 'Current password is wrong.' : e && e.code === 'auth/requires-recent-login' ? 'Sign out and in again, then retry.' : 'Could not change the password (' + ((e && e.code) || 'error') + ').'); return; }
       const u = D.users.find(z => z._id === S.uid); if (u && u.pwDefault) { const b = Object.assign({}, u); delete b._id; b.pwDefault = false; b.pwSetAt = Date.now(); try { await fs.doc('users/' + S.uid).set(b); } catch (e) {} }
       ['pw-old', 'pw-n1', 'pw-n2'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; }); toast('Password changed – use it in the Punch app too'); render(); return; }
-    case 'em-left': { const p = empOf(x); if (!p || !confirm('Mark ' + p.name + ' as left? They drop off every list; their Punch history is kept.')) return;
+    case 'em-left': { const p = empOf(x); if (!p || !await ask('Mark ' + p.name + ' as left? They drop off every list; their Punch history is kept.', { ok: 'Mark left', danger: 1 })) return;
       const sid = p.staffId || 'p_' + p._id, cur = Object.assign({}, D.staff.find(z => z._id === sid) || { name: p.name, empId: p.eid || '', role: p.desg || '', puid: p.noPunch ? '' : p._id, createdAt: now }); delete cur._id;
       if (await save('staff/' + sid, Object.assign(cur, { stage: 'Left', leftAt: now, updatedAt: now }), p.name + ' marked as left')) render(); return; }
     case 'pp-open': S.open.person = x; render(); window.scrollTo(0, 0); return;
     case 'pp-close': S.open.person = null; render(); return;
     case 'an-add': { if (!val('an-title')) { toast('Write a title.'); return; } await save('hr_posts/' + newId('an'), { title: val('an-title'), body: val('an-body'), pin: !!val('an-pin'), by: S.self, byName: S.me.name, at: now }, 'Posted'); return; }
     case 'ho-add': { if (!val('ho-date') || !val('ho-name')) { toast('Enter the date and holiday.'); return; } await save('hr_holidays/' + val('ho-date'), { date: val('ho-date'), name: val('ho-name'), by: S.self, at: now }, 'Holiday added'); return; }
-    case 'del': { if (!confirm('Delete this?')) return; await del(t.dataset.p); return; }
-    case 'ap-ok': case 'ap-no': if (a === 'ap-no' && !confirm('Reject this request?')) return; await decide(x, a === 'ap-ok'); return;
+    case 'del': { if (!await ask('Delete this?', { ok: 'Delete', danger: 1 })) return; await del(t.dataset.p); return; }
+    case 'ap-ok': case 'ap-no': if (a === 'ap-no' && !await ask('Reject this request?', { ok: 'Reject', danger: 1 })) return; await decide(x, a === 'ap-ok'); return;
     case 'jb-add': { if (!val('jb-title')) { toast('Enter the role.'); return; } await save('hr_jobs/' + newId('jb'), { title: val('jb-title'), dept: val('jb-dept'), loc: val('jb-loc'), openings: num(val('jb-n')) || 1, type: val('jb-type'), desc: val('jb-desc'), s: 'Open', by: S.self, at: now }, 'Opening posted'); return; }
     case 'jb-toggle': { const j = D.jobs.find(z => z._id === x); if (!j) return; const b = Object.assign({}, j); delete b._id; b.s = j.s === 'Closed' ? 'Open' : 'Closed'; await save('hr_jobs/' + x, b); return; }
     case 'cd-add': { if (!val('cd-name')) { toast('Enter the name.'); return; } await save('hr_cands/' + newId('cd'), { name: val('cd-name'), mob: val('cd-mob'), email: val('cd-email'), job: val('cd-job'), source: val('cd-src'), note: val('cd-note'), stage: 'Applied', by: S.self, at: now }, 'Candidate added'); return; }
@@ -606,12 +774,19 @@ async function act(a, x, t) {
 }
 document.addEventListener('change', async ev => {
   const t = ev.target;
+  if (t.id === 'pk-grat') { const e = empOf(S.pkgFor); if (e) { S.pkgDraft = readPkg(e); render(); } return; }
+  if (t.dataset && t.dataset.up) { await uploadDoc(t); return; }
   if (t.id === 'ym' || t.id === 'ym-sel') { S.ym = t.value || ymNow(); render(); return; }
   if (t.dataset.gp) { const g = D.goals.find(z => z._id === t.dataset.gp); if (!g) return; const b = Object.assign({}, g); delete b._id; b.progress = Math.max(0, Math.min(100, num(t.value))); await save('hr_goals/' + g._id, b, 'Progress saved'); return; }
+  if (t.dataset.mg) { if (!isHR()) return; const e = empOf(t.dataset.mg), m = t.value; if (!e) return;
+    // no loops: the new manager must not report (directly or further down) to this person
+    let x = m && D.emp.find(o => normN(o.name) === normN(m)), hop = 0; while (x && hop++ < 50) { if (x._id === e._id) { toast(m + ' reports to ' + e.name + ' – pick someone above them.'); render(); return; } x = mgrOf(x); }
+    if (await patchEmp(e, { mgr: m })) toast(m ? e.name + ' now reports to ' + m : e.name + ' has no manager'); return; }
   if (t.dataset.cs) { const c = D.cands.find(z => z._id === t.dataset.cs); if (!c) return; const b = Object.assign({}, c); delete b._id; b.stage = t.value; b.updatedAt = Date.now(); await save('hr_cands/' + c._id, b, 'Moved to ' + t.value); if (t.value === 'Hired') toast('Hired – create their Punch login and offer letter in the portal (New joiner).'); return; }
 });
 document.addEventListener('input', ev => {
   const t = ev.target;
+  if (t.id && /^pk-(basic|hra|conv|spl|pfPct|pt)$/.test(t.id)) { const e = empOf(S.pkgFor); if (e) { S.pkgDraft = readPkg(e); clearTimeout(S.pkT); S.pkT = setTimeout(render, 400); } return; }
   if (t.id === 'q-people') { S.q.people = t.value; render(); return; }
   if (t.id === 'q-emp') { S.q.emp = t.value; render(); return; }
   if (t.id === 'q') { const q = lc(t.value.trim()), h = $('#hits'); if (!q) { h.hidden = true; return; } const L = D.emp.filter(e => lc([e.name, e.eid, e.desg].join(' ')).includes(q)).slice(0, 8);

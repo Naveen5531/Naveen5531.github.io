@@ -40,7 +40,7 @@ service cloud.firestore {
     // Gmail sign-in: an admin approves an address (collection "gmail", document id = the address) with a role.
     function gmailDoc() { return /databases/$(db)/documents/gmail/$(request.auth.token.email.lower()); }
     function gmailOk(r) { return signedIn() && request.auth.token.email_verified == true && exists(gmailDoc()) && get(gmailDoc()).data.role == r; }
-    function punchColl(c) { return c in ['punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer']; }
+    function punchColl(c) { return c in ['punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer', 'punch_exp']; }
 
     // Employee profile for the app (designation, workplace, weekly offs …): HR keeps it, the employee reads their own.
     // Everyone signed in may read these basic profiles (Employee directory); salary is in punch_pay, not here.
@@ -76,6 +76,11 @@ service cloud.firestore {
       allow read: if mine(uid) || hrAll();
       allow write: if (mine(uid) && request.resource.data.uid == request.auth.uid) || hrAll();
     }
+    // Personal salary deductions the employee enters in the Punch app (RD, FD, chit …): the app writes its own; salary viewers read them for the payslip.
+    match /punch_exp/{uid} {
+      allow read: if mine(uid) || salView();
+      allow write: if mine(uid) && request.resource.data.uid == request.auth.uid;
+    }
     // Leave, comp off and attendance-change requests.
     match /punch_req/{id} {
       allow read: if (signedIn() && resource.data.uid == request.auth.uid) || hrAll();
@@ -102,7 +107,7 @@ service cloud.firestore {
     match /hr_cands/{id} { allow read, write: if hrAll(); }
     // Each person's own records (goals, reviews, training sign-ups, expenses, resignation, HR helpdesk): the person creates and reads their own,
     // can change them only while still open, and cannot close or approve them; HR reads and decides all.
-    function hrOwnColl(c) { return c in ['hr_goals', 'hr_reviews', 'hr_enrol', 'hr_expenses', 'hr_exits', 'hr_help']; }
+    function hrOwnColl(c) { return c in ['hr_goals', 'hr_reviews', 'hr_enrol', 'hr_expenses', 'hr_exits', 'hr_help', 'hr_docs', 'hr_files']; }
     function closedSt() { return ['Approved', 'Rejected', 'Paid', 'Closed', 'Completed', 'Final', 'Resolved']; }
     match /{coll}/{id} {
       allow read: if hrOwnColl(coll) && ((signedIn() && resource.data.uid == request.auth.uid) || hrAll());
