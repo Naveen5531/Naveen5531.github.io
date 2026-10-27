@@ -130,9 +130,12 @@ const MGR_UP = ['ops_mgr', 'ops_manager', 'ops_srm', 'ops_gm', 'ops_sgm', 'ops_a
 const MGMT = ['superadmin', 'director', 'gm'];
 const ACCOUNTS = ['fin_head', 'fin_manager', 'accountant', 'billing_exec', 'ar_exec', 'ap_exec', 'cashier', 'tax_exec', 'fin_exec', 'fin_sr', 'fin_tl', 'fin_am', 'fin_mgr', 'fin_srm', 'fin_gm', 'fin_sgm', 'fin_avp', 'fin_vp', 'fin_svp'];
 const has = list => S.owner || S.roles.some(r => list.includes(r));
-const canAssign = () => has(MGMT.concat(MGR_UP, ['admin_head', 'branch_manager', 'pickup_coord', 'ops_tl', 'ops_am']));
-const canInbound = () => canAssign() || has(['hub_sup']);
-const canCost = () => has(MGMT.concat(MGR_UP, ACCOUNTS));        // accounts, or operations manager and above
+/* On the HHT (SN Pickup app) only the executive's work is shown: assigned pickups, accept, pickup details,
+   labels, scanning and pickup complete. Assigning, inbound, vendor onboarding and costs are on the web only. */
+const HHT = /SNPickup\//.test(navigator.userAgent);
+const canAssign = () => !HHT && has(MGMT.concat(MGR_UP, ['admin_head', 'branch_manager', 'pickup_coord', 'ops_tl', 'ops_am']));
+const canInbound = () => !HHT && (canAssign() || has(['hub_sup']));
+const canCost = () => !HHT && has(MGMT.concat(MGR_UP, ACCOUNTS));        // accounts, or operations manager and above
 const isExecRole = r => /^(ops_|pickup_coord|hub_sup|rider|booking_exec|vendor_coord|lastmile_lead)/.test(r);
 
 /* ================= login ================= */
@@ -143,7 +146,7 @@ $('#lf').addEventListener('submit', async e => { e.preventDefault(); const b = $
   finally { b.disabled = false; } });
 /* Google sign-in for admins (same Gmail approvals as the portal). Google does not allow its sign-in inside app
    web views, so in the SN Pickup APK the button opens this page in Chrome instead. */
-if (/SNPickup\//.test(navigator.userAgent)) { $('#lg').textContent = 'Admin: sign in with Google in Chrome'; $('#lg').onclick = () => { const u = 'https://naveen5531.github.io/pickup/';
+if (/SNPickup\//.test(navigator.userAgent)) { $('#gwrap').hidden = true; $('#lg').textContent = 'Admin: sign in with Google in Chrome'; $('#lg').onclick = () => { const u = 'https://naveen5531.github.io/pickup/';
   if (window.SNPickup && SNPickup.openExternal) SNPickup.openExternal(u);                       // app 1.2+: opens Chrome directly
   else location.href = 'https://www.google.com/url?q=' + encodeURIComponent(u); }; }          // app 1.1: an outside link, so the app hands it to the browser
 else $('#lg').addEventListener('click', async () => {
@@ -200,7 +203,7 @@ function listen() {
     fs.collection('rates').get().then(s => { S.rates = s.docs.map(d => d.data()); }).catch(() => {});
   }
 }
-window.SNP = { $, $$, esc, num, toast, fs, S, fd, fdt, pinInfo: (...a) => pinInfo(...a), canAssign: () => canAssign(), has: l => has(l), renderNow: f => { if (f) S.force = true; render(); } };
+window.SNP = { hht: HHT, $, $$, esc, num, toast, fs, S, fd, fdt, pinInfo: (...a) => pinInfo(...a), canAssign: () => canAssign(), has: l => has(l), renderNow: f => { if (f) S.force = true; render(); } };
 let rq = false; const later = () => { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; render(); }); };
 
 /* ================= cost (same rules as the portal's price calculation) ================= */
@@ -572,5 +575,5 @@ async function receive(btn, short) {
 }
 })();
 </script>
-<script src="vendors.js?v=3"></script>
+<script src="vendors.js?v=4"></script>
 </body></html>

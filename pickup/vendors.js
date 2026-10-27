@@ -37,7 +37,7 @@ P.vendorStatusColor = VST;
 /* ---------- who may do what ---------- */
 const canOnboard = () => P.canAssign() || P.has(['vendor_coord']);
 const canVerify = () => P.has(['superadmin', 'director', 'gm', 'admin_head', 'ops_manager', 'ops_mgr', 'ops_srm', 'ops_gm', 'ops_sgm', 'ops_avp', 'ops_vp', 'ops_svp', 'fin_head', 'fin_manager', 'fin_mgr']);
-P.canVendors = () => canOnboard() || canVerify();
+P.canVendors = () => !P.hht && (canOnboard() || canVerify());   // never on the HHT app
 
 /* ---------- screens ---------- */
 let VS = { q: '', docs: {} };
