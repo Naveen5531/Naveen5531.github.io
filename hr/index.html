@@ -692,6 +692,31 @@ async function savePkg(release) {
   await patchEmp(e, { desg: o.desg, grade: o.grade, cat: o.cat, join: o.join, mgr: o.mgr });
   S.pkgDraft = null; toast(release ? 'Offer letter released' : 'Package saved – monthly salary updated in Punch'); render();
 }
+/* ================= Data check: check-ins that ended up under the wrong person (several people on one phone with older Punch) ================= */
+function attIssues() {
+  const by = {}, dupes = [], stray = [];
+  D.att.forEach(d => (d.logs || []).forEach(l => { if (!l || !l.in) return; (by[l.in] = by[l.in] || []).push({ doc: d, l }); }));
+  Object.keys(by).forEach(k => { const L = by[k], who = [...new Set(L.map(x => x.doc.uid))]; if (who.length > 1) dupes.push({ at: +k, who, L }); });
+  D.att.forEach(d => { if (!D.pemp.some(e => e._id === d.uid)) stray.push(d); });
+  return { dupes: dupes.sort((a, b) => a.at - b.at), stray };
+}
+const ownerGuess = who => { const P = who.map(u => D.pemp.find(e => e._id === u)).filter(Boolean).sort((a, b) => String(a.join || '9999') < String(b.join || '9999') ? -1 : 1); return (P[0] || {})._id || who[0]; };
+function vDataCheck() {
+  if (!isAdmin()) return ph('Data check') + '<div class="empty">For super admin and admin head.</div>';
+  const { dupes, stray } = attIssues();
+  return ph('Data check', 'Finds check-ins saved under the wrong person – this happened when several people signed in to an older Punch app on the same phone. Punch 6.8 keeps everyone separate.') +
+    '<section class="card"><h2>Check-ins saved under more than one person <span class="more mute">' + dupes.length + '</span></h2>' + (dupes.length ? '<p class="mute small">Pick whose check-in each one really is (the earliest-joined person is pre-selected). The others lose that check-in.</p>' +
+      tbl(['Check-in', 'Check-out', 'Belongs to'], dupes.map((x, i) => '<tr><td>' + esc(fmtT(x.at)) + '</td><td>' + esc(x.L[0].l.out ? tm(x.L[0].l.out) : '') + '</td><td><select class="btn s" data-dup="' + i + '">' + x.who.map(u => '<option value="' + esc(u) + '"' + (u === ownerGuess(x.who) ? ' selected' : '') + '>' + esc(nameOf(u)) + '</option>').join('') + '</select></td></tr>')) +
+      '<div class="row mt"><button class="btn p" type="button" data-a="dc-fix">Fix these check-ins</button></div>' : '<div class="empty">None – every check-in belongs to one person.</div>') + '</section>' +
+    '<section class="card mt"><h2>Attendance saved under a login with no Punch profile <span class="more mute">' + stray.length + '</span></h2>' + (stray.length ? tbl(['Login', 'Month', '#Check-ins'], stray.map(d => '<tr><td>' + esc(nameOf(d.uid)) + '<div class="mute small">' + esc(d.uid) + '</div></td><td>' + esc(ymLabel(d.ym)) + '</td><td class="n">' + (d.logs || []).length + '</td></tr>')) + '<div class="row mt"><button class="btn d" type="button" data-a="dc-stray">Remove these copies</button></div>' : '<div class="empty">None.</div>') + '</section>';
+}
+async function fixDupes() { const { dupes } = attIssues(); if (!dupes.length) return; const pick = {}; $$('[data-dup]').forEach(el => pick[+el.dataset.dup] = el.value);
+  const drop = {}; dupes.forEach((x, i) => { const keep = pick[i] || ownerGuess(x.who); x.L.forEach(({ doc }) => { if (doc.uid !== keep) (drop[doc._id] = drop[doc._id] || new Set()).add(x.at); }); });
+  let n = 0; for (const id of Object.keys(drop)) { const d = D.att.find(z => z._id === id); if (!d) continue; const b = Object.assign({}, d); delete b._id; const gone = drop[id];
+    b.logs = (d.logs || []).filter(l => !gone.has(l.in)); const days = Object.assign({}, d.days);
+    [...gone].forEach(t => { const dk = iso(new Date(t)), dd = dk.slice(8); if (!b.logs.some(l => iso(new Date(l.in)) === dk)) delete days[dd]; });
+    if (b.open && gone.has(b.open.t)) b.open = null; b.days = days; b.updatedAt = Date.now(); b.fixedBy = S.uid; if (await save('punch_att/' + id, b)) n += gone.size; }
+  toast(n + ' check-in' + (n === 1 ? '' : 's') + ' moved off the wrong person'); render(); }
 const STG = ['Applied', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
 function vRecruit() {
   const J = D.jobs.slice().sort((a, b) => num(b.at) - num(a.at)), C = D.cands;
@@ -752,6 +777,7 @@ add('training-admin', 'HR', 'Training admin', 'learn', vTrainAdmin, isHR);
 add('hr-expenses', 'HR', 'Expense claims', 'exp', vHrExpenses, isHR, () => D.exp.filter(r => r.s === 'Pending').map(r => ({ at: r.at })));
 add('hr-helpdesk', 'HR', 'HR tickets', 'help', vHrHelp, isHR, () => D.help.filter(r => r.s !== 'Resolved').map(r => ({ at: tkLast(r, 0) })));
 add('hr-exits', 'HR', 'Separations', 'exit', vHrExits, isHR, () => D.exits.filter(r => r.s === 'Pending').map(r => ({ at: r.at })));
+add('data-check', 'Admin', 'Data check', 'check', vDataCheck, isAdmin, () => { const x = attIssues(); return x.dupes.length + x.stray.length; });
 ext('Admin', 'Roles & access', 'key', '../portal/#access', isAdmin);
 
 ext('Apps', 'Control tower (portal)', 'tower', '../portal/', () => !S.roles.every(r => r === 'employee'));
@@ -811,6 +837,8 @@ async function act(a, x, t) {
     case 'pk-withdraw': { const o = D.offer.find(z => z._id === S.pkgFor); if (!o || !await ask('Withdraw this offer letter?', { ok: 'Withdraw', danger: 1 })) return; const b = Object.assign({}, o); delete b._id; b.status = 'Withdrawn'; b.updatedAt = now; b.by = S.uid; await save('punch_offer/' + o._id, b, 'Withdrawn'); return; }
     case 'att-days': S.attOpen = S.attOpen === x ? null : x; render(); return;
     case 'att-csv': attCsv(); return;
+    case 'dc-fix': if (await ask('Remove each listed check-in from everyone except the person you picked?', { ok: 'Fix check-ins' })) await fixDupes(); return;
+    case 'dc-stray': { const { stray } = attIssues(); if (!stray.length || !await ask('Delete ' + stray.length + ' attendance cop' + (stray.length === 1 ? 'y' : 'ies') + ' saved under logins that have no Punch profile? Real Punch attendance is not touched.', { ok: 'Remove', danger: 1 })) return; let n = 0; for (const d of stray) if (await del('punch_att/' + d._id)) n++; toast(n + ' removed'); render(); return; }
     case 'doc-view': await viewDoc(x); return;
     case 'doc-open': S.docFor = x; render(); window.scrollTo(0, 0); return;
     case 'doc-close': S.docFor = null; render(); return;
