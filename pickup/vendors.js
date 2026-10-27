@@ -137,7 +137,7 @@ document.addEventListener('submit', async e => {
     if (!/^\d{6}$/.test(v.pin)) { er.textContent = 'Pincode must be 6 digits.'; return; }
     if (!v.bank.acctOk) { er.textContent = 'The two bank account numbers do not match.'; return; }
     if (S.vendors.some(x => x.gstin === v.gstin && x._id !== VS.open)) { er.textContent = 'A vendor with this GSTIN already exists.'; return; }
-    const bad = checks(v).filter(c => c[1] === false).map(c => c[0]); if (bad.length && !confirm('These checks failed:\n• ' + bad.join('\n• ') + '\n\nSave anyway as a draft? It cannot be approved until they pass.')) return;
+    const bad = checks(v).filter(c => c[1] === false).map(c => c[0]); if (bad.length && !(await P.ask('These checks failed:\n• ' + bad.join('\n• ') + '\n\nSave anyway as a draft? It cannot be approved until they pass.', { ok: 'Save draft' }))) return;
     const now = Date.now();
     try {
       if (VS.open && VS.open !== 'new') { await fs.collection('pvendors').doc(VS.open).update(Object.assign(v, { updatedAt: now, updatedBy: S.me })); toast('Vendor details saved.'); }
@@ -164,14 +164,14 @@ document.addEventListener('click', async e => {
   if (act === 'up') { pickDoc(v, k); return; }
   if (act === 'view') { try { const d = await fs.doc('pvdocs/' + v._id + '_' + k).get(); if (!d.exists) { toast('The file is missing – ask the vendor to upload it again.', true); return; } showDoc(d.data()); } catch (x) { toast(x.code === 'permission-denied' ? 'No permission to open documents – publish the latest Firestore rules.' : 'Could not open (' + (x.code || 'error') + ').', true); } return; }
   if (act === 'dok') { await upd({ ['docs.' + k + '.s']: 'Verified', ['docs.' + k + '.by']: S.name, ['docs.' + k + '.vat']: now }, 'Document verified.'); return; }
-  if (act === 'dno') { const why = prompt('What is wrong with this document?'); if (!why) return; await upd({ ['docs.' + k + '.s']: 'Rejected', ['docs.' + k + '.note']: why.slice(0, 160), ['docs.' + k + '.by']: S.name, status: v.status === 'Submitted' ? 'Rejected' : v.status, rejectWhy: 'Document: ' + why.slice(0, 160) }, 'Document rejected. The vendor goes back for correction.'); return; }
+  if (act === 'dno') { const why = await P.ask('What is wrong with this document?', { input: 'What is wrong', ok: 'Reject document', danger: 1 }); if (!why) return; await upd({ ['docs.' + k + '.s']: 'Rejected', ['docs.' + k + '.note']: why.slice(0, 160), ['docs.' + k + '.by']: S.name, status: v.status === 'Submitted' ? 'Rejected' : v.status, rejectWhy: 'Document: ' + why.slice(0, 160) }, 'Document rejected. The vendor goes back for correction.'); return; }
   if (act === 'submit') { await upd({ status: 'Submitted', submittedAt: now, submittedBy: S.name, rejectWhy: '' }, 'Sent for verification.'); return; }
   if (act === 'approve') { const self = v.createdBy === S.me; if (self && !isSuper()) { toast('The person who onboarded cannot verify.', true); return; }
-    if (!confirm('Approve ' + v.name + '? You confirm you checked all 5 documents.' + (self ? '\n\nYou onboarded this vendor – this is recorded as self-approved by Super admin.' : ''))) return;
+    if (!(await P.ask('Approve ' + v.name + '? You confirm you checked all 5 documents.' + (self ? '\n\nYou onboarded this vendor – this is recorded as self-approved by Super admin.' : ''), { ok: 'Approve' }))) return;
     await upd({ status: 'Verified', verifiedAt: now, verifiedBy: S.me, verifiedByName: S.name + (self ? ' (self-approved, Super admin)' : ''), selfApproved: self, rejectWhy: '' }, 'Vendor verified. Now create the vendor login.'); return; }
-  if (act === 'reject') { const why = prompt('Why is this vendor rejected?'); if (!why) return; await upd({ status: 'Rejected', rejectWhy: why.slice(0, 200), verifiedByName: S.name, rejectedAt: now }, 'Vendor rejected.'); return; }
-  if (act === 'block') { const why = prompt('Why block this vendor?'); if (!why) return; await upd({ status: 'Blocked', rejectWhy: why.slice(0, 200), blockedBy: S.name, blockedAt: now, uid: '' }, 'Vendor blocked.'); return; }
-  if (act === 'cred') { if (!confirm('Make a new login for ' + v.name + '? The old login stops working.')) return; await upd({ uid: '', username: '' }); return; }
+  if (act === 'reject') { const why = await P.ask('Why is this vendor rejected?', { input: 'Reason', ok: 'Reject vendor', danger: 1 }); if (!why) return; await upd({ status: 'Rejected', rejectWhy: why.slice(0, 200), verifiedByName: S.name, rejectedAt: now }, 'Vendor rejected.'); return; }
+  if (act === 'block') { const why = await P.ask('Why block this vendor?', { input: 'Reason', ok: 'Block vendor', danger: 1 }); if (!why) return; await upd({ status: 'Blocked', rejectWhy: why.slice(0, 200), blockedBy: S.name, blockedAt: now, uid: '' }, 'Vendor blocked.'); return; }
+  if (act === 'cred') { if (!(await P.ask('Make a new login for ' + v.name + '? The old login stops working.', { ok: 'Make new login' }))) return; await upd({ uid: '', username: '' }); return; }
 });
 
 /* documents: photo (shrunk) or PDF, up to 700 KB, stored with the vendor */
