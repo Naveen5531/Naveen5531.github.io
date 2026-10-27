@@ -154,7 +154,7 @@ const scanMgr = () => S.owner || (S.roles || []).some(r => SCAN_MGR.includes(r))
 const camOK = () => scanMgr() || !!(S.scanCfg && S.scanCfg.cam), manOK = () => scanMgr() || !!(S.scanCfg && S.scanCfg.manual);
 function scanBox() {
   /* the phone keyboard never opens by itself (HHT scans don't need it); ⌨ opens it when typing is allowed */
-  return '<div class="scanbox" style="margin-top:10px"><input class="in" id="scan" placeholder="Press the HHT scan trigger" autocomplete="off" autocapitalize="characters" enterkeyhint="go" aria-label="Scan label" inputmode="none"' + (manOK() ? '' : ' data-noman="1"') + '>' +
+  return '<div class="scanbox" style="margin-top:10px"><input class="in" id="scan" placeholder="Press the HHT scan trigger" autocomplete="off" autocapitalize="characters" enterkeyhint="go" aria-label="Scan label" inputmode="none" readonly' + (manOK() ? '' : ' data-noman="1"') + '>' +
     (manOK() ? '<button class="btn" type="button" data-act="kbd" aria-label="Type the label">⌨</button>' : '') +
     (camOK() ? '<button class="btn" type="button" data-act="cam" aria-label="Scan with camera">📷</button>' : '') + '</div>';
 }
@@ -483,7 +483,7 @@ document.addEventListener('click', async e => {
   if (act === 'same') { const r = $$('#bt tr'), f = r[0] && [...r[0].querySelectorAll('input')].map(i => i.value); r.forEach((tr, i) => { if (i) [...tr.querySelectorAll('input')].forEach((inp, j) => { inp.value = f[j]; }); }); boxTotals(); return; }
   if (act === 'lr' && p) { await makeLR(p, a); return; }
   if (act === 'print') { const x = p || null; if (x) printLabels(x); return; }
-  if (act === 'kbd') { const i = $('#scan'); if (i && manOK()) { i.blur(); i.setAttribute('inputmode', 'text'); i.placeholder = 'Type the label, then press Enter'; setTimeout(() => i.focus(), 30); } return; }
+  if (act === 'kbd') { const i = $('#scan'); if (i && manOK()) { i.blur(); i.removeAttribute('readonly'); i.dataset.typing = '1'; i.setAttribute('inputmode', 'text'); i.placeholder = 'Type the label, then press Enter'; setTimeout(() => i.focus(), 30); } return; }
   if (act === 'cam') { if (camOK()) camScan(v => onScan(v)); else toast('Camera scan is off. Ask your manager.', true); return; }
   if (act === 'tick') { if (!manOK()) { toast('Marking by hand is off. Ask your manager.', true); return; }
     const i = +a.dataset.i, sh = S.open && S.open.k === 's' ? S.ships.find(x => x._id === S.open.id) : null, x = sh ? null : cur();
@@ -632,13 +632,20 @@ function printLabels(p) {
 /* ---- scanning: HHT scanner types into the box and presses Enter; the camera is the backup ---- */
 let scanT;
 /* HHT scanners "type" a whole label in a few milliseconds; slow key-by-key typing is a person – blocked unless a manager allows it */
-let kt = [];
-document.addEventListener('keydown', e => { if (e.target.id !== 'scan') return;
-  if (e.key !== 'Enter') { if (e.key.length === 1) kt.push(Date.now()); return; }
-  e.preventDefault(); const v = e.target.value, t = kt; kt = []; e.target.value = '';
-  const slow = t.length > 3 && (t[t.length - 1] - t[0]) / (t.length - 1) > 60;
-  if (e.target.dataset.noman && slow) { beep(false); const er = $('#se'); if (er) er.textContent = 'Typing labels is off. Use the HHT scan trigger (a manager can allow typing).'; return; }
+let kt = [], kb = '';
+/* The scan box is read-only (so the phone keyboard can never open); scanner keystrokes are collected here instead,
+   whether or not the box has focus. ⌨ (when allowed) makes the box typeable. */
+document.addEventListener('keydown', e => { const box = $('#scan'); if (!box) return;
+  const t = e.target, other = t !== box && t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); if (other) return;
+  const typing = t === box && box.dataset.typing;
+  if (e.key !== 'Enter') { if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) { kt.push(Date.now()); if (!typing) { kb += e.key; box.value = kb; e.preventDefault(); } } else if (e.key === 'Backspace' && !typing) { kb = kb.slice(0, -1); box.value = kb; } return; }
+  e.preventDefault(); const v = typing ? box.value : kb, tm = kt; kt = []; kb = ''; box.value = '';
+  if (!v) return;
+  const slow = tm.length > 3 && (tm[tm.length - 1] - tm[0]) / (tm.length - 1) > 60;
+  if (box.dataset.noman && slow) { beep(false); const er = $('#se'); if (er) er.textContent = 'Typing labels is off. Use the HHT scan trigger (a manager can allow typing).'; return; }
   onScan(v); });
+/* scanners that fill the box directly (no key events) */
+document.addEventListener('input', e => { const box = e.target; if (box.id !== 'scan' || box.dataset.typing) return; if (/^SN\d{11}-\d{3}-\d{3}$/i.test(box.value.trim())) { const v = box.value; box.value = ''; kb = ''; onScan(v); } });
 document.addEventListener('paste', e => { if (e.target.id === 'scan' && e.target.dataset.noman) { e.preventDefault(); const er = $('#se'); if (er) er.textContent = 'Pasting labels is off. Use the HHT scan trigger.'; } });
 document.addEventListener('input', e => { if (e.target.id !== 'scan') return; clearTimeout(scanT); scanT = setTimeout(() => { const v = e.target.value; if (/^SN\d{11}-\d{3}-\d{3}$/i.test(v.trim())) { e.target.value = ''; onScan(v); } }, 180); });
 async function onScan(raw) {
