@@ -1,11 +1,13 @@
 {
-  "versionCode": 61,
-  "versionName": "7.7",
+  "versionCode": 62,
+  "versionName": "7.8",
   "date": "28 Oct 2026",
-  "size": 3056712,
+  "size": 3059304,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Sign in with your SN Mail ID.",
+  "notes": "Read SN Mail in Punch.",
   "list": [
-    "Sign in with your Employee ID or your SN Mail ID (name@snlogistics) and the same password."
+    "More › Mail: read your SN Mail in the app, with an unread count.",
+    "Open letters and payslips sent by HR and save them as PDF.",
+    "Sign in with your Employee ID or SN Mail ID."
   ]
 }
