@@ -146,7 +146,7 @@ function revLetter(e,h,issued){const c=CO(),n=issued?new Date(issued):new Date()
 <p class="to">To,<br><b>${esc(e.name)}</b><br>${esc(e.desg||'')}${e.eid?' · Employee ID '+esc(e.eid):''}</p>
 <p class="sub2"><b>Subject: Revision in Compensation</b></p>
 <p>Dear ${esc(first)},</p>
-<p>In recognition of your contribution and performance, we are pleased to inform you that your compensation has been revised by <b>${fN(h.p)}%</b> with effect from <b>${ef}</b>.</p>
+<p><b>Congratulations!</b> In recognition of your contribution and performance, we are pleased to inform you that your compensation has been revised with effect from <b>${ef}</b>.</p>
 <p>Your revised annual Cost to Company (CTC) is <b>₹${money(r.y)}</b>. The revised salary structure is given below.</p>
 <table class="st oct"><tr><th>Component</th><th class="r">Per month (₹)</th><th class="r">Per year (₹)</th></tr>
 ${row('Basic',r.b)}${r.h?row('HRA',r.h):''}${r.c?row('Conveyance',r.c):''}${r.sp?row('Special allowance',r.sp):''}${row('Gross salary',r.gross,1)}${row('PF – employer',r.pfR)}${r.gr?row('Gratuity',r.gr):''}<tr class="ctc"><td>Cost to company (CTC)</td><td class="r">${money(r.m)}</td><td class="r">${money(r.y)}</td></tr>${row('Less: PF – employee',-r.pfE)}${row('Less: Professional tax',-r.pt)}${row('Take-home (approx.)',r.net,1)}</table>
