@@ -239,12 +239,16 @@ async function mailLetter(e, subject, body, att) {
   const ref = fs.collection('mail').doc();
   try { await ref.set({ from: S.uid, fromName: S.me.name, fromMail: mailOf(S.uid), toMail: [mailOf(e._id)].filter(Boolean), ccMail: [], to, cc: [], rcpt: to, toNames, subject, body, att: [att], at: Date.now(), thread: ref.id, st: { [S.uid]: { r: 1 } } }); return true; }
   catch (x) { toast('Released, but the mail to ' + e.name + ' failed (' + (x.code || 'error') + ').'); return false; } }
+/** Second mail: the SN Mail ID on its own. */
+const mailIdText = x => { const base = location.origin + location.pathname.replace(/\/hr\/.*$/, '/');
+  return 'Dear ' + x.name + ',\n\nYour SN Mail ID is:\n\n' + x.mail + '\n\nSN Mail is the internal mail for SN Logistics. Open it at ' + base + 'mail/ and sign in with your Employee ID and password – the same login as Punch and SN People (sent in a separate mail).\n\nRegards,\nHR – SN Logistics'; };
 /** Mail the welcome message with the login details to each new employee's SN Mail (and their reporting manager if asked). */
 async function sendCreds(L, cc) { let n = 0;
   for (const c of L) { const e = D.emp.find(o => o._id === c.uid) || {}, m = cc && e.mgr ? D.emp.find(o => !o.noPunch && normN(o.name) === normN(e.mgr)) : null, box = id => { const ml = mailOf(id); return ml ? D.users.filter(u => u.mail === ml).map(u => u._id).concat([id]) : [id]; },
       to = [...new Set(box(c.uid))], ccL = m && m._id !== c.uid && m._id !== S.uid ? [...new Set(box(m._id))].filter(u => !to.includes(u) && u !== S.uid) : [];
     const rcpt = to.concat(ccL), toNames = {}; rcpt.forEach(u => toNames[u] = u === c.uid ? c.name : m.name); const ref = fs.collection('mail').doc();
-    try { await ref.set({ from: S.uid, fromName: S.me.name, fromMail: mailOf(S.uid), toMail: [mailOf(c.uid)].filter(Boolean), ccMail: m && mailOf(m._id) ? [mailOf(m._id)] : [], to, cc: ccL, rcpt, toNames, subject: 'Welcome to SN Logistics – your login details', body: credText(Object.assign({}, c, { mail: c.mail || mailOf(c.uid) })), at: Date.now(), thread: ref.id, st: { [S.uid]: { r: 1 } } }); c.sent = 1; n++; }
+    try { await ref.set({ from: S.uid, fromName: S.me.name, fromMail: mailOf(S.uid), toMail: [mailOf(c.uid)].filter(Boolean), ccMail: m && mailOf(m._id) ? [mailOf(m._id)] : [], to, cc: ccL, rcpt, toNames, subject: 'Welcome to SN Logistics – your login details', body: credText(Object.assign({}, c, { mail: '' })), at: Date.now(), thread: ref.id, st: { [S.uid]: { r: 1 } } }); c.sent = 1; n++;
+      const ml = c.mail || mailOf(c.uid); if (ml) { const r2 = fs.collection('mail').doc(); await r2.set({ from: S.uid, fromName: S.me.name, fromMail: mailOf(S.uid), toMail: [ml], ccMail: [], to, cc: [], rcpt: to, toNames: Object.fromEntries(to.map(u => [u, c.name])), subject: 'Your SN Mail ID – SN Logistics', body: mailIdText({ name: c.name, mail: ml }), at: Date.now() + 1, thread: r2.id, st: { [S.uid]: { r: 1 } } }); } }
     catch (x) { toast('Could not mail ' + c.name + ' (' + (x.code || 'error') + ').'); } }
   if (n) toast('Login details sent to ' + n + ' employee' + (n > 1 ? 's' : '') + ' in SN Mail' + (cc ? ' (manager copied)' : '')); return n; }
 /** Automatic Punch IDs: anyone in the employee list without a Punch login gets one (Punch ID = employee ID, password Welcome@123),
