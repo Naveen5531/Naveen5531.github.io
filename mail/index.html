@@ -101,7 +101,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <div class="menu" id="menu" role="menu" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="Mail folders"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <div id="cmpHost"></div>
-<script src="../portal/fb.js?v=20261027d"></script><script src="../portal/offer.js?v=7"></script>
+<script src="../portal/fb.js?v=20261027d"></script><script src="../portal/offer.js?v=7"></script><script src="../portal/payslip.js?v=2"></script>
 <script src="../seen.js?v=1"></script>
 <script>
 (async function () {
@@ -258,7 +258,7 @@ function replyTo(all_, fwd) { const T = threads(() => true).find(t => t.id === S
 
 /* ----- attachments: letters from HR (built from the employee's released letter, so they always match SN People) ----- */
 let ATT = null;
-async function attLoad(x) { const d = await fs.doc('punch_offer/' + x.uid).get(); if (!d.exists) throw new Error('missing'); const o = d.data(); if (x.kind === 'rev') { const r = (o.revs || []).find(z => z.f === x.f); if (!r) throw new Error('missing'); return { o, r }; } return { o }; }
+async function attLoad(x) { if (x.kind === 'slip') { if (!x.data) throw new Error('missing'); return { d: x.data }; } const d = await fs.doc('punch_offer/' + x.uid).get(); if (!d.exists) throw new Error('missing'); const o = d.data(); if (x.kind === 'rev') { const r = (o.revs || []).find(z => z.f === x.f); if (!r) throw new Error('missing'); return { o, r }; } return { o }; }
 async function attAct(b) {
   if (b.dataset.attx === 'close') { ATT = null; const v = $('#attv'); if (v) v.remove(); return; }
   if (b.dataset.attx === 'dl') { if (ATT) attPrint(ATT); return; }
@@ -266,9 +266,9 @@ async function attAct(b) {
   let L; try { L = await attLoad(x); } catch (e) { toast(e && e.code === 'permission-denied' ? 'Only the employee and HR can open this letter.' : 'This letter is no longer available.'); return; }
   ATT = { x, L }; if (mode === 'd') { attPrint(ATT); return; }
   const v = document.createElement('div'); v.className = 'attv'; v.id = 'attv'; v.setAttribute('role', 'dialog');
-  v.innerHTML = '<div class="bar"><button class="btn" type="button" data-attx="close">← Back to mail</button><b>' + esc(x.name || '') + '</b><button class="btn p" type="button" data-attx="dl">Download / Print</button></div><div style="overflow-x:auto">' + (x.kind === 'rev' ? OfferLetter.revHtml(L.o, L.r, { name: 'SN Logistics' }, L.r.at) : x.kind === 'ctc' ? OfferLetter.ctcHtml(L.o, { name: 'SN Logistics' }, L.o.ctcAt) : OfferLetter.html(L.o, { name: 'SN Logistics' })) + '</div>';
+  v.innerHTML = '<div class="bar"><button class="btn" type="button" data-attx="close">← Back to mail</button><b>' + esc(x.name || '') + '</b><button class="btn p" type="button" data-attx="dl">Download / Print</button></div><div style="overflow-x:auto">' + (x.kind === 'slip' ? (window.Payslip ? Payslip.html(L.d) : '') : x.kind === 'rev' ? OfferLetter.revHtml(L.o, L.r, { name: 'SN Logistics' }, L.r.at) : x.kind === 'ctc' ? OfferLetter.ctcHtml(L.o, { name: 'SN Logistics' }, L.o.ctcAt) : OfferLetter.html(L.o, { name: 'SN Logistics' })) + '</div>';
   document.body.appendChild(v); }
-function attPrint(a) { if (a.x.kind === 'rev') OfferLetter.revPrint(a.L.o, a.L.r, { name: 'SN Logistics' }, a.L.r.at); else if (a.x.kind === 'ctc') OfferLetter.ctcPrint(a.L.o, { name: 'SN Logistics' }, a.L.o.ctcAt); else OfferLetter.print(a.L.o, { name: 'SN Logistics' }); }
+function attPrint(a) { if (a.x.kind === 'slip') { if (window.Payslip) Payslip.print(a.L.d); return; } if (a.x.kind === 'rev') OfferLetter.revPrint(a.L.o, a.L.r, { name: 'SN Logistics' }, a.L.r.at); else if (a.x.kind === 'ctc') OfferLetter.ctcPrint(a.L.o, { name: 'SN Logistics' }, a.L.o.ctcAt); else OfferLetter.print(a.L.o, { name: 'SN Logistics' }); }
 
 /* ----- events ----- */
 document.addEventListener('click', async ev => {

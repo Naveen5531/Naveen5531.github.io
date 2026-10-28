@@ -120,7 +120,7 @@ const ini = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w
 function ask(msg, o) { o = o || {}; return new Promise(res => {
   let m = document.getElementById('askDlg'); if (!m) { m = document.createElement('div'); m.id = 'askDlg'; m.className = 'askbg'; document.body.appendChild(m); }
   m.innerHTML = '<div class="askbox" role="dialog" aria-modal="true" aria-labelledby="askT"><div class="askic">' + svg(o.danger ? 'exit' : 'check') + '</div><p id="askT">' + esc(msg).replace(/\n/g, '<br>') + '</p>' + (o.input ? '<input id="askIn" class="btn" style="width:100%;text-align:left" value="' + esc(o.value || '') + '">' : '') +
-    '<div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn" type="button" id="askNo">Cancel</button><button class="btn ' + (o.danger ? 'd' : 'p') + '" type="button" id="askOk">' + esc(o.ok || 'OK') + '</button></div></div>';
+    '<div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn" type="button" id="askNo">' + esc(o.cancel || 'Cancel') + '</button><button class="btn ' + (o.danger ? 'd' : 'p') + '" type="button" id="askOk">' + esc(o.ok || 'OK') + '</button></div></div>';
   m.hidden = false; const inp = document.getElementById('askIn'); setTimeout(() => (inp || document.getElementById('askOk')).focus(), 30);
   const done = v => { m.hidden = true; m.innerHTML = ''; document.removeEventListener('keydown', key, true); res(v); };
   const key = e => { if (e.key === 'Escape') { e.stopPropagation(); done(o.input ? null : false); } else if (e.key === 'Enter') { e.preventDefault(); done(o.input ? inp.value.trim() : true); } };
@@ -242,6 +242,59 @@ async function mailLetter(e, subject, body, att) {
 /** Second mail: the SN Mail ID on its own. */
 const mailIdText = x => { const base = location.origin + location.pathname.replace(/\/hr\/.*$/, '/');
   return 'Dear ' + x.name + ',\n\nYour SN Mail ID is:\n\n' + x.mail + '\n\nSN Mail is the internal mail for SN Logistics. Open it at ' + base + 'mail/ and sign in with your Employee ID and password – the same login as Punch and SN People (sent in a separate mail).\n\nRegards,\nHR – SN Logistics'; };
+/* ================= Letters: shared by the buttons and by the automation ================= */
+const firstN = e => String(e.name || '').split(/\s+/)[0];
+const offMiss = o => OFF_J.filter(([k]) => k !== 'addr' && k !== 'email' && !o[k]).map(x => x[1]);
+async function markJoined(e, auto) { const cur = D.offer.find(z => z._id === e._id); if (!cur || !canSalE()) return false; const b = Object.assign({}, cur), now = Date.now(); delete b._id;
+  if (!auto && !await ask('Mark ' + e.name + ' as joined' + (b.join ? ' (joining date ' + fmtD(b.join) + ')' : '') + '? The offer letter can then be released.', { ok: 'Mark as joined' })) return false;
+  b.joined = 1; b.joinedAt = now; b.joinedBy = auto ? 'auto' : S.uid; if (!b.join) b.join = today(); if (!(await save('punch_offer/' + e._id, b, auto ? '' : e.name + ' marked as joined'))) return false;
+  cur.joined = 1; cur.joinedAt = now; cur.join = b.join; if (S.pkgDraft && S.pkgFor === e._id) Object.assign(S.pkgDraft, { joined: 1, joinedAt: now, join: b.join }); render(); return true; }
+async function relOffer(e, auto) { const cur = D.offer.find(z => z._id === e._id); if (!cur || !canSalE()) return false; const b = Object.assign({}, cur), now = Date.now(); delete b._id;
+  const miss = offMiss(b); if (!isSuperP(e._id) && miss.length) { if (!auto) toast('Fill in the joining details first: ' + miss.join(', ')); return false; }
+  if (!auto && !await ask('Release the offer letter to ' + e.name + '? It is mailed to them and appears in My documents.', { ok: 'Release' })) return false;
+  b.letterAt = now; b.letterBy = auto ? 'auto' : S.uid; if (!(await save('punch_offer/' + e._id, b))) return false; cur.letterAt = now; if (S.pkgDraft && S.pkgFor === e._id) S.pkgDraft.letterAt = now;
+  await mailLetter(e, 'Your offer letter – SN Logistics', 'Dear ' + firstN(e) + ',\n\nWelcome to SN Logistics. Please find attached your offer letter with the terms and conditions of your employment.\n\nYou can also see it in SN People › My documents.\n\nRegards,\nHR – SN Logistics', { kind: 'offer', uid: e._id, name: 'Offer letter – ' + e.name + '.pdf' });
+  toast('Offer letter released and mailed to ' + e.name + (auto ? ' (joined – first check-in)' : '')); render(); return true; }
+async function relRev(e, h, auto) { const cur = D.offer.find(z => z._id === e._id); if (!cur || !canSalE()) { if (!auto) toast('Save the package first.'); return false; }
+  if (!auto && !await ask('Release the revised salary letter (' + h.p + '% from ' + monthName(h.f) + ') to ' + e.name + '? They can see and download it in My documents.', { ok: 'Release' })) return false;
+  const b = Object.assign({}, cur), now = Date.now(); delete b._id; b.revs = (cur.revs || []).filter(z => z.f !== h.f).concat([{ f: h.f, p: h.p, before: h.before, after: h.after, at: now, by: auto ? 'auto' : S.uid }]).sort((a2, b2) => a2.f < b2.f ? -1 : 1);
+  if (!(await save('punch_offer/' + e._id, b))) return false; cur.revs = b.revs; if (S.pkgDraft && S.pkgFor === e._id) S.pkgDraft.revs = b.revs;
+  await mailLetter(e, 'Your revised salary letter – SN Logistics', 'Dear ' + firstN(e) + ',\n\nPlease find attached your revised salary letter: a ' + h.p + '% revision with effect from ' + monthName(h.f) + '.\n\nYou can also see it in SN People › My documents.\n\nRegards,\nHR – SN Logistics', { kind: 'rev', uid: e._id, f: h.f, name: 'Revised salary letter – ' + e.name + ' – ' + monthName(h.f) + '.pdf' });
+  toast('Revised salary letter released and mailed to ' + e.name); render(); return true; }
+
+/* ================= Automation: runs for HR (salary edit) while SN People is open ================= */
+const addM = (d, m) => { const x = new Date(d + 'T00:00:00'); x.setMonth(x.getMonth() + m); return iso(x); };
+const prevYm = () => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1); };
+/** Has this person checked in with Punch on or after a date? */
+const inSince = (uid, from) => D.att.some(d => d.uid === uid && ((d.logs || []).some(l => l && l.in && iso(new Date(l.in)) >= from) || (d.open && d.open.t && iso(new Date(d.open.t)) >= from) || Object.entries(d.days || {}).some(([dd, x]) => x && x.a && (d.ym + '-' + dd) >= from)));
+/** Things HR should act on, newest trigger first. */
+function hrAlerts() { const t = today(), now = Date.now(), L = [], E = id => D.emp.find(z => z._id === id);
+  D.offer.forEach(o => { const e = E(o._id); if (!e) return; const st = ofStage(o), nm = e.name;
+    if (st === 'ctc' && o.status === 'Released' && num(o.ctcAt) && now - num(o.ctcAt) > 3 * 864e5) L.push({ uid: e._id, at: num(o.ctcAt) + 3 * 864e5, kind: 'warn', text: nm + ' has not accepted the CTC letter (' + Math.floor((now - num(o.ctcAt)) / 864e5) + ' days).' });
+    if (st === 'ctc' && o.join && o.join < t) L.push({ uid: e._id, at: +new Date(o.join + 'T00:00:00') + 864e5, kind: 'bad', text: nm + '\'s joining date ' + fmtD(o.join) + ' has passed – no Punch check-in yet.' });
+    if (['draft', 'ctc', 'joined'].includes(st) && o.join && o.join <= iso(new Date(now + 7 * 864e5))) { const m = offMiss(o); if (m.length) L.push({ uid: e._id, at: +new Date(o.join + 'T00:00:00') - 7 * 864e5, kind: 'warn', text: nm + (st === 'joined' ? ' has joined' : ' joins on ' + fmtD(o.join)) + ' – missing: ' + m.join(', ') + '. The offer letter needs these.' }); }
+    if (st === 'letter' && num(o.prob) > 0 && (o.join || '') && !o.confirmedAt) { const end = addM(o.join, num(o.prob)); if (end <= iso(new Date(now + 14 * 864e5))) L.push({ uid: e._id, at: +new Date(end + 'T00:00:00') - 14 * 864e5, kind: end < t ? 'bad' : 'info', text: nm + '\'s probation ' + (end < t ? 'ended' : 'ends') + ' on ' + fmtD(end) + '.', conf: 1 }); } });
+  return L.sort((a, b) => b.at - a.at); }
+function vAlerts() { const L = hrAlerts();
+  return ph('Needs attention', 'Letters and joining steps that need HR. Joining, the offer letter, hike letters and payslip mails also run on their own while SN People is open.') +
+    (L.length ? '<div class="list">' + L.map(a => '<div class="li"><span class="pill ' + a.kind + '">' + (a.kind === 'bad' ? 'Overdue' : a.kind === 'warn' ? 'Pending' : 'Coming up') + '</span><div class="g1"><span>' + esc(a.text) + '</span></div><button class="btn s" type="button" data-a="al-open" data-x="' + esc(a.uid) + '">Open package</button>' + (a.conf && canSalE() ? '<button class="btn s p" type="button" data-a="al-conf" data-x="' + esc(a.uid) + '">Confirmed</button>' : '') + '</div>').join('') + '</div>' : '<div class="empty">All caught up – nothing needs HR right now.</div>'); }
+let auBusy = false, auLast = 0;
+async function autoHR() {
+  if (auBusy || !canSalE() || !isHR() || !S.ready || Date.now() - auLast < 60000 || !window.OfferLetter) return; auBusy = true; auLast = Date.now();
+  try { const t = today(), ym = ymNow();
+    // joined: first Punch check-in on or after the joining date → mark joined, then release the offer letter (if joining details are complete)
+    for (const o of D.offer.slice()) { const e = D.emp.find(z => z._id === o._id); if (!e || ofStage(o) !== 'ctc' || !o.join || o.join > t || !inSince(e._id, o.join)) continue;
+      if (await markJoined(e, true)) await relOffer(e, true); }
+    for (const o of D.offer.slice()) { const e = D.emp.find(z => z._id === o._id); if (e && ofStage(o) === 'joined' && o.joinedBy === 'auto' && !offMiss(o).length) await relOffer(e, true); }
+    // hike month arrives → revised salary letter released and mailed
+    for (const v of D.pay.slice()) { const e = D.emp.find(z => z._id === v._id), o = D.offer.find(z => z._id === v._id); if (!e || !o || ofStage(o) === 'draft') continue;
+      for (const h of OfferLetter.hikeSteps(v.hikes)) if (h.f === ym && !(o.revs || []).some(r => r.f === h.f)) await relRev(e, h, true); }
+    // 1st of the month → last month's payslip mailed to each employee (from November 2026 on)
+    const pm = prevYm(); if (pm >= '2026-10') for (const v of D.pay.slice()) { const e = D.emp.find(z => z._id === v._id); if (!e || e.noPunch || (v.slipMailed || []).includes(pm) || (e.join && e.join.slice(0, 7) > pm)) continue;
+      const d = slipData(e, v, pm, true); if (!d || !(d.payDays > 0)) continue; const b = Object.assign({}, v); delete b._id; b.slipMailed = (v.slipMailed || []).concat([pm]).slice(-24);
+      if (!(await save('punch_pay/' + e._id, b))) continue; v.slipMailed = b.slipMailed;
+      await mailLetter(e, 'Your payslip for ' + monthName(pm) + ' – SN Logistics', 'Dear ' + firstN(e) + ',\n\nPlease find attached your payslip for ' + monthName(pm) + '. Net pay: ' + money(d.net) + '.\n\nYou can also see it in SN People › Payslips.\n\nRegards,\nHR – SN Logistics', { kind: 'slip', name: 'Payslip – ' + e.name + ' – ' + monthName(pm) + '.pdf', data: d }); }
+  } catch (x) { console.warn('autoHR', x); } finally { auBusy = false; } }
 /** Mail the welcome message with the login details to each new employee's SN Mail (and their reporting manager if asked). */
 async function sendCreds(L, cc) { let n = 0;
   for (const c of L) { const e = D.emp.find(o => o._id === c.uid) || {}, m = cc && e.mgr ? D.emp.find(o => !o.noPunch && normN(o.name) === normN(e.mgr)) : null, box = id => { const ml = mailOf(id); return ml ? D.users.filter(u => u.mail === ml).map(u => u._id).concat([id]) : [id]; },
@@ -725,11 +778,11 @@ function vPackages() {
   return x + tbl(['Name', 'ID', 'Designation', '#Gross / month', '#CTC / year', 'Offer letter', ''], E.map(e => { if (e.noPunch) return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td colspan="3" class="mute">Create the Punch login first (Employees)</td><td></td></tr>';
     const o = offerFor(e), k = ctcOf(o); return '<tr><td><b>' + esc(e.name) + '</b></td><td>' + esc(e.eid || '') + '</td><td>' + esc(o.desg || '') + '</td><td class="n">' + money(k.gross) + '</td><td class="n">' + money(k.y) + '</td><td>' + stPill(o.status) + '</td><td><button class="btn s' + (S.pkgFor === e._id ? ' p' : '') + '" type="button" data-a="pk-open" data-x="' + esc(e._id) + '">' + (ed ? 'Package' : 'View') + '</button></td></tr>'; }), 'No employees.');
 }
-async function savePkg(release) {
+async function savePkg(release, noAsk) {
   const e = empOf(S.pkgFor); if (!e || !canSalE()) return; const o = readPkg(e), ps = readPs() || S.psDraft, now = Date.now();
   if (!(num(o.basic) > 0)) { toast('Build the structure from the CTC (or enter Basic).'); return; }
   if (release) { const miss = OFF_J.filter(([k]) => ['desg', 'join'].includes(k) && !o[k]).map(x => x[1]); if (miss.length) { toast('Fill in: ' + miss.join(', ')); return; }
-    if (!await ask('Release the CTC letter to ' + e.name + ' (CTC ' + money(ctcOf(o).y) + ' a year)? They can read and accept it in SN People. The offer letter follows once they join.', { ok: 'Release' })) return; o.status = 'Released'; o.releasedAt = now; o.releasedBy = S.uid; o.v3 = 1; o.ctcAt = now; }
+    if (!noAsk && !await ask('Release the CTC letter to ' + e.name + ' (CTC ' + money(ctcOf(o).y) + ' a year)? They can read and accept it in SN People. The offer letter follows once they join.', { ok: 'Release' })) return; o.status = 'Released'; o.releasedAt = now; o.releasedBy = S.uid; o.v3 = 1; o.ctcAt = now; }
   o.uid = e._id; o.updatedAt = now; o.by = S.uid;
   if (!(await save('punch_offer/' + e._id, o))) return;
   const v = Object.assign({}, payOf(e._id) || {}); delete v._id; 
@@ -740,7 +793,8 @@ async function savePkg(release) {
   await patchEmp(e, { desg: o.desg, grade: o.grade, cat: o.cat, join: o.join, mgr: o.mgr });
   if (release) { const first = String(e.name || '').split(/\s+/)[0];
     await mailLetter(e, 'Your CTC letter – SN Logistics', 'Dear ' + first + ',\n\nPlease find attached your CTC letter' + (o.desg ? ' for the position of ' + o.desg : '') + ' with SN Logistics.\n\nPlease read it and accept it in SN People › My documents. Your offer letter will follow on the day you join.\n\nRegards,\nHR – SN Logistics', { kind: 'ctc', uid: e._id, name: 'CTC letter – ' + e.name + '.pdf' }); }
-  S.pkgDraft = null; toast(release ? 'CTC letter released and mailed to ' + e.name : 'Package saved – monthly salary updated in Punch'); render();
+  S.pkgDraft = null; toast(release ? 'CTC letter released and mailed to ' + e.name : 'Package saved – monthly salary updated in Punch');
+  if (!release && ofStage(o) === 'draft' && o.desg && o.join && await ask('Package saved. Release the CTC letter to ' + e.name + ' now? It is mailed to them; the offer letter follows automatically on their first Punch check-in after joining.', { ok: 'Release CTC letter', cancel: 'Later' })) { render(); await savePkg(true, true); return; } render();
 }
 /* ================= Data check: check-ins that ended up under the wrong person (several people on one phone with older Punch) ================= */
 function attIssues() {
@@ -820,6 +874,7 @@ add('onboarding', 'HR', 'Onboarding', 'user', vOnboarding, isHR, () => D.docs.fi
 add('team-attendance', 'HR', 'Attendance register', 'cal', vTeamAtt, isHR);
 add('approvals', 'HR', 'Leave & attendance approvals', 'check', vApprovals, isHR, () => D.req.filter(r => r.s === 'Pending').map(r => ({ at: r.at })));
 add('payroll', 'HR', 'Payroll', 'pay', vPayroll, canSal);
+add('hr-alerts', 'HR', 'Needs attention', 'check', vAlerts, canSal, () => hrAlerts().map(a => ({ at: a.at })));
 add('packages', 'HR', 'Package & offer letter', 'doc', vPackages, canSal, () => D.offer.filter(o => o.status === 'Accepted').map(o => ({ at: o.acceptedAt })));
 add('recruitment', 'HR', 'Recruitment', 'brief', vRecruit, isHR);
 add('performance', 'HR', 'Performance', 'goal', vPerf, isHR);
@@ -838,7 +893,7 @@ ext('Apps', 'Website', 'home', '../', E_);
 function render() {
   resolvePeople();
   if (!S.ready && D.users.length && (D.pemp.length || D.staff.length)) S.ready = Date.now() + 3000;
-  if (S.ready && Date.now() > S.ready) setTimeout(autoPunch, 0); else if (S.ready && !S.readyT) S.readyT = setTimeout(() => render(), 3200);
+  if (S.ready && Date.now() > S.ready) { setTimeout(autoPunch, 0); setTimeout(autoHR, 400); } else if (S.ready && !S.readyT) S.readyT = setTimeout(() => render(), 3200);
   const want = (location.hash.match(/^#\/([\w-]+)/) || [])[1], vis = V.filter(v => v.id && v.ok());
   let cur = vis.find(v => v.id === want);
   if (cur && sideOf(cur) !== 'both' && sideOf(cur) !== S.mode && !cur.hide) { S.mode = sideOf(cur); try { localStorage.setItem('hr.mode', S.mode); } catch (e) {} }
@@ -885,24 +940,16 @@ async function act(a, x, t) {
     case 'rv-open': { const e = empOf(S.pkgFor); if (!e) return; S.pkgDraft = readPkg(e); const ps = readPs(); if (ps) S.psDraft = ps; S.pkgRev = x; render(); window.scrollTo(0, 0); return; }
     case 'rv-back': S.pkgRev = null; render(); window.scrollTo(0, 0); return;
     case 'rv-print': { const e = empOf(S.pkgFor); if (!e || !window.OfferLetter) return; const o = S.pkgDraft || offerFor(e), h = OfferLetter.hikeSteps((payOf(e._id) || {}).hikes).find(z => z.f === S.pkgRev), r = (o.revs || []).find(z => z.f === S.pkgRev); if (h) OfferLetter.revPrint(o, h, { name: 'SN Logistics' }, r && r.at); return; }
-    case 'rv-release': { const e = empOf(S.pkgFor); if (!e || !canSalE() || !window.OfferLetter) return; const cur = D.offer.find(z => z._id === e._id); if (!cur) { toast('Save the package first.'); return; }
-      const h = OfferLetter.hikeSteps((payOf(e._id) || {}).hikes).find(z => z.f === S.pkgRev); if (!h) return;
-      if (!await ask('Release the revised salary letter (' + h.p + '% from ' + monthName(h.f) + ') to ' + e.name + '? They can see and download it in My documents.', { ok: 'Release' })) return;
-      const b = Object.assign({}, cur); delete b._id; b.revs = (cur.revs || []).filter(z => z.f !== h.f).concat([{ f: h.f, p: h.p, before: h.before, after: h.after, at: now, by: S.uid }]).sort((a2, b2) => a2.f < b2.f ? -1 : 1);
-      if (await save('punch_offer/' + e._id, b)) { if (S.pkgDraft) S.pkgDraft.revs = b.revs; const first = String(e.name || '').split(/\s+/)[0];
-        await mailLetter(e, 'Your revised salary letter – SN Logistics', 'Dear ' + first + ',\n\nPlease find attached your revised salary letter: a ' + h.p + '% revision with effect from ' + monthName(h.f) + '.\n\nYou can also see it in SN People › My documents.\n\nRegards,\nHR – SN Logistics', { kind: 'rev', uid: e._id, f: h.f, name: 'Revised salary letter – ' + e.name + ' – ' + monthName(h.f) + '.pdf' });
-        toast('Revised salary letter released and mailed to ' + e.name); render(); } return; }
+
     case 'pk-print': { const e = empOf(S.pkgFor); if (!e || !window.OfferLetter) return; const o = readPkg(e); if (S.pkgPrev === 'offer') OfferLetter.print(o, { name: 'SN Logistics' }); else OfferLetter.ctcPrint(o, { name: 'SN Logistics' }, o.ctcAt); return; }
     case 'pk-save': await savePkg(false); return;
     case 'pk-release': await savePkg(true); return;
-    case 'pk-joined': case 'pk-letter': { const e = empOf(S.pkgFor), cur = e && D.offer.find(z => z._id === e._id); if (!cur || !canSalE()) return; const b = Object.assign({}, cur); delete b._id;
-      if (a === 'pk-joined') { if (!await ask('Mark ' + e.name + ' as joined' + (b.join ? ' (joining date ' + fmtD(b.join) + ')' : '') + '? The offer letter can then be released.', { ok: 'Mark as joined' })) return;
-        b.joined = 1; b.joinedAt = now; b.joinedBy = S.uid; if (!b.join) b.join = today(); await save('punch_offer/' + e._id, b, e.name + ' marked as joined'); if (S.pkgDraft) Object.assign(S.pkgDraft, { joined: 1, joinedAt: now, join: b.join }); render(); return; }
-      const miss = OFF_J.filter(([k]) => k !== 'addr' && k !== 'email' && !b[k]).map(x => x[1]); if (!isSuperP(e._id) && miss.length) { toast('Fill in the joining details first: ' + miss.join(', ')); return; }
-      if (!await ask('Release the offer letter to ' + e.name + '? It is mailed to them and appears in My documents.', { ok: 'Release' })) return;
-      b.letterAt = now; b.letterBy = S.uid; if (await save('punch_offer/' + e._id, b)) { if (S.pkgDraft) S.pkgDraft.letterAt = now; const first = String(e.name || '').split(/\s+/)[0];
-        await mailLetter(e, 'Your offer letter – SN Logistics', 'Dear ' + first + ',\n\nWelcome to SN Logistics. Please find attached your offer letter with the terms and conditions of your employment.\n\nYou can also see it in SN People › My documents.\n\nRegards,\nHR – SN Logistics', { kind: 'offer', uid: e._id, name: 'Offer letter – ' + e.name + '.pdf' });
-        toast('Offer letter released and mailed to ' + e.name); render(); } return; }
+    case 'pk-joined': { const e = empOf(S.pkgFor); if (e) await markJoined(e, false); return; }
+    case 'pk-letter': { const e = empOf(S.pkgFor); if (e) await relOffer(e, false); return; }
+    case 'rv-release': { const e = empOf(S.pkgFor), h = e && window.OfferLetter && OfferLetter.hikeSteps((payOf(e._id) || {}).hikes).find(z => z.f === S.pkgRev); if (h) await relRev(e, h, false); return; }
+    case 'al-open': S.pkgFor = x; S.pkgDraft = null; S.psDraft = null; S.pkTab = 'sal'; S.pkgPrev = false; S.pkgRev = null; go('packages'); return;
+    case 'al-conf': { const o = D.offer.find(z => z._id === x); if (!o || !canSalE() || !await ask('Mark probation as completed for ' + o.name + '?', { ok: 'Confirm' })) return; const b = Object.assign({}, o); delete b._id; b.confirmedAt = now; b.confirmedBy = S.uid; await save('punch_offer/' + x, b, 'Marked as confirmed'); return; }
+
     case 'pk-withdraw': { const o = D.offer.find(z => z._id === S.pkgFor); if (!o || !await ask('Withdraw this offer letter?', { ok: 'Withdraw', danger: 1 })) return; const b = Object.assign({}, o); delete b._id; b.status = 'Withdrawn'; b.updatedAt = now; b.by = S.uid; await save('punch_offer/' + o._id, b, 'Withdrawn'); return; }
     case 'att-days': S.attOpen = S.attOpen === x ? null : x; render(); return;
     case 'att-csv': attCsv(); return;
