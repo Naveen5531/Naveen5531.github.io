@@ -1,12 +1,12 @@
 {
-  "versionCode": 63,
-  "versionName": "7.9",
+  "versionCode": 64,
+  "versionName": "8.0",
   "date": "28 Oct 2026",
-  "size": 3059328,
+  "size": 3059300,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Mail attachments easier to open.",
+  "notes": "Promotion letters in Mail.",
   "list": [
-    "Clear View button on letters and payslips in Mail.",
+    "Mail opens every letter HR sends, including promotion letters.",
     "More › Mail: read your SN Mail in the app.",
     "Sign in with your Employee ID or SN Mail ID."
   ]
