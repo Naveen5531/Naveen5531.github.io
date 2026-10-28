@@ -167,7 +167,7 @@ let SEEN = {}; try { SEEN = JSON.parse(localStorage.getItem('hr.seen.' + S.uid) 
 const seenAt = id => Math.max(+SEEN[id] || 0, window.SNSeen ? SNSeen.at('hr_' + id) : 0);
 let lastSeen = '';
 const markSeen = id => { const v = V.find(x => x.id === id); if (id === lastSeen && !(v && badge(v))) return; lastSeen = id;
-  SEEN[id] = Date.now(); try { localStorage.setItem('hr.seen.' + S.uid, JSON.stringify(SEEN)); } catch (e) {} if (window.SNSeen) SNSeen.mark('hr_' + id); };
+  SEEN[id] = Date.now(); if (v && v.n) { const r = v.n(); if (!Array.isArray(r)) SEEN[id + '#n'] = num(r); } try { localStorage.setItem('hr.seen.' + S.uid, JSON.stringify(SEEN)); } catch (e) {} if (window.SNSeen) SNSeen.mark('hr_' + id); };
 if (window.SNSeen) SNSeen.on(() => { try { if (!route) return; const vis = V.filter(v => v.id && v.ok()); $('#nav').innerHTML = navHtml(); const bn = vis.reduce((t, v) => t + badge(v), 0); $('#bellN').hidden = !bn; $('#bellN').textContent = bn; } catch (e) {} });
 $('#whoAv').textContent = ini(S.me.name); $('#whoName').textContent = S.me.name;
 
@@ -424,7 +424,7 @@ let FOLD = {}; try { FOLD = JSON.parse(localStorage.getItem('hr.fold') || '{}') 
 const EMP_G = ['Home', 'Me', 'Company'], sideOf = v => v.g === 'Apps' ? 'both' : EMP_G.includes(v.g) ? 'emp' : 'admin';
 const onSide = v => sideOf(v) === 'both' || sideOf(v) === S.mode;
 /** Badge: things that arrived after this page was last opened (opening the page clears it). n() returns [{at}] or a number. */
-const badge = v => { if (!v.n) return 0; const r = v.n(); return Array.isArray(r) ? r.filter(x => num(x.at) > seenAt(v.id)).length : num(r); };
+const badge = v => { if (!v.n) return 0; const r = v.n(); return Array.isArray(r) ? r.filter(x => num(x.at) > seenAt(v.id)).length : Math.max(0, num(r) - num(SEEN[v.id + '#n'])); };
 const folded = (g, vis) => FOLD[g] != null ? FOLD[g] : !vis.some(v => v.g === g && v.id === route) && g !== 'Home';
 function navHtml() {
   const vis = V.filter(v => v.ok() && !v.hide && onSide(v)); let g0 = '';
@@ -932,7 +932,7 @@ add('training-admin', 'HR', 'Training admin', 'learn', vTrainAdmin, isHR);
 add('hr-expenses', 'HR', 'Expense claims', 'exp', vHrExpenses, isHR, () => D.exp.filter(r => r.s === 'Pending').map(r => ({ at: r.at })));
 add('hr-helpdesk', 'HR', 'HR tickets', 'help', vHrHelp, isHR, () => D.help.filter(r => r.s !== 'Resolved').map(r => ({ at: tkLast(r, 0) })));
 add('hr-exits', 'HR', 'Separations', 'exit', vHrExits, isHR, () => D.exits.filter(r => r.s === 'Pending').map(r => ({ at: r.at })));
-add('data-check', 'Admin', 'Data check', 'check', vDataCheck, isAdmin, () => { const x = attIssues(); return x.dupes.length + x.stray.length; });
+add('data-check', 'Admin', 'Data check', 'check', vDataCheck, isAdmin, () => { const x = attIssues(); return x.dupes.map(d => ({ at: num(d.at) })).concat(x.stray.map(d => ({ at: num(d.updatedAt) || 1 }))); });
 ext('Admin', 'Roles & access', 'key', '../portal/#access', isAdmin);
 
 ext('Apps', 'Control tower (portal)', 'tower', '../portal/', () => !S.roles.every(r => r === 'employee'));
