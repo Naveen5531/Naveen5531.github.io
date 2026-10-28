@@ -112,7 +112,35 @@ function ensureCss() { if (document.getElementById('offerCss')) return; const s 
     '#offerPrint .slip.off{width:210mm!important;margin:0!important;font-size:10pt;line-height:1.42}' +
     '#offerPrint .slip.off .pg{width:210mm!important;height:296mm!important;min-height:0!important;padding:14mm 16mm 20mm!important;margin:0!important;border:0!important;border-radius:0!important;box-sizing:border-box;overflow:hidden;position:relative;break-before:auto!important;page-break-before:auto!important;break-after:page;page-break-after:always}' +
     '#offerPrint .slip.off .pg:last-child{break-after:auto;page-break-after:auto}#offerPrint .slip.off .lf{left:16mm!important;right:16mm!important;bottom:8mm!important}}'; document.head.appendChild(s); }
+/** Hike list in order, with the factor before and after each one. */
+function hikeSteps(hikes){let f=1;return (hikes||[]).filter(h=>+h.p&&h.f).slice().sort((a,b)=>a.f<b.f?-1:1).map(h=>{const b=f;f=f*(1+(+h.p)/100);return{p:+h.p,f:h.f,before:b,after:f}})}
+function scaled(e,x){return Object.assign({},e,{basic:R2((+e.basic||0)*x),hra:R2((+e.hra||0)*x),conv:R2((+e.conv||0)*x),spl:R2((+e.spl||0)*x)})}
+function revLetter(e,h,issued){const c=CO(),n=issued?new Date(issued):new Date(),first=String(e.name||'').split(/\s+/)[0],dt=n.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const co=esc(c.name)||'the Company',ref=`${esc(c.ref).replace(/OFFER/i,'REV')}/${n.getFullYear()}/${esc(e.eid)}/${esc(h.f.replace('-',''))}`,ef=new Date(h.f+'-01T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const o=ctc(scaled(e,h.before)),r=ctc(scaled(e,h.after)),row=(l,a,b,bold)=>`<tr${bold?' class="b"':''}><td>${l}</td><td class="r">${money(a)}</td><td class="r">${money(b)}</td><td class="r">${money(b*12)}</td></tr>`;
+  const sign=`<div class="sgb"><p>Yours sincerely,<br>For <b>${co}</b></p><div class="sl"></div><p><b>${esc(c.sig)||'Authorised Signatory'}</b><br>${esc(c.sigD)}</p></div>`;
+  return `<div class="pg">${__lh()}
+<div class="olh"><span><b>Ref:</b> ${ref}</span><span><b>Date:</b> ${dt}</span></div>
+<div class="conf">Private &amp; Confidential</div>
+<p class="to">To,<br><b>${esc(e.name)}</b><br>${esc(e.desg||'')}${e.eid?' · Employee ID '+esc(e.eid):''}</p>
+<p class="sub2"><b>Subject: Revision in Compensation</b></p>
+<p>Dear ${esc(first)},</p>
+<p>In recognition of your contribution and performance, we are pleased to inform you that your compensation has been revised by <b>${fN(h.p)}%</b> with effect from <b>${ef}</b>.</p>
+<p>Your annual Cost to Company (CTC) is revised from ₹${money(o.y)} to <b>₹${money(r.y)}</b>. The revised monthly structure is given below.</p>
+<table class="st oct"><tr><th>Component</th><th class="r">Current / month</th><th class="r">Revised / month</th><th class="r">Revised / year</th></tr>
+${row('Basic',o.b,r.b)}${row('HRA',o.h,r.h)}${row('Conveyance',o.c,r.c)}${row('Special allowance',o.sp,r.sp)}${row('Gross salary',o.gross,r.gross,1)}${row('PF – employer',o.pfR,r.pfR)}${o.gr||r.gr?row('Gratuity',o.gr,r.gr):''}<tr class="ctc"><td>Cost to company (CTC)</td><td class="r">${money(o.m)}</td><td class="r">${money(r.m)}</td><td class="r">${money(r.y)}</td></tr>${row('Less: PF – employee',-o.pfE,-r.pfE)}${row('Less: Professional tax',-o.pt,-r.pt)}${row('Take-home (approx.)',o.net,r.net,1)}</table>
+<p class="nt">Take-home is before VPF, ESI, other deductions and income tax, which are deducted as applicable.</p>
+<p>All other terms and conditions of your employment remain unchanged. This letter is confidential and its contents should not be shared.</p>
+<p>We appreciate your efforts and look forward to your continued contribution to ${co}.</p>
+${sign}<div class="lf"><span>${esc(c.name)}${c.cin?' · CIN '+esc(c.cin):''}</span><span>Revision letter</span><span>Page 1 of 1</span></div></div>`;}
+function printDoc(inner,title){let p=document.getElementById('offerPrint');if(!p){p=document.createElement('div');p.id='offerPrint';p.style.display='none';document.body.appendChild(p)}
+  p.innerHTML='<div class="slip off">'+inner+'</div>';document.body.classList.add('printing-offer');
+  let pg=document.getElementById('offerPage');if(!pg){pg=document.createElement('style');pg.id='offerPage';document.head.appendChild(pg)}pg.textContent='@page{size:A4;margin:0}';
+  const t0=document.title;document.title=title;const done=()=>{document.body.classList.remove('printing-offer');p.innerHTML='';pg.textContent='';document.title=t0;removeEventListener('afterprint',done)};addEventListener('afterprint',done);setTimeout(()=>window.print(),50)}
 window.OfferLetter = {
+  hikeSteps,
+  revHtml(e, h, company, issued) { COMPANY = company || {}; ensureCss(); return '<div class="slip off">' + revLetter(e, h, issued) + '</div>'; },
+  revPrint(e, h, company, issued) { COMPANY = company || {}; ensureCss(); printDoc(revLetter(e, h, issued), 'Salary revision letter - ' + (e.name || '')); },
   ctc,
   lh(short, company) { COMPANY = company || {}; ensureCss(); return __lh(short); },
   html(e, company) { COMPANY = company || {}; ensureCss(); return '<div class="slip off">' + letter(e) + '</div>'; },
