@@ -154,6 +154,27 @@ ${row('Basic',r.b)}${r.h?row('HRA',r.h):''}${r.c?row('Conveyance',r.c):''}${r.sp
 <p>All other terms and conditions of your employment remain unchanged. This letter is confidential and its contents should not be shared.</p>
 <p>We appreciate your efforts and look forward to your continued contribution to ${co}.</p>
 ${sign}<div class="lf"><span>${esc(c.name)}${c.cin?' · CIN '+esc(c.cin):''}</span><span>Revision letter</span><span>Page 1 of 1</span></div></div>`;}
+/** Promotion letter: new designation from a month; if pay goes up, the new salary structure (no %). pr = {f, desg, grade, p, after} */
+function promoLetter(e,pr,issued){const c=CO(),n=issued?new Date(issued):new Date(),first=String(e.name||'').split(/\s+/)[0],dt=n.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const co=esc(c.name)||'the Company',ref=`${esc(c.ref).replace(/OFFER/i,'PROMO')}/${n.getFullYear()}/${esc(e.eid)}/${esc(String(pr.f||'').replace('-',''))}`,ef=pr.f?new Date(pr.f+'-01T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'—';
+  const r=ctc(scaled(e,+pr.after||1)),row=(l,b,bold)=>`<tr${bold?' class="b"':''}><td>${l}</td><td class="r">${money(b)}</td><td class="r">${money(b*12)}</td></tr>`,pay=+pr.p>0;
+  const sign=`<div class="sgb"><p>Yours sincerely,<br>For <b>${co}</b></p><div class="sl"></div><p><b>${esc(c.sig)||'Authorised Signatory'}</b><br>${esc(c.sigD)}</p></div>`;
+  return `<div class="pg">${__lh()}
+<div class="olh"><span><b>Ref:</b> ${ref}</span><span><b>Date:</b> ${dt}</span></div>
+<div class="conf">Private &amp; Confidential</div>
+<p class="to">To,<br><b>${esc(e.name)}</b><br>${esc(pr.prevDesg||e.desg||'')}${e.eid?' · Employee ID '+esc(e.eid):''}</p>
+<p class="sub2"><b>Subject: Promotion – ${esc(pr.desg)}</b></p>
+<p>Dear ${esc(first)},</p>
+<p><b>Congratulations!</b> In recognition of your performance, dedication and contribution to ${co}, we are delighted to promote you to the position of <b>${esc(pr.desg)}</b>${pr.grade?` (Grade ${esc(pr.grade)})`:''} with effect from <b>${ef}</b>.</p>
+${pay?`<p>With this promotion your compensation is revised. Your new annual Cost to Company (CTC) is <b>₹${money(r.y)}</b>, as set out below.</p>
+<table class="st oct"><tr><th>Component</th><th class="r">Per month (₹)</th><th class="r">Per year (₹)</th></tr>
+${row('Basic',r.b)}${r.h?row('HRA',r.h):''}${r.c?row('Conveyance',r.c):''}${r.sp?row('Special allowance',r.sp):''}${row('Gross salary',r.gross,1)}${row('PF – employer',r.pfR)}${r.gr?row('Gratuity',r.gr):''}<tr class="ctc"><td>Cost to company (CTC)</td><td class="r">${money(r.m)}</td><td class="r">${money(r.y)}</td></tr>${row('Less: PF – employee',-r.pfE)}${row('Less: Professional tax',-r.pt)}${row('Take-home (approx.)',r.net,1)}</table>
+<p class="nt">Take-home is before VPF, ESI, other deductions and income tax, which are deducted as applicable.</p>`:'<p>Your present compensation remains unchanged.</p>'}
+<p>In your new role you will take on wider responsibilities, which your reporting manager will explain. All other terms and conditions of your employment remain unchanged. This letter is confidential.</p>
+<p>We are confident you will continue to excel and we wish you every success in your new role.</p>
+${sign}<div class="lf"><span>${esc(c.name)}${c.cin?' · CIN '+esc(c.cin):''}</span><span>Promotion letter</span><span>Page 1 of 1</span></div></div>`;}
+/** Any letter attached to an SN Mail, by kind – so SN Mail and the Punch app open new kinds without an update. */
+function attInner(o,x){if(x.kind==='rev'){const r=(o.revs||[]).find(z=>z.f===x.f);return r?revLetter(o,r,r.at):''}if(x.kind==='promo'){const r=(o.promos||[]).find(z=>z.f===x.f);return r?promoLetter(o,r,r.at):''}if(x.kind==='ctc')return ctcLetter(o,o.ctcAt);if(x.kind==='offer')return letter(o);return ''}
 function printDoc(inner,title){let p=document.getElementById('offerPrint');if(!p){p=document.createElement('div');p.id='offerPrint';p.style.display='none';document.body.appendChild(p)}
   p.innerHTML='<div class="slip off">'+inner+'</div>';document.body.classList.add('printing-offer');
   let pg=document.getElementById('offerPage');if(!pg){pg=document.createElement('style');pg.id='offerPage';document.head.appendChild(pg)}pg.textContent='@page{size:A4;margin:0}';
@@ -167,6 +188,10 @@ if(typeof document!=='undefined'&&document.addEventListener){if(document.body)fi
 window.OfferLetter = {
   fit: fitAll,
   hikeSteps,
+  promoHtml(e, pr, company, issued) { COMPANY = company || {}; ensureCss(); return '<div class="slip off">' + promoLetter(e, pr, issued) + '</div>'; },
+  promoPrint(e, pr, company, issued) { COMPANY = company || {}; ensureCss(); printDoc(promoLetter(e, pr, issued), 'Promotion letter - ' + (e.name || '')); },
+  attHtml(o, x, company) { COMPANY = company || {}; ensureCss(); const h = attInner(o, x); return h ? '<div class="slip off">' + h + '</div>' : ''; },
+  attPrint(o, x, company) { COMPANY = company || {}; ensureCss(); const h = attInner(o, x); if (h) printDoc(h, String(x.name || 'Letter').replace(/\.pdf$/i, '')); },
   ctcHtml(e, company, issued) { COMPANY = company || {}; ensureCss(); return '<div class="slip off">' + ctcLetter(e, issued) + '</div>'; },
   ctcPrint(e, company, issued) { COMPANY = company || {}; ensureCss(); printDoc(ctcLetter(e, issued), 'CTC letter - ' + (e.name || '')); },
   revHtml(e, h, company, issued) { COMPANY = company || {}; ensureCss(); return '<div class="slip off">' + revLetter(e, h, issued) + '</div>'; },
