@@ -1,11 +1,11 @@
 {
-  "versionCode": 60,
-  "versionName": "7.6",
+  "versionCode": 61,
+  "versionName": "7.7",
   "date": "28 Oct 2026",
-  "size": 3056548,
+  "size": 3056712,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Deductions start from the month HR sets.",
+  "notes": "Sign in with your SN Mail ID.",
   "list": [
-    "VPF, ESI and Other deduction now start from the From month set by HR (salary, payslip and YTD)."
+    "Sign in with your Employee ID or your SN Mail ID (name@snlogistics) and the same password."
   ]
 }
