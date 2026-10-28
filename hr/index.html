@@ -92,7 +92,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <div class="shell"><nav class="nav" id="nav" aria-label="People"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <script src="../portal/fb.js?v=20261027d"></script>
 <script src="../seen.js?v=1"></script>
-<script src="../portal/offer.js?v=7"></script>
+<script src="../portal/offer.js?v=8"></script>
 <script src="../portal/payslip.js?v=2"></script>
 <script>
 (async function () {
@@ -109,6 +109,7 @@ const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.get
 const today = () => iso(new Date());
 const ymNow = () => today().slice(0, 7);
 const fmtD = k => k ? new Date(String(k).slice(0, 10) + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+const ymAdd = (ym, n) => { if (!/^\d{4}-\d\d/.test(ym || '')) return ''; const d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1); };
 const monthName = ym => ym ? new Date(ym + "-01T00:00:00").toLocaleDateString("en-IN", { month: "long", year: "numeric" }) : "";
 const fmtT = ms => ms ? new Date(ms).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
 const tm = ms => ms ? new Date(ms).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '';
@@ -737,7 +738,7 @@ function hikeCalc(o, hikes) { if (!window.OfferLetter) return ''; const St = Off
 const ctcOf = o => window.OfferLetter ? OfferLetter.ctc(o) : { gross: 0, m: 0, y: 0, net: 0 };
 function readPs() { const g = id => { const el = document.getElementById(id); return el ? el.value : null; }; if (g('ps-basis') == null) return null;
   const hk = []; for (let i = 0; document.getElementById('ps-hp' + i); i++) hk.push({ p: g('ps-hp' + i), f: g('ps-hf' + i) });
-  return { pfMode: g('ps-pfMode'), pf: g('ps-pf'), vpf: g('ps-vpf'), esi: g('ps-esi'), oth: g('ps-oth'), ot: g('ps-ot'), vpfFrom: g('ps-vpfFrom') || '', esiFrom: g('ps-esiFrom') || '', othFrom: g('ps-othFrom') || '', basis: g('ps-basis'), leavePaid: g('ps-leavePaid') === '0' ? 0 : 1, holPaid: g('ps-holPaid') === '0' ? 0 : 1, hikes: hk }; }
+  return { pfMode: g('ps-pfMode'), pf: g('ps-pf'), vpf: g('ps-vpf'), esi: g('ps-esi'), oth: g('ps-oth'), ot: g('ps-ot'), hkCyc: g('ps-cyc'), vpfFrom: g('ps-vpfFrom') || '', esiFrom: g('ps-esiFrom') || '', othFrom: g('ps-othFrom') || '', basis: g('ps-basis'), leavePaid: g('ps-leavePaid') === '0' ? 0 : 1, holPaid: g('ps-holPaid') === '0' ? 0 : 1, hikes: hk }; }
 function readPkg(e) { const o = Object.assign({}, S.pkgDraft || offerFor(e)); delete o._id;
   OFF_J.forEach(([k]) => { const el = document.getElementById('pk-' + k); if (el) o[k] = el.value.trim(); });
   OFF_P.concat(OFF_T).forEach(([k]) => { const el = document.getElementById('pk-' + k); if (el) o[k] = el.value === '' ? 0 : num(el.value); });
@@ -750,7 +751,7 @@ function vPackages() {
     const nf = ([k2, l]) => '<label>' + esc(l) + '<input id="pk-' + k2 + '" type="number" step="0.01" value="' + esc(o[k2] == null ? '' : o[k2]) + '"' + dis + '></label>';
     if (S.pkgRev && window.OfferLetter) { const h = OfferLetter.hikeSteps((payOf(cur._id) || {}).hikes).find(z => z.f === S.pkgRev), r = (o.revs || []).find(z => z.f === S.pkgRev);
       if (h) { const bt = '<button class="btn" type="button" data-a="rv-back">← Back to package</button><button class="btn" type="button" data-a="rv-print">Print / PDF</button>' + (ed ? '<button class="btn p" type="button" data-a="rv-release">' + (r ? 'Release again (updated)' : 'Release to employee') + '</button>' : '');
-        return ph('Revised salary letter – ' + cur.name, h.p + '% hike from ' + monthName(h.f) + (r ? ' · released ' + fmtD(iso(new Date(r.at))) : ' · not released yet'), bt) + '<section class="card" id="pkCard"><div style="overflow-x:auto">' + OfferLetter.revHtml(o, h, { name: 'SN Logistics' }, r && r.at) + '</div><div class="row mt">' + bt + '</div></section>'; }
+        return ph('Revised salary letter – ' + cur.name, h.p + '% hike from ' + monthName(h.f) + (r ? ' · released ' + fmtD(iso(new Date(r.at))) : ' · not released yet'), bt) + (ed ? '<section class="card" style="margin-bottom:14px"><div class="row" style="align-items:flex-end;flex-wrap:wrap"><label style="flex:1;min-width:140px">Hike %<input id="rv-p" type="number" step="0.01" value="' + esc(h.p) + '"></label><button class="btn" type="button" data-a="rv-upd">Update %</button></div>' + (r && num(r.p) !== num(h.p) ? '<p class="mute small mt">The letter sent earlier said ' + esc(r.p) + '%. Press Release again to send the updated letter.</p>' : '<p class="mute small mt">Change the % here to revise this hike; the salary and the letter update.</p>') + '</section>' : '') + '<section class="card" id="pkCard"><div style="overflow-x:auto">' + OfferLetter.revHtml(o, h, { name: 'SN Logistics' }, r && r.at) + '</div><div class="row mt">' + bt + '</div></section>'; }
       S.pkgRev = null; }
     if (S.pkgPrev && window.OfferLetter) return ph((S.pkgPrev === 'offer' ? 'Offer letter – ' : 'CTC letter – ') + cur.name, 'Preview. Go back to the package to make changes.', '<button class="btn" type="button" data-a="pk-prev">← Back to package</button><button class="btn p" type="button" data-a="pk-print">Print / PDF</button>') +
       '<section class="card" id="pkCard"><div style="overflow-x:auto">' + (S.pkgPrev === 'offer' ? OfferLetter.html(o, { name: 'SN Logistics' }) : OfferLetter.ctcHtml(o, { name: 'SN Logistics' }, o.ctcAt)) + '</div><div class="row mt"><button class="btn" type="button" data-a="pk-prev">← Back to package</button><button class="btn p" type="button" data-a="pk-print">Print / PDF</button></div></section>';
@@ -763,10 +764,10 @@ function vPackages() {
       '<div class="tiles mt"><div class="t"><span>Gross / month</span><b>' + money(k.gross) + '</b></div><div class="t"><span>Take-home / month</span><b>' + money(k.net) + '</b></div><div class="t"><span>CTC / month</span><b>' + money(k.m) + '</b></div><div class="t"><span>CTC / year</span><b>' + money(k.y) + '</b></div></div>' +
       tbl(['Component', '#Monthly', '#Annual'], [['Basic', k.b], ['HRA', k.h], ['Conveyance', k.c], ['Special allowance', k.sp], ['Gross salary', k.gross, 1], ['PF – employer', k.pfR], ['Gratuity', k.gr], ['Cost to company (CTC)', k.m, 1], ['Less: PF – employee', -k.pfE], ['Less: Professional tax', -k.pt], ['Take-home (approx.)', k.net, 1]].map(([l, v, b]) => '<tr><td>' + (b ? '<b>' + l + '</b>' : l) + '</td><td class="n">' + (b ? '<b>' + money(v) + '</b>' : money(v)) + '</td><td class="n">' + (b ? '<b>' + money(v * 12) + '</b>' : money(v * 12)) + '</td></tr>')) : '') +
       (T === 'pay' ? ''
-      + (() => { const v = S.psDraft || payOf(cur._id) || {}, hk = (v.hikes || []).concat([{ p: '', f: '' }, { p: '', f: '' }]).slice(0, Math.max(2, (v.hikes || []).length + 1)), sel = (id, L, cv) => '<select id="' + id + '"' + dis + '>' + L.map(([a2, b2]) => '<option value="' + a2 + '"' + (String(cv) === a2 ? ' selected' : '') + '>' + b2 + '</option>').join('') + '</select>';
+      + (() => { const v = S.psDraft || payOf(cur._id) || {}, cyc = num(v.hkCyc) || 12, hk = (() => { let pf = String(o.join || cur.join || '').slice(0, 7); return (v.hikes || []).concat([{ p: '', f: '' }, { p: '', f: '' }]).slice(0, Math.max(2, (v.hikes || []).length + 1)).map(h => { const f = h.f || ymAdd(pf, cyc); pf = f || pf; return { p: h.p, f }; }); })(), sel = (id, L, cv) => '<select id="' + id + '"' + dis + '>' + L.map(([a2, b2]) => '<option value="' + a2 + '"' + (String(cv) === a2 ? ' selected' : '') + '>' + b2 + '</option>').join('') + '</select>';
         return '<h3 class="mt">Pay settings</h3><div class="form"><label>PF calculation' + sel('ps-pfMode', [['pct', '% of earned Basic'], ['fix', 'Fixed amount']], v.pfMode === 'fix' ? 'fix' : 'pct') + '</label>' + fld('ps-pf', 'PF fixed ₹ (if fixed)', 'number', v.pf, dis) + fld('ps-vpf', 'VPF / month', 'number', v.vpf, dis) + fld('ps-vpfFrom', 'VPF from month', 'month', v.vpfFrom, dis) + fld('ps-esi', 'ESI / month', 'number', v.esi, dis) + fld('ps-esiFrom', 'ESI from month', 'month', v.esiFrom, dis) + fld('ps-oth', 'Other deduction / month', 'number', v.oth, dis) + fld('ps-othFrom', 'Other deduction from month', 'month', v.othFrom, dis) +
           '<label>Overtime pay' + sel('ps-ot', [['1', 'On (1.5× per extra hour)'], ['0', 'Off']], v.ot === 0 || v.ot === '0' ? '0' : '1') + '</label><label>Days basis' + sel('ps-basis', [['cal', 'Calendar days'], ['work', 'Working days'], ['26', 'Fixed 26'], ['30', 'Fixed 30']], v.basis || 'cal') + '</label><label>Paid leave counts as paid' + sel('ps-leavePaid', [['1', 'Yes'], ['0', 'No']], v.leavePaid === false || v.leavePaid === 0 ? '0' : '1') + '</label><label>Holidays are paid' + sel('ps-holPaid', [['1', 'Yes'], ['0', 'No']], v.holPaid === false || v.holPaid === 0 ? '0' : '1') + '</label></div>' +
-          '<p class="mute small mt">Leave a From month empty to apply the deduction from joining.</p><p class="mute small mt">Hikes – each raises Basic, HRA, Conveyance and Special from that month.</p><div class="form">' + hk.map((h, i2) => fld('ps-hp' + i2, 'Hike %', 'number', h.p, dis) + fld('ps-hf' + i2, 'From month', 'month', h.f, dis)).join('') + '</div>' +
+          '<p class="mute small mt">Leave a From month empty to apply the deduction from joining.</p><h3 class="mt">Hikes</h3><div class="form"><label>Hike cycle' + sel('ps-cyc', [['6', 'Every 6 months'], ['12', 'Every 12 months']], String(cyc)) + '</label></div><p class="mute small">Each hike starts one cycle after joining or after the previous hike – the month fills in by itself. Type the % for each hike; it raises Basic, HRA, Conveyance and Special.</p><div class="form">' + hk.map((h, i2) => fld('ps-hp' + i2, 'Hike %', 'number', h.p, dis) + fld('ps-hf' + i2, 'From month', 'month', h.f, dis)).join('') + '</div>' +
           '<div id="hkCalc">' + hikeCalc(o, v.hikes) + '</div>' +
           (() => { const St = window.OfferLetter ? OfferLetter.hikeSteps((payOf(cur._id) || {}).hikes) : [], R = (o.revs || []); if (!St.length) return '<p class="mute small mt">Save a hike to create its revised salary letter.</p>';
             return '<h3 class="mt">Revised salary letters</h3>' + tbl(['Hike', 'From', 'Letter', ''], St.map(h => { const r = R.find(z => z.f === h.f); return '<tr><td>' + esc(h.p) + '%</td><td>' + esc(monthName(h.f)) + '</td><td>' + (r ? pill('Released ' + fmtD(iso(new Date(r.at))), 'good') : pill('Not released', 'warn')) + '</td><td><button class="btn s" type="button" data-a="rv-open" data-x="' + esc(h.f) + '">Revised letter</button></td></tr>'; })); })(); })() : '') +
@@ -793,7 +794,7 @@ async function savePkg(release, noAsk) {
   if (!(await save('punch_offer/' + e._id, o))) return;
   const v = Object.assign({}, payOf(e._id) || {}); delete v._id; 
   Object.assign(v, { basicAmt: num(o.basic), hraAmt: num(o.hra), convAmt: num(o.conv), splAmt: num(o.spl), pfPct: num(o.pfPct), pfMode: (ps && ps.pfMode) || v.pfMode || 'pct', pt: num(o.pt), v2: 1, updatedAt: now, by: S.uid });
-  if (ps) { Object.assign(v, { pf: num(ps.pf), vpf: num(ps.vpf), esi: num(ps.esi), oth: num(ps.oth), ot: ps.ot === '0' ? 0 : (num(v.ot) || 1.5), vpfFrom: ps.vpfFrom || '', esiFrom: ps.esiFrom || '', othFrom: ps.othFrom || '', basis: ps.basis || 'cal', leavePaid: ps.leavePaid, holPaid: ps.holPaid });
+  if (ps) { Object.assign(v, { pf: num(ps.pf), vpf: num(ps.vpf), esi: num(ps.esi), oth: num(ps.oth), hkCyc: num(ps.hkCyc) || 12, ot: ps.ot === '0' ? 0 : (num(v.ot) || 1.5), vpfFrom: ps.vpfFrom || '', esiFrom: ps.esiFrom || '', othFrom: ps.othFrom || '', basis: ps.basis || 'cal', leavePaid: ps.leavePaid, holPaid: ps.holPaid });
     v.hikes = (ps.hikes || []).map(h => ({ p: num(h.p), f: h.f })).filter(h => h.p && h.f); }
   if (!(await save('punch_pay/' + e._id, v))) return; S.psDraft = null;
   await patchEmp(e, { desg: o.desg, grade: o.grade, cat: o.cat, join: o.join, mgr: o.mgr });
@@ -944,6 +945,9 @@ async function act(a, x, t) {
       Object.assign(o, ctcSplit(A, { bp: O.bp, hp: O.hp, conv: O.conv, pfPct: num(o.pfPct), grat: o.grat })); S.pkgDraft = o; render(); toast('Structure built for CTC ' + money(A)); return; }
     case 'pk-prev': { const e = empOf(S.pkgFor); if (!e) return; if (!S.pkgPrev) { S.pkgDraft = readPkg(e); const ps = readPs(); if (ps) S.psDraft = ps; } S.pkgPrev = S.pkgPrev ? false : (x || 'ctc'); render(); window.scrollTo(0, 0); return; }
     case 'rv-open': { const e = empOf(S.pkgFor); if (!e) return; S.pkgDraft = readPkg(e); const ps = readPs(); if (ps) S.psDraft = ps; S.pkgRev = x; render(); window.scrollTo(0, 0); return; }
+    case 'rv-upd': { const e = empOf(S.pkgFor), v = e && payOf(e._id), np = num(val('rv-p')); if (!v || !canSalE()) return; if (!(np > 0 && np < 200)) { toast('Enter the hike %, e.g. 8.'); return; }
+      const b = Object.assign({}, v); delete b._id; b.hikes = (v.hikes || []).map(h => h.f === S.pkgRev ? Object.assign({}, h, { p: np }) : h); b.updatedAt = now; b.by = S.uid;
+      if (await save('punch_pay/' + e._id, b, 'Hike changed to ' + np + '% – salary updated')) { v.hikes = b.hikes; if (S.psDraft) S.psDraft.hikes = (S.psDraft.hikes || []).map(h => h.f === S.pkgRev ? Object.assign({}, h, { p: np }) : h); render(); } return; }
     case 'rv-back': S.pkgRev = null; render(); window.scrollTo(0, 0); return;
     case 'rv-print': { const e = empOf(S.pkgFor); if (!e || !window.OfferLetter) return; const o = S.pkgDraft || offerFor(e), h = OfferLetter.hikeSteps((payOf(e._id) || {}).hikes).find(z => z.f === S.pkgRev), r = (o.revs || []).find(z => z.f === S.pkgRev); if (h) OfferLetter.revPrint(o, h, { name: 'SN Logistics' }, r && r.at); return; }
 
@@ -1061,6 +1065,7 @@ async function act(a, x, t) {
 }
 document.addEventListener('change', async ev => {
   const t = ev.target;
+  if (t.id === 'ps-cyc') { const e = empOf(S.pkgFor); S.psDraft = readPs(); if (e && S.psDraft) { const sv = new Set(((payOf(e._id) || {}).hikes || []).map(h => h.f)); S.psDraft.hikes = S.psDraft.hikes.map(h => sv.has(h.f) && num(h.p) ? h : { p: h.p, f: '' }); } render(); return; }
   if (t.id && /^ps-/.test(t.id)) { S.psDraft = readPs(); if (/^ps-h[pf]/.test(t.id) && S.psDraft && S.psDraft.hikes.every(h => num(h.p) && h.f)) { render(); return; } const hc = $('#hkCalc'), e = empOf(S.pkgFor); if (hc && e && S.psDraft) hc.innerHTML = hikeCalc(S.pkgDraft || offerFor(e), S.psDraft.hikes); return; }
   if (t.id === 'pk-grat') { const e = empOf(S.pkgFor); if (e) { S.pkgDraft = readPkg(e); render(); } return; }
   if (t.dataset && t.dataset.up) { await uploadDoc(t); return; }

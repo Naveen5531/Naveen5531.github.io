@@ -138,7 +138,7 @@ function hikeSteps(hikes){let f=1;return (hikes||[]).filter(h=>+h.p&&h.f).slice(
 function scaled(e,x){return Object.assign({},e,{basic:R2((+e.basic||0)*x),hra:R2((+e.hra||0)*x),conv:R2((+e.conv||0)*x),spl:R2((+e.spl||0)*x)})}
 function revLetter(e,h,issued){const c=CO(),n=issued?new Date(issued):new Date(),first=String(e.name||'').split(/\s+/)[0],dt=n.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   const co=esc(c.name)||'the Company',ref=`${esc(c.ref).replace(/OFFER/i,'REV')}/${n.getFullYear()}/${esc(e.eid)}/${esc(h.f.replace('-',''))}`,ef=new Date(h.f+'-01T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-  const o=ctc(scaled(e,h.before)),r=ctc(scaled(e,h.after)),row=(l,a,b,bold)=>`<tr${bold?' class="b"':''}><td>${l}</td><td class="r">${money(a)}</td><td class="r">${money(b)}</td><td class="r">${money(b*12)}</td></tr>`;
+  const r=ctc(scaled(e,h.after)),row=(l,b,bold)=>`<tr${bold?' class="b"':''}><td>${l}</td><td class="r">${money(b)}</td><td class="r">${money(b*12)}</td></tr>`;
   const sign=`<div class="sgb"><p>Yours sincerely,<br>For <b>${co}</b></p><div class="sl"></div><p><b>${esc(c.sig)||'Authorised Signatory'}</b><br>${esc(c.sigD)}</p></div>`;
   return `<div class="pg">${__lh()}
 <div class="olh"><span><b>Ref:</b> ${ref}</span><span><b>Date:</b> ${dt}</span></div>
@@ -147,9 +147,9 @@ function revLetter(e,h,issued){const c=CO(),n=issued?new Date(issued):new Date()
 <p class="sub2"><b>Subject: Revision in Compensation</b></p>
 <p>Dear ${esc(first)},</p>
 <p>In recognition of your contribution and performance, we are pleased to inform you that your compensation has been revised by <b>${fN(h.p)}%</b> with effect from <b>${ef}</b>.</p>
-<p>Your annual Cost to Company (CTC) is revised from ₹${money(o.y)} to <b>₹${money(r.y)}</b>. The revised monthly structure is given below.</p>
-<table class="st oct"><tr><th>Component</th><th class="r">Current / month</th><th class="r">Revised / month</th><th class="r">Revised / year</th></tr>
-${row('Basic',o.b,r.b)}${row('HRA',o.h,r.h)}${row('Conveyance',o.c,r.c)}${row('Special allowance',o.sp,r.sp)}${row('Gross salary',o.gross,r.gross,1)}${row('PF – employer',o.pfR,r.pfR)}${o.gr||r.gr?row('Gratuity',o.gr,r.gr):''}<tr class="ctc"><td>Cost to company (CTC)</td><td class="r">${money(o.m)}</td><td class="r">${money(r.m)}</td><td class="r">${money(r.y)}</td></tr>${row('Less: PF – employee',-o.pfE,-r.pfE)}${row('Less: Professional tax',-o.pt,-r.pt)}${row('Take-home (approx.)',o.net,r.net,1)}</table>
+<p>Your revised annual Cost to Company (CTC) is <b>₹${money(r.y)}</b>. The revised salary structure is given below.</p>
+<table class="st oct"><tr><th>Component</th><th class="r">Per month (₹)</th><th class="r">Per year (₹)</th></tr>
+${row('Basic',r.b)}${r.h?row('HRA',r.h):''}${r.c?row('Conveyance',r.c):''}${r.sp?row('Special allowance',r.sp):''}${row('Gross salary',r.gross,1)}${row('PF – employer',r.pfR)}${r.gr?row('Gratuity',r.gr):''}<tr class="ctc"><td>Cost to company (CTC)</td><td class="r">${money(r.m)}</td><td class="r">${money(r.y)}</td></tr>${row('Less: PF – employee',-r.pfE)}${row('Less: Professional tax',-r.pt)}${row('Take-home (approx.)',r.net,1)}</table>
 <p class="nt">Take-home is before VPF, ESI, other deductions and income tax, which are deducted as applicable.</p>
 <p>All other terms and conditions of your employment remain unchanged. This letter is confidential and its contents should not be shared.</p>
 <p>We appreciate your efforts and look forward to your continued contribution to ${co}.</p>
