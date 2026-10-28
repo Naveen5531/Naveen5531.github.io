@@ -3399,7 +3399,7 @@ function pEarn(e, ym) {
   if (basis === '26' || basis === '30') pay = Math.min(pay, base);
   const k = base ? pay / base : 0, basic = amt('basicAmt') * k, gross = full * k;
   const pf = v.pfMode === 'fix' ? num(v.pf) : Math.round(basic * num(v.pfPct == null ? 12 : v.pfPct) / 100);
-  return { full, pay, base, gross: Math.round(gross), net: Math.round(gross - pf - num(v.pt) - num(v.vpf) - num(v.esi) - num(v.oth)) };
+  return { full, pay, base, gross: Math.round(gross), net: Math.round(gross - pf - num(v.pt) - ['vpf', 'esi', 'oth'].reduce((t, k) => t + (!v[k + 'From'] || ym >= v[k + 'From'] ? num(v[k]) : 0), 0)) };
 }
 /** Employee directory: anyone signed in can look up a colleague by employee ID or name and see a basic profile (no salary, no attendance). */
 function directoryView() {
