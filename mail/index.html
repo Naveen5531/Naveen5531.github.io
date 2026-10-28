@@ -82,6 +82,8 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 .btn svg{width:18px;height:18px;flex:none;vertical-align:-3px}.btn{display:inline-flex;align-items:center;gap:6px}
 @media (max-width:560px){.top{gap:6px;padding:8px 10px}.top .brand img{width:32px!important;height:32px!important}.ib{width:34px;height:34px}.modesw{padding:2px}.modesw button{padding:5px 7px;font-size:.7rem}.search{flex:0 1 auto;min-width:0}}
 @media (max-width:400px){.top .brand{display:none}}
+.attc{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--soft);max-width:520px}.attc .ai{background:#d33;color:#fff;font:800 .7rem system-ui;border-radius:6px;padding:6px 7px}.attc .an{flex:1;min-width:140px;font-weight:700;word-break:break-word}
+.attv{position:fixed;inset:0;z-index:70;background:var(--bg);overflow:auto;padding:14px}.attv .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;position:sticky;top:0;background:var(--bg);padding:6px 0;z-index:2}.attv .bar b{flex:1;min-width:160px}
 </style>
 <script>window.MOVANA_APP_TITLE = 'SN Mail'; window.MOVANA_APP_SUB = 'Internal mail for SN Logistics · same login as the staff portal and Punch';</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -99,7 +101,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <div class="menu" id="menu" role="menu" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="Mail folders"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <div id="cmpHost"></div>
-<script src="../portal/fb.js?v=20261027d"></script>
+<script src="../portal/fb.js?v=20261027d"></script><script src="../portal/offer.js?v=5"></script>
 <script src="../seen.js?v=1"></script>
 <script>
 (async function () {
@@ -185,7 +187,7 @@ function threadHtml() {
   const L = T.L, last = L[L.length - 1], trashed = L.every(m => st(m).t), stz = L.some(m => st(m).s);
   return '<div class="row" style="margin-bottom:12px;flex-wrap:wrap"><button class="btn" type="button" data-a="back">' + svg('back') + ' Back</button><button class="btn" type="button" data-a="t-star">' + (stz ? 'Unstar' : 'Star') + '</button><button class="btn" type="button" data-a="t-unread">Mark unread</button><button class="btn' + (trashed ? '' : ' d') + '" type="button" data-a="t-trash">' + (trashed ? 'Restore' : 'Move to trash') + '</button></div>' +
     '<h1 style="font-family:var(--disp);margin:0 0 12px">' + esc(last.subject || '(no subject)') + '</h1>' +
-    L.map(m => '<article class="msg"><div class="mh"><span class="av">' + esc(ini(m.fromName || nameOf(m.from))) + '</span><div class="g1"><b>' + esc(MY().has(m.from) ? (m.fromName || S.myName) + ' (me)' : m.fromName || nameOf(m.from)) + '</b>' + ((m.fromMail || mailOf(m.from)) ? ' <span class="to">&lt;' + esc(m.fromMail || mailOf(m.from)) + '&gt;</span>' : '') + '<div class="to">to ' + esc(whoList(m, 'to', true)) + ((m.cc || []).length ? ' · cc ' + esc(whoList(m, 'cc', true)) : '') + '</div></div><span class="to">' + esc(full(m.at)) + '</span></div><div class="bd">' + esc(m.body || '') + '</div></article>').join('') +
+    L.map(m => '<article class="msg"><div class="mh"><span class="av">' + esc(ini(m.fromName || nameOf(m.from))) + '</span><div class="g1"><b>' + esc(MY().has(m.from) ? (m.fromName || S.myName) + ' (me)' : m.fromName || nameOf(m.from)) + '</b>' + ((m.fromMail || mailOf(m.from)) ? ' <span class="to">&lt;' + esc(m.fromMail || mailOf(m.from)) + '&gt;</span>' : '') + '<div class="to">to ' + esc(whoList(m, 'to', true)) + ((m.cc || []).length ? ' · cc ' + esc(whoList(m, 'cc', true)) : '') + '</div></div><span class="to">' + esc(full(m.at)) + '</span></div><div class="bd">' + esc(m.body || '') + '</div>' + (m.att || []).map((x, i) => '<div class="attc"><span class="ai">PDF</span><span class="an">' + esc(x.name || 'Letter.pdf') + '</span><button class="btn s" type="button" data-att="' + esc(m._id) + '|' + i + '|v">View</button><button class="btn s" type="button" data-att="' + esc(m._id) + '|' + i + '|d">Download</button></div>').join('') + '</article>').join('') +
     '<div class="row"><button class="btn p" type="button" data-a="reply">' + svg('reply') + ' Reply</button>' + ((last.rcpt || []).length > 1 ? '<button class="btn" type="button" data-a="replyall">' + svg('reply') + ' Reply all</button>' : '') + '<button class="btn" type="button" data-a="fwd">' + svg('fwd') + ' Forward</button></div>';
 }
 const QST = { New: '#f26a1b', Replied: '#3557b5', Closed: '#0c9b76' };
@@ -254,6 +256,20 @@ function replyTo(all_, fwd) { const T = threads(() => true).find(t => t.id === S
   const my = MY(), mine = my.has(last.from), to = [...new Set((mine ? (last.to || []) : [last.from]).map(keyOf))].filter(k => k !== keyOf(ME)), cc = all_ ? [...new Set((last.rcpt || []).filter(u => !my.has(u)).map(keyOf))].filter(k => !to.includes(k)) : [];
   openCmp({ to, cc, subject: re(last.subject || ''), body: quote, thread: T.id }); setTimeout(() => { const b = $('#c-body'); if (b) { b.focus(); b.setSelectionRange(0, 0); } }, 40); }
 
+/* ----- attachments: letters from HR (built from the employee's released letter, so they always match SN People) ----- */
+let ATT = null;
+async function attLoad(x) { const d = await fs.doc('punch_offer/' + x.uid).get(); if (!d.exists) throw new Error('missing'); const o = d.data(); if (x.kind === 'rev') { const r = (o.revs || []).find(z => z.f === x.f); if (!r) throw new Error('missing'); return { o, r }; } return { o }; }
+async function attAct(b) {
+  if (b.dataset.attx === 'close') { ATT = null; const v = $('#attv'); if (v) v.remove(); return; }
+  if (b.dataset.attx === 'dl') { if (ATT) attPrint(ATT); return; }
+  const [id, i, mode] = b.dataset.att.split('|'), m = S.msgs[id], x = m && (m.att || [])[+i]; if (!x || !window.OfferLetter) return;
+  let L; try { L = await attLoad(x); } catch (e) { toast(e && e.code === 'permission-denied' ? 'Only the employee and HR can open this letter.' : 'This letter is no longer available.'); return; }
+  ATT = { x, L }; if (mode === 'd') { attPrint(ATT); return; }
+  const v = document.createElement('div'); v.className = 'attv'; v.id = 'attv'; v.setAttribute('role', 'dialog');
+  v.innerHTML = '<div class="bar"><button class="btn" type="button" data-attx="close">← Back to mail</button><b>' + esc(x.name || '') + '</b><button class="btn p" type="button" data-attx="dl">Download / Print</button></div><div style="overflow-x:auto">' + (x.kind === 'rev' ? OfferLetter.revHtml(L.o, L.r, { name: 'SN Logistics' }, L.r.at) : OfferLetter.html(L.o, { name: 'SN Logistics' })) + '</div>';
+  document.body.appendChild(v); }
+function attPrint(a) { if (a.x.kind === 'rev') OfferLetter.revPrint(a.L.o, a.L.r, { name: 'SN Logistics' }, a.L.r.at); else OfferLetter.print(a.L.o, { name: 'SN Logistics' }); }
+
 /* ----- events ----- */
 document.addEventListener('click', async ev => {
   { const o = ev.target.closest('[data-qopen]'); if (o) { location.hash = '#/q/' + encodeURIComponent(o.dataset.qopen); return; } }
@@ -262,6 +278,7 @@ document.addEventListener('click', async ev => {
     if (!q) return;
     if (b.dataset.qa === 'st') { try { await fs.doc('queries/' + id).update({ s: b.dataset.v, by: ME, byName: S.myName, upd: Date.now() }); toast('Marked ' + b.dataset.v.toLowerCase()); } catch (e) { toast('Could not update (' + (e.code || 'error') + ').'); } return; }
     if (b.dataset.qa === 'fwd') { openCmp({ subject: 'Fwd: ' + (q.kind || 'Enquiry') + ' – ' + (q.name || '') + ' (' + (q.ref || '') + ')', body: qText(q) }); return; } } }
+  { const ab = ev.target.closest('[data-att],[data-attx]'); if (ab) { await attAct(ab); return; } }
   const t = ev.target.closest('[data-a],[data-open],[data-star],[data-pick],[data-rm]');
   if (ev.target.closest('#burger')) { document.body.classList.toggle('navopen'); return; }
   if (ev.target.closest('#who')) { const m = $('#menu'); m.innerHTML = '<div class="h"><b>' + esc(S.myName) + '</b><span>' + esc(mailOf(ME) || 'SN Mail') + '</span></div><a href="../hr/#/settings">' + svg('cog') + 'Settings</a><button type="button" class="out" id="logout">' + svg('exit') + 'Log out</button>'; m.hidden = !m.hidden; return; }

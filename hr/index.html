@@ -233,6 +233,12 @@ const credText = x => { const e = D.emp.find(o => o._id === x.uid) || {}, base =
   return 'Dear ' + x.name + ',\n\nWelcome to SN Logistics. Your login details are below.\n\n' +
     'Employee ID : ' + x.user + '\nPunch ID    : ' + x.user + '\nPassword    : ' + DEFAULT_PW + '\n' + (x.mail ? 'SN Mail ID  : ' + x.mail + '\n' : '') + (e.desg ? 'Designation : ' + e.desg + '\n' : '') + (e.join ? 'Joining date: ' + fmtD(e.join) + '\n' : '') +
     '\nHow to start\n1. Install the Punch app: ' + base + 'Punch.apk\n2. Sign in with your Punch ID and password.\n3. Set your own password: ' + base + 'hr/#/settings\n4. SN People (leave, payslips, HR tickets): ' + base + 'hr/\n5. SN Mail (internal mail): ' + base + 'mail/\n\nThe same login works in all of them. Please do not share your password.\n\nRegards,\nHR – SN Logistics'; };
+/** Mail a released letter to the employee's SN Mail: a short note, with the letter itself attached (opens and downloads as a PDF in SN Mail). */
+async function mailLetter(e, subject, body, att) {
+  const box = id => { const ml = mailOf(id); return ml ? D.users.filter(u => u.mail === ml).map(u => u._id).concat([id]) : [id]; }, to = [...new Set(box(e._id))], toNames = {}; to.forEach(u => toNames[u] = e.name);
+  const ref = fs.collection('mail').doc();
+  try { await ref.set({ from: S.uid, fromName: S.me.name, fromMail: mailOf(S.uid), toMail: [mailOf(e._id)].filter(Boolean), ccMail: [], to, cc: [], rcpt: to, toNames, subject, body, att: [att], at: Date.now(), thread: ref.id, st: { [S.uid]: { r: 1 } } }); return true; }
+  catch (x) { toast('Released, but the mail to ' + e.name + ' failed (' + (x.code || 'error') + ').'); return false; } }
 /** Mail the welcome message with the login details to each new employee's SN Mail (and their reporting manager if asked). */
 async function sendCreds(L, cc) { let n = 0;
   for (const c of L) { const e = D.emp.find(o => o._id === c.uid) || {}, m = cc && e.mgr ? D.emp.find(o => !o.noPunch && normN(o.name) === normN(e.mgr)) : null, box = id => { const ml = mailOf(id); return ml ? D.users.filter(u => u.mail === ml).map(u => u._id).concat([id]) : [id]; },
@@ -723,7 +729,9 @@ async function savePkg(release) {
     v.hikes = (ps.hikes || []).map(h => ({ p: num(h.p), f: h.f })).filter(h => h.p && h.f); }
   if (!(await save('punch_pay/' + e._id, v))) return; S.psDraft = null;
   await patchEmp(e, { desg: o.desg, grade: o.grade, cat: o.cat, join: o.join, mgr: o.mgr });
-  S.pkgDraft = null; toast(release ? 'Offer letter released' : 'Package saved – monthly salary updated in Punch'); render();
+  if (release) { const first = String(e.name || '').split(/\s+/)[0];
+    await mailLetter(e, 'Your CTC offer letter – SN Logistics', 'Dear ' + first + ',\n\nPlease find attached your CTC offer letter' + (o.desg ? ' for the position of ' + o.desg : '') + ' with SN Logistics.\n\nPlease read it carefully and accept it in SN People › My documents.\n\nRegards,\nHR – SN Logistics', { kind: 'offer', uid: e._id, name: 'CTC offer letter – ' + e.name + '.pdf' }); }
+  S.pkgDraft = null; toast(release ? 'Offer letter released and mailed to ' + e.name : 'Package saved – monthly salary updated in Punch'); render();
 }
 /* ================= Data check: check-ins that ended up under the wrong person (several people on one phone with older Punch) ================= */
 function attIssues() {
@@ -872,7 +880,9 @@ async function act(a, x, t) {
       const h = OfferLetter.hikeSteps((payOf(e._id) || {}).hikes).find(z => z.f === S.pkgRev); if (!h) return;
       if (!await ask('Release the revised salary letter (' + h.p + '% from ' + monthName(h.f) + ') to ' + e.name + '? They can see and download it in My documents.', { ok: 'Release' })) return;
       const b = Object.assign({}, cur); delete b._id; b.revs = (cur.revs || []).filter(z => z.f !== h.f).concat([{ f: h.f, p: h.p, before: h.before, after: h.after, at: now, by: S.uid }]).sort((a2, b2) => a2.f < b2.f ? -1 : 1);
-      if (await save('punch_offer/' + e._id, b, 'Revised salary letter released')) { if (S.pkgDraft) S.pkgDraft.revs = b.revs; render(); } return; }
+      if (await save('punch_offer/' + e._id, b)) { if (S.pkgDraft) S.pkgDraft.revs = b.revs; const first = String(e.name || '').split(/\s+/)[0];
+        await mailLetter(e, 'Your revised salary letter – SN Logistics', 'Dear ' + first + ',\n\nPlease find attached your revised salary letter: a ' + h.p + '% revision with effect from ' + monthName(h.f) + '.\n\nYou can also see it in SN People › My documents.\n\nRegards,\nHR – SN Logistics', { kind: 'rev', uid: e._id, f: h.f, name: 'Revised salary letter – ' + e.name + ' – ' + monthName(h.f) + '.pdf' });
+        toast('Revised salary letter released and mailed to ' + e.name); render(); } return; }
     case 'pk-print': { const e = empOf(S.pkgFor); if (!e || !window.OfferLetter) return; OfferLetter.print(readPkg(e), { name: 'SN Logistics' }); return; }
     case 'pk-save': await savePkg(false); return;
     case 'pk-release': await savePkg(true); return;
