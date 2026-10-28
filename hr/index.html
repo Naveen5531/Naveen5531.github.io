@@ -72,6 +72,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 @media (max-width:560px){.top{gap:6px;padding:8px 10px}.top .brand img{width:32px!important;height:32px!important}.ib{width:34px;height:34px}.modesw{padding:2px}.modesw button{padding:5px 7px;font-size:.7rem}.search{flex:0 1 auto;min-width:0}}
 @media (max-width:400px){.top .brand{display:none}}
 .emrow{cursor:pointer;background:var(--card);box-shadow:var(--sh)}.emrow:hover{background:var(--soft)}.emrow .g1 b{display:block}.emrow .btn{flex:none}
+.obb{border:0;background:none;padding:0;cursor:pointer;border-radius:999px}.obb .pill{cursor:pointer;display:inline-flex;align-items:center;gap:4px}.obb .pill::after{content:'›';font-weight:800}
 </style>
 <script>window.MOVANA_APP_TITLE = 'SN People'; window.MOVANA_APP_SUB = 'HR for SN Logistics · same login as the staff portal and Punch';</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -687,9 +688,13 @@ function vOnboarding() {
   const E = D.emp.filter(e => e.noPunch || !e.join || e.join >= iso(new Date(Date.now() - 90 * 864e5)) || docStat(e._id).ok < docStat(e._id).n).sort((a, b) => String(b.join) < String(a.join) ? -1 : 1), cur = S.docFor && empOf(S.docFor);
   return ph('Onboarding', 'New joiners: offer letter, Punch login and the required joining documents.', '<a class="btn p" href="#/hr-employees">＋ New employee</a>') +
     (cur ? '<section class="card" style="margin-bottom:14px" id="docRev"><h2>' + svg('doc') + ' Documents · ' + esc(cur.name) + '<button class="btn s more" type="button" data-a="doc-close">Close</button></h2><p class="mute small">Verify each document, ask for a re-upload, or upload it for them.</p>' + docList(cur._id, true) + '</section>' : '') +
-    (cur ? '' : tbl(['Name', 'ID', 'Joining', 'Offer letter', 'Punch app', 'Documents', ''], E.map(e => { const o = D.offer.find(x => x._id === e._id), at = D.att.some(a => a.uid === e._id), st = docStat(e._id);
-      return '<tr><td><b>' + esc(e.name) + '</b><div class="mute small">' + esc(e.desg || '') + '</div></td><td>' + esc(e.eid || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (o ? stPill(o.status) : pill('Not prepared')) + '</td><td>' + (e.noPunch ? '<a href="#/hr-employees" class="pill warn">Create Punch login</a>' : at ? pill('Using', 'good') : pill('Not yet', 'warn')) + '</td>' +
-        '<td>' + (!st.n ? pill('Not required (super admin)') : st.ok === st.n ? pill('All ' + st.n + ' verified', 'good') : pill(st.up + '/' + st.n + ' uploaded' + (st.wait ? ' · ' + st.wait + ' to verify' : ''), st.wait ? 'info' : 'warn')) + '</td><td><button class="btn s" type="button" data-a="doc-open" data-x="' + esc(e._id) + '">Documents</button></td></tr>'; }), 'No new joiners.') +
+    (cur ? '' : (E.length ? '<div class="list">' + E.map(e => { const o = D.offer.find(x => x._id === e._id), at = D.att.some(a => a.uid === e._id), st = docStat(e._id);
+      const offer = o ? stPill(o.status) : pill('Not prepared'), punch = e.noPunch ? pill('Create Punch login', 'warn') : at ? pill('Punch: using', 'good') : pill('Punch: not yet', 'warn'), docs = !st.n ? pill('Docs not required') : st.ok === st.n ? pill('All ' + st.n + ' docs verified', 'good') : pill(st.up + '/' + st.n + ' docs' + (st.wait ? ' · ' + st.wait + ' to verify' : ''), st.wait ? 'info' : 'warn');
+      return '<div class="li emrow" style="flex-wrap:wrap"><span class="av">' + esc(ini(e.name)) + '</span><div class="g1"><b>' + esc(e.name) + ' <span class="mute small">' + esc(e.eid || '') + '</span></b><span>' + esc(e.desg || '—') + '</span><span class="mute small">' + (e.join ? 'Joining ' + esc(fmtD(e.join)) : 'Joining date not set') + '</span></div>' +
+        '<div class="row" style="flex-basis:100%;flex-wrap:wrap;gap:6px;margin-top:6px">' +
+        '<button class="obb" type="button" data-a="' + (canSal() ? 'al-open' : 'ob-emp') + '" data-x="' + esc(e._id) + '" title="Open the package and offer letter">' + offer + '</button>' +
+        '<button class="obb" type="button" data-a="' + (e.noPunch && canAppr() ? 'pl-one' : at ? 'ob-att' : 'ob-emp') + '" data-x="' + esc(e._id) + '">' + punch + '</button>' +
+        '<button class="obb" type="button" data-a="doc-open" data-x="' + esc(e._id) + '">' + docs + '</button></div></div>'; }).join('') + '</div>' : '<div class="empty">No new joiners.</div>') +
     '<p class="mute small mt">Packages and CTC offer letters: HR › Package &amp; offer letter.</p>');
 }
 /** Admin home: who is in right now (live from the Punch app), what is waiting for HR, and the month so far. */
@@ -1016,6 +1021,8 @@ async function act(a, x, t) {
     case 'dc-stray': { if (!superOnly()) { toast('Only Super admin can delete attendance copies.'); return; } const { stray } = attIssues(); if (!stray.length || !await ask('Delete ' + stray.length + ' attendance cop' + (stray.length === 1 ? 'y' : 'ies') + ' saved under logins that have no Punch profile? Real Punch attendance is not touched.', { ok: 'Remove', danger: 1 })) return; let n = 0; for (const d of stray) if (await del('punch_att/' + d._id)) n++; toast(n + ' removed'); render(); return; }
     case 'doc-view': await viewDoc(x); return;
     case 'doc-open': S.docFor = x; render(); window.scrollTo(0, 0); return;
+    case 'ob-emp': S.edit = x; go('hr-employees'); window.scrollTo(0, 0); return;
+    case 'ob-att': S.attOpen = x; go('team-attendance'); window.scrollTo(0, 0); return;
     case 'doc-close': S.docFor = null; render(); window.scrollTo(0, 0); return;
     case 'doc-ok': case 'doc-re': { const d = D.docs.find(z => z._id === x); if (!d || !isHR()) return; let note = '';
       if (a === 'doc-re') { note = (await ask('What should they fix? (shown to the employee)', { input: 1, value: 'Photo not clear', ok: 'Ask to re-upload' })) || ''; if (!note) return; }
