@@ -686,10 +686,10 @@ function vOnboarding() {
   const E = D.emp.filter(e => e.noPunch || !e.join || e.join >= iso(new Date(Date.now() - 90 * 864e5)) || docStat(e._id).ok < docStat(e._id).n).sort((a, b) => String(b.join) < String(a.join) ? -1 : 1), cur = S.docFor && empOf(S.docFor);
   return ph('Onboarding', 'New joiners: offer letter, Punch login and the required joining documents.', '<a class="btn p" href="#/hr-employees">＋ New employee</a>') +
     (cur ? '<section class="card" style="margin-bottom:14px" id="docRev"><h2>' + svg('doc') + ' Documents · ' + esc(cur.name) + '<button class="btn s more" type="button" data-a="doc-close">Close</button></h2><p class="mute small">Verify each document, ask for a re-upload, or upload it for them.</p>' + docList(cur._id, true) + '</section>' : '') +
-    tbl(['Name', 'ID', 'Joining', 'Offer letter', 'Punch app', 'Documents', ''], E.map(e => { const o = D.offer.find(x => x._id === e._id), at = D.att.some(a => a.uid === e._id), st = docStat(e._id);
+    (cur ? '' : tbl(['Name', 'ID', 'Joining', 'Offer letter', 'Punch app', 'Documents', ''], E.map(e => { const o = D.offer.find(x => x._id === e._id), at = D.att.some(a => a.uid === e._id), st = docStat(e._id);
       return '<tr><td><b>' + esc(e.name) + '</b><div class="mute small">' + esc(e.desg || '') + '</div></td><td>' + esc(e.eid || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (o ? stPill(o.status) : pill('Not prepared')) + '</td><td>' + (e.noPunch ? '<a href="#/hr-employees" class="pill warn">Create Punch login</a>' : at ? pill('Using', 'good') : pill('Not yet', 'warn')) + '</td>' +
         '<td>' + (!st.n ? pill('Not required (super admin)') : st.ok === st.n ? pill('All ' + st.n + ' verified', 'good') : pill(st.up + '/' + st.n + ' uploaded' + (st.wait ? ' · ' + st.wait + ' to verify' : ''), st.wait ? 'info' : 'warn')) + '</td><td><button class="btn s" type="button" data-a="doc-open" data-x="' + esc(e._id) + '">Documents</button></td></tr>'; }), 'No new joiners.') +
-    '<p class="mute small mt">Packages and CTC offer letters: HR › Package &amp; offer letter.</p>';
+    '<p class="mute small mt">Packages and CTC offer letters: HR › Package &amp; offer letter.</p>');
 }
 /** Admin home: who is in right now (live from the Punch app), what is waiting for HR, and the month so far. */
 function vLive() {
@@ -1015,7 +1015,7 @@ async function act(a, x, t) {
     case 'dc-stray': { if (!superOnly()) { toast('Only Super admin can delete attendance copies.'); return; } const { stray } = attIssues(); if (!stray.length || !await ask('Delete ' + stray.length + ' attendance cop' + (stray.length === 1 ? 'y' : 'ies') + ' saved under logins that have no Punch profile? Real Punch attendance is not touched.', { ok: 'Remove', danger: 1 })) return; let n = 0; for (const d of stray) if (await del('punch_att/' + d._id)) n++; toast(n + ' removed'); render(); return; }
     case 'doc-view': await viewDoc(x); return;
     case 'doc-open': S.docFor = x; render(); window.scrollTo(0, 0); return;
-    case 'doc-close': S.docFor = null; render(); return;
+    case 'doc-close': S.docFor = null; render(); window.scrollTo(0, 0); return;
     case 'doc-ok': case 'doc-re': { const d = D.docs.find(z => z._id === x); if (!d || !isHR()) return; let note = '';
       if (a === 'doc-re') { note = (await ask('What should they fix? (shown to the employee)', { input: 1, value: 'Photo not clear', ok: 'Ask to re-upload' })) || ''; if (!note) return; }
       const b = Object.assign({}, d); delete b._id; b.s = a === 'doc-ok' ? 'Approved' : 'Re-upload'; b.note = note; b.by = S.uid; b.decidedAt = now; await save('hr_docs/' + x, b, a === 'doc-ok' ? 'Verified' : 'Asked to re-upload'); return; }
@@ -1065,7 +1065,7 @@ async function act(a, x, t) {
         const wp = Object.assign({}, raw.wp, { name: f.hub }), la = val('em-lat'), ln = val('em-lng'); if (la !== '' && ln !== '') { wp.lat = num(la); wp.lng = num(ln); }
         const wo = $$('[data-wo]').filter(c => c.checked).map(c => +c.dataset.wo), extra = $('#em-radius') ? { radius: num(val('em-radius')) || 150, wo } : {};
         if (!(await save('punch_emp/' + p._id, Object.assign(raw, { name: f.name, eid: f.eid, desg: f.desg, grade: f.grade, cat: f.cat, join: f.join, mgr: f.mgr, wp, updatedAt: now }, extra)))) return; }
-      S.edit = null;
+      S.edit = null; setTimeout(() => window.scrollTo(0, 0), 50);
       if (!p && canAppr()) { toast('Employee added – creating the Punch ID…'); plBusy = true; let c; try { c = await makePunchLogin({ name: f.name, eid: f.eid, desg: f.desg, grade: f.grade, cat: f.cat, wp: { name: f.hub }, join: f.join, mgr: f.mgr, staffId: sid }); } finally { plBusy = false; plLast = Date.now(); }
         if (c) { await new Promise(r => setTimeout(r, 800)); if (!c.mail) c.mail = mailOf(c.uid); await sendCreds([c], true); S.creds = [c]; } render(); window.scrollTo(0, 0); return; }
       toast(p ? 'Saved – portal' + (p.noPunch ? '' : ' and Punch app') + ' updated' : 'Employee added'); render(); return; }
