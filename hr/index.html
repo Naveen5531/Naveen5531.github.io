@@ -92,7 +92,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <div class="shell"><nav class="nav" id="nav" aria-label="People"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <script src="../portal/fb.js?v=20261027d"></script>
 <script src="../seen.js?v=1"></script>
-<script src="../portal/offer.js?v=5"></script>
+<script src="../portal/offer.js?v=6"></script>
 <script src="../portal/payslip.js?v=2"></script>
 <script>
 (async function () {
@@ -483,8 +483,8 @@ async function viewDoc(id) { try { const d = await fs.doc('hr_files/' + id).get(
 function vDocuments() {
   const o = D.offer.find(x => x._id === S.self), ok = o && ['Released', 'Accepted'].includes(o.status);
   const ds = docStat(S.self);
-  return ph('My documents', 'Upload the joining documents HR needs. Photos or PDFs.') + '<section class="card" style="margin-bottom:14px"><h2>' + svg('doc') + ' Joining documents<span class="more mute">' + (ds.n ? ds.ok + ' of ' + ds.n + ' verified' : 'optional for super admin') + '</span></h2>' + docList(S.self, false) + '</section><div class="grid g2"><section class="card"><h2>Offer letter</h2>' + (ok ? '<p>' + (o.status === 'Accepted' ? 'You accepted this offer on ' + esc(fmtT(o.acceptedAt)) + '.' : 'Released by HR. Please read and accept it.') + '</p><div class="row"><button class="btn" type="button" data-a="of-view">' + (S.ofView ? 'Hide' : 'View') + '</button><button class="btn" type="button" data-a="of-print">Print / PDF</button>' + (o.status === 'Released' ? '<button class="btn p" type="button" data-a="of-accept">Accept offer</button>' : '') + '</div>' : '<div class="empty">No offer letter released to you.</div>') + '</section>' +
-    '<section class="card"><h2>Payslips</h2><p>Monthly salary slips worked out from your attendance.</p><a class="btn" href="#/payslips">Open payslips</a></section></div>' + (ok && S.ofView && window.OfferLetter ? '<div class="card mt" style="overflow-x:auto">' + OfferLetter.html(o, { name: 'SN Logistics' }) + '</div>' : '') +
+  return ph('My documents', 'Upload the joining documents HR needs. Photos or PDFs.') + '<section class="card" style="margin-bottom:14px"><h2>' + svg('doc') + ' Joining documents<span class="more mute">' + (ds.n ? ds.ok + ' of ' + ds.n + ' verified' : 'optional for super admin') + '</span></h2>' + docList(S.self, false) + '</section><div class="grid g2"><section class="card"><h2>' + (ofStage(o) === 'letter' ? 'Offer letter' : 'CTC letter') + '</h2>' + (ok ? '<p>' + (o.status === 'Accepted' ? 'You accepted ' + (ofStage(o) === 'letter' ? 'this offer' : 'this CTC') + ' on ' + esc(fmtT(o.acceptedAt)) + '.' : 'Released by HR. Please read and accept it.') + (ofStage(o) !== 'letter' ? ' Your offer letter will be released once you join.' : '') + '</p><div class="row"><button class="btn" type="button" data-a="of-view">' + (S.ofView ? 'Hide' : 'View') + '</button><button class="btn" type="button" data-a="of-print">Print / PDF</button>' + (o.status === 'Released' ? '<button class="btn p" type="button" data-a="of-accept">' + (ofStage(o) === 'letter' ? 'Accept offer' : 'Accept CTC') + '</button>' : '') + (ofStage(o) === 'letter' && o.v3 ? '<button class="btn" type="button" data-a="of-ctc">CTC letter</button>' : '') + '</div>' : '<div class="empty">No offer letter released to you.</div>') + '</section>' +
+    '<section class="card"><h2>Payslips</h2><p>Monthly salary slips worked out from your attendance.</p><a class="btn" href="#/payslips">Open payslips</a></section></div>' + (ok && S.ofView && window.OfferLetter ? '<div class="card mt" style="overflow-x:auto">' + (ofStage(o) === 'letter' ? OfferLetter.html(o, { name: 'SN Logistics' }) : OfferLetter.ctcHtml(o, { name: 'SN Logistics' }, o.ctcAt)) + '</div>' : '') +
     (o && (o.revs || []).length && window.OfferLetter ? '<section class="card mt"><h2>Revised salary letters</h2>' + tbl(['Hike', 'From', 'Released', ''], o.revs.slice().reverse().map(r => '<tr><td>' + esc(r.p) + '%</td><td>' + esc(monthName(r.f)) + '</td><td>' + esc(fmtD(iso(new Date(r.at)))) + '</td><td><button class="btn s" type="button" data-a="rv-view" data-x="' + esc(r.f) + '">' + (S.rvView === r.f ? 'Hide' : 'View') + '</button> <button class="btn s" type="button" data-a="rv-dl" data-x="' + esc(r.f) + '">Print / PDF</button></td></tr>')) +
       (() => { const r = S.rvView && o.revs.find(z => z.f === S.rvView); return r ? '<div class="mt" style="overflow-x:auto">' + OfferLetter.revHtml(o, r, { name: 'SN Logistics' }, r.at) + '</div>' : ''; })() + '</section>' : '');
 }
@@ -670,6 +670,8 @@ const OFF_T = [['prob', 'Probation (months)'], ['pnotice', 'Notice in probation 
 function offerFor(e) { const o = D.offer.find(x => x._id === e._id), v = payOf(e._id) || {};
   return Object.assign({ pfPct: 12, pt: 200, grat: true, prob: 6, pnotice: 15, notice: 30, hrs: 9, wdays: 6, status: 'Draft' },
     { name: e.name, eid: e.eid, desg: e.desg, grade: e.grade, cat: e.cat, loc: (e.wp || {}).name, join: e.join, mgr: e.mgr, mob: e.phone, basic: v.basicAmt, hra: v.hraAmt, conv: v.convAmt, spl: v.splAmt, pfPct: v.pfPct == null ? 12 : v.pfPct, pt: v.pt == null ? 200 : v.pt }, o || {}, { name: e.name, eid: e.eid }); }
+/** Letter stage. New flow (v3): CTC letter before joining → Mark as joined → offer letter. Letters released before this flow count as the offer letter. */
+const ofStage = o => !o || !['Released', 'Accepted'].includes(o.status) ? 'draft' : !o.v3 || o.letterAt ? 'letter' : o.joined ? 'joined' : 'ctc';
 const ctcOf = o => window.OfferLetter ? OfferLetter.ctc(o) : { gross: 0, m: 0, y: 0, net: 0 };
 function readPs() { const g = id => { const el = document.getElementById(id); return el ? el.value : null; }; if (g('ps-basis') == null) return null;
   const hk = []; for (let i = 0; document.getElementById('ps-hp' + i); i++) hk.push({ p: g('ps-hp' + i), f: g('ps-hf' + i) });
@@ -688,8 +690,8 @@ function vPackages() {
       if (h) { const bt = '<button class="btn" type="button" data-a="rv-back">← Back to package</button><button class="btn" type="button" data-a="rv-print">Print / PDF</button>' + (ed ? '<button class="btn p" type="button" data-a="rv-release">' + (r ? 'Release again (updated)' : 'Release to employee') + '</button>' : '');
         return ph('Revised salary letter – ' + cur.name, h.p + '% hike from ' + monthName(h.f) + (r ? ' · released ' + fmtD(iso(new Date(r.at))) : ' · not released yet'), bt) + '<section class="card" id="pkCard"><div style="overflow-x:auto">' + OfferLetter.revHtml(o, h, { name: 'SN Logistics' }, r && r.at) + '</div><div class="row mt">' + bt + '</div></section>'; }
       S.pkgRev = null; }
-    if (S.pkgPrev && window.OfferLetter) return ph('Offer letter – ' + cur.name, 'Preview of the CTC offer letter. Go back to the package to make changes.', '<button class="btn" type="button" data-a="pk-prev">← Back to package</button><button class="btn p" type="button" data-a="pk-print">Print / PDF</button>') +
-      '<section class="card" id="pkCard"><div style="overflow-x:auto">' + OfferLetter.html(o, { name: 'SN Logistics' }) + '</div><div class="row mt"><button class="btn" type="button" data-a="pk-prev">← Back to package</button><button class="btn p" type="button" data-a="pk-print">Print / PDF</button></div></section>';
+    if (S.pkgPrev && window.OfferLetter) return ph((S.pkgPrev === 'offer' ? 'Offer letter – ' : 'CTC letter – ') + cur.name, 'Preview. Go back to the package to make changes.', '<button class="btn" type="button" data-a="pk-prev">← Back to package</button><button class="btn p" type="button" data-a="pk-print">Print / PDF</button>') +
+      '<section class="card" id="pkCard"><div style="overflow-x:auto">' + (S.pkgPrev === 'offer' ? OfferLetter.html(o, { name: 'SN Logistics' }) : OfferLetter.ctcHtml(o, { name: 'SN Logistics' }, o.ctcAt)) + '</div><div class="row mt"><button class="btn" type="button" data-a="pk-prev">← Back to package</button><button class="btn p" type="button" data-a="pk-print">Print / PDF</button></div></section>';
     x += '<section class="card" style="margin-bottom:14px" id="pkCard"><h2>' + svg('pay') + ' ' + esc(cur.name) + ' · ' + esc(cur.eid || '') + ' ' + stPill(o.status) + '<button class="btn s more" type="button" data-a="pk-close">Close</button></h2>' +
       '<div class="row" role="tablist" style="flex-wrap:wrap;margin:10px 0 4px">' + [['sal', 'Salary & CTC'], ['pay', 'Pay settings'], ['join', 'Joining details'], ['terms', 'Offer terms']].map(([t, l]) => '<button class="btn s' + (T === t ? ' p' : '') + '" type="button" role="tab" aria-selected="' + (T === t) + '" data-a="pk-tab" data-x="' + t + '">' + l + '</button>').join('') + '</div>' +
       (T === 'sal' ? ''
@@ -709,8 +711,11 @@ function vPackages() {
       + '<h3 class="mt">Joining details <span class="mute small">(all required to release)</span></h3><div class="form">' + OFF_J.map(([k2, l, t]) => k2 === 'mgr' ? '<label>' + l + '<select id="pk-mgr"' + dis + '><option value=""></option>' + D.emp.filter(z => z._id !== cur._id).map(z => '<option' + (normN(z.name) === normN(o.mgr) ? ' selected' : '') + '>' + esc(z.name) + '</option>').join('') + '</select></label>' : k2 === 'grade' ? '<label>' + l + '<select id="pk-grade"' + dis + '><option value=""></option>' + GRADES.concat(o.grade && !GRADES.includes(o.grade) ? [o.grade] : []).map(g => '<option' + (g === o.grade ? ' selected' : '') + '>' + esc(g) + '</option>').join('') + '</select></label>' : fld('pk-' + k2, l, t || 'text', o[k2], dis)).join('') + '</div>' : '') +
       (T === 'terms' ? ''
       + '<h3 class="mt">Terms</h3><div class="form">' + OFF_T.map(nf).join('') + '</div>' : '') +
-      '<div class="row mt">' + (ed ? '<button class="btn p" type="button" data-a="pk-save">Save package</button>' : '') + '<button class="btn" type="button" data-a="pk-prev">' + 'Preview CTC offer letter' + '</button><button class="btn" type="button" data-a="pk-print">Print / PDF</button>' +
-        (ed && !['Released', 'Accepted'].includes(o.status) ? '<button class="btn p" type="button" data-a="pk-release">Release offer letter</button>' : '') + '</div>' +
+      '<div class="row mt">' + (ed ? '<button class="btn p" type="button" data-a="pk-save">Save package</button>' : '') + '<button class="btn" type="button" data-a="pk-prev" data-x="ctc">Preview CTC letter</button>' + (['joined', 'letter'].includes(ofStage(o)) ? '<button class="btn" type="button" data-a="pk-prev" data-x="offer">Preview offer letter</button>' : '') +
+        (ed && ofStage(o) === 'draft' ? '<button class="btn p" type="button" data-a="pk-release">Release CTC letter</button>' : '') +
+        (ed && ofStage(o) === 'ctc' ? '<button class="btn p" type="button" data-a="pk-joined">Mark as joined</button>' : '') +
+        (ed && ofStage(o) === 'joined' ? '<button class="btn p" type="button" data-a="pk-letter">Release offer letter</button>' : '') +
+        '</div><p class="mute small mt">' + ({ draft: 'Step 1: release the CTC letter before joining.', ctc: 'CTC letter released' + (o.status === 'Accepted' ? ' and accepted' : '') + '. Step 2: mark as joined on the joining day.', joined: 'Joined' + (o.joinedAt ? ' on ' + esc(fmtD(iso(new Date(o.joinedAt)))) : '') + '. Step 3: release the offer letter.', letter: 'Offer letter released' + (o.letterAt ? ' on ' + esc(fmtD(iso(new Date(o.letterAt)))) : '') + '.' })[ofStage(o)] + '</p>' +
       '</section>'; }
   if (cur && !cur.noPunch) return x; // one employee open: show only their package
   return x + tbl(['Name', 'ID', 'Designation', '#Gross / month', '#CTC / year', 'Offer letter', ''], E.map(e => { if (e.noPunch) return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td colspan="3" class="mute">Create the Punch login first (Employees)</td><td></td></tr>';
@@ -719,8 +724,8 @@ function vPackages() {
 async function savePkg(release) {
   const e = empOf(S.pkgFor); if (!e || !canSalE()) return; const o = readPkg(e), ps = readPs() || S.psDraft, now = Date.now();
   if (!(num(o.basic) > 0)) { toast('Build the structure from the CTC (or enter Basic).'); return; }
-  if (release) { const miss = OFF_J.filter(([k]) => k !== 'addr' && k !== 'email' && !o[k]).map(x => x[1]); if (!isSuperP(e._id) && miss.length) { toast('Fill in: ' + miss.join(', ')); return; }
-    if (!await ask('Release the CTC offer letter to ' + e.name + ' (CTC ' + money(ctcOf(o).y) + ' a year)? They can read and accept it in SN People.', { ok: 'Release' })) return; o.status = 'Released'; o.releasedAt = now; o.releasedBy = S.uid; }
+  if (release) { const miss = OFF_J.filter(([k]) => ['desg', 'join'].includes(k) && !o[k]).map(x => x[1]); if (miss.length) { toast('Fill in: ' + miss.join(', ')); return; }
+    if (!await ask('Release the CTC letter to ' + e.name + ' (CTC ' + money(ctcOf(o).y) + ' a year)? They can read and accept it in SN People. The offer letter follows once they join.', { ok: 'Release' })) return; o.status = 'Released'; o.releasedAt = now; o.releasedBy = S.uid; o.v3 = 1; o.ctcAt = now; }
   o.uid = e._id; o.updatedAt = now; o.by = S.uid;
   if (!(await save('punch_offer/' + e._id, o))) return;
   const v = Object.assign({}, payOf(e._id) || {}); delete v._id; 
@@ -730,8 +735,8 @@ async function savePkg(release) {
   if (!(await save('punch_pay/' + e._id, v))) return; S.psDraft = null;
   await patchEmp(e, { desg: o.desg, grade: o.grade, cat: o.cat, join: o.join, mgr: o.mgr });
   if (release) { const first = String(e.name || '').split(/\s+/)[0];
-    await mailLetter(e, 'Your CTC offer letter – SN Logistics', 'Dear ' + first + ',\n\nPlease find attached your CTC offer letter' + (o.desg ? ' for the position of ' + o.desg : '') + ' with SN Logistics.\n\nPlease read it carefully and accept it in SN People › My documents.\n\nRegards,\nHR – SN Logistics', { kind: 'offer', uid: e._id, name: 'CTC offer letter – ' + e.name + '.pdf' }); }
-  S.pkgDraft = null; toast(release ? 'Offer letter released and mailed to ' + e.name : 'Package saved – monthly salary updated in Punch'); render();
+    await mailLetter(e, 'Your CTC letter – SN Logistics', 'Dear ' + first + ',\n\nPlease find attached your CTC letter' + (o.desg ? ' for the position of ' + o.desg : '') + ' with SN Logistics.\n\nPlease read it and accept it in SN People › My documents. Your offer letter will follow on the day you join.\n\nRegards,\nHR – SN Logistics', { kind: 'ctc', uid: e._id, name: 'CTC letter – ' + e.name + '.pdf' }); }
+  S.pkgDraft = null; toast(release ? 'CTC letter released and mailed to ' + e.name : 'Package saved – monthly salary updated in Punch'); render();
 }
 /* ================= Data check: check-ins that ended up under the wrong person (several people on one phone with older Punch) ================= */
 function attIssues() {
@@ -872,7 +877,7 @@ async function act(a, x, t) {
     case 'pk-build': { const e = empOf(S.pkgFor); if (!e) return; const A = num(val('pk-ctc')); if (!(A >= 12000)) { toast('Enter the annual CTC in rupees, e.g. 600000.'); return; }
       const O = { bp: num(val('pk-bp')) || 40, hp: num(val('pk-hp')) || 0, conv: num(val('pk-cv')) || 0 }, o = readPkg(e); S.pkgOpt = O; S.pkgCtc = A;
       Object.assign(o, ctcSplit(A, { bp: O.bp, hp: O.hp, conv: O.conv, pfPct: num(o.pfPct), grat: o.grat })); S.pkgDraft = o; render(); toast('Structure built for CTC ' + money(A)); return; }
-    case 'pk-prev': { const e = empOf(S.pkgFor); if (!e) return; if (!S.pkgPrev) { S.pkgDraft = readPkg(e); const ps = readPs(); if (ps) S.psDraft = ps; } S.pkgPrev = !S.pkgPrev; render(); window.scrollTo(0, 0); return; }
+    case 'pk-prev': { const e = empOf(S.pkgFor); if (!e) return; if (!S.pkgPrev) { S.pkgDraft = readPkg(e); const ps = readPs(); if (ps) S.psDraft = ps; } S.pkgPrev = S.pkgPrev ? false : (x || 'ctc'); render(); window.scrollTo(0, 0); return; }
     case 'rv-open': { const e = empOf(S.pkgFor); if (!e) return; S.pkgDraft = readPkg(e); const ps = readPs(); if (ps) S.psDraft = ps; S.pkgRev = x; render(); window.scrollTo(0, 0); return; }
     case 'rv-back': S.pkgRev = null; render(); window.scrollTo(0, 0); return;
     case 'rv-print': { const e = empOf(S.pkgFor); if (!e || !window.OfferLetter) return; const o = S.pkgDraft || offerFor(e), h = OfferLetter.hikeSteps((payOf(e._id) || {}).hikes).find(z => z.f === S.pkgRev), r = (o.revs || []).find(z => z.f === S.pkgRev); if (h) OfferLetter.revPrint(o, h, { name: 'SN Logistics' }, r && r.at); return; }
@@ -883,9 +888,17 @@ async function act(a, x, t) {
       if (await save('punch_offer/' + e._id, b)) { if (S.pkgDraft) S.pkgDraft.revs = b.revs; const first = String(e.name || '').split(/\s+/)[0];
         await mailLetter(e, 'Your revised salary letter – SN Logistics', 'Dear ' + first + ',\n\nPlease find attached your revised salary letter: a ' + h.p + '% revision with effect from ' + monthName(h.f) + '.\n\nYou can also see it in SN People › My documents.\n\nRegards,\nHR – SN Logistics', { kind: 'rev', uid: e._id, f: h.f, name: 'Revised salary letter – ' + e.name + ' – ' + monthName(h.f) + '.pdf' });
         toast('Revised salary letter released and mailed to ' + e.name); render(); } return; }
-    case 'pk-print': { const e = empOf(S.pkgFor); if (!e || !window.OfferLetter) return; OfferLetter.print(readPkg(e), { name: 'SN Logistics' }); return; }
+    case 'pk-print': { const e = empOf(S.pkgFor); if (!e || !window.OfferLetter) return; const o = readPkg(e); if (S.pkgPrev === 'offer') OfferLetter.print(o, { name: 'SN Logistics' }); else OfferLetter.ctcPrint(o, { name: 'SN Logistics' }, o.ctcAt); return; }
     case 'pk-save': await savePkg(false); return;
     case 'pk-release': await savePkg(true); return;
+    case 'pk-joined': case 'pk-letter': { const e = empOf(S.pkgFor), cur = e && D.offer.find(z => z._id === e._id); if (!cur || !canSalE()) return; const b = Object.assign({}, cur); delete b._id;
+      if (a === 'pk-joined') { if (!await ask('Mark ' + e.name + ' as joined' + (b.join ? ' (joining date ' + fmtD(b.join) + ')' : '') + '? The offer letter can then be released.', { ok: 'Mark as joined' })) return;
+        b.joined = 1; b.joinedAt = now; b.joinedBy = S.uid; if (!b.join) b.join = today(); await save('punch_offer/' + e._id, b, e.name + ' marked as joined'); if (S.pkgDraft) Object.assign(S.pkgDraft, { joined: 1, joinedAt: now, join: b.join }); render(); return; }
+      const miss = OFF_J.filter(([k]) => k !== 'addr' && k !== 'email' && !b[k]).map(x => x[1]); if (!isSuperP(e._id) && miss.length) { toast('Fill in the joining details first: ' + miss.join(', ')); return; }
+      if (!await ask('Release the offer letter to ' + e.name + '? It is mailed to them and appears in My documents.', { ok: 'Release' })) return;
+      b.letterAt = now; b.letterBy = S.uid; if (await save('punch_offer/' + e._id, b)) { if (S.pkgDraft) S.pkgDraft.letterAt = now; const first = String(e.name || '').split(/\s+/)[0];
+        await mailLetter(e, 'Your offer letter – SN Logistics', 'Dear ' + first + ',\n\nWelcome to SN Logistics. Please find attached your offer letter with the terms and conditions of your employment.\n\nYou can also see it in SN People › My documents.\n\nRegards,\nHR – SN Logistics', { kind: 'offer', uid: e._id, name: 'Offer letter – ' + e.name + '.pdf' });
+        toast('Offer letter released and mailed to ' + e.name); render(); } return; }
     case 'pk-withdraw': { const o = D.offer.find(z => z._id === S.pkgFor); if (!o || !await ask('Withdraw this offer letter?', { ok: 'Withdraw', danger: 1 })) return; const b = Object.assign({}, o); delete b._id; b.status = 'Withdrawn'; b.updatedAt = now; b.by = S.uid; await save('punch_offer/' + o._id, b, 'Withdrawn'); return; }
     case 'att-days': S.attOpen = S.attOpen === x ? null : x; render(); return;
     case 'att-csv': attCsv(); return;
@@ -916,8 +929,9 @@ async function act(a, x, t) {
     case 'rv-view': S.rvView = S.rvView === x ? null : x; render(); return;
     case 'rv-dl': { const o = D.offer.find(z => z._id === S.self), r = o && (o.revs || []).find(z => z.f === x); if (r && window.OfferLetter) OfferLetter.revPrint(o, r, { name: 'SN Logistics' }, r.at); return; }
     case 'of-view': S.ofView = !S.ofView; render(); return;
-    case 'of-print': { const o = D.offer.find(z => z._id === S.self); if (o && window.OfferLetter) OfferLetter.print(o, { name: 'SN Logistics' }); return; }
-    case 'of-accept': { const o = D.offer.find(z => z._id === S.self); if (!o || !await ask('Accept this offer on the terms in the letter?', { ok: 'Accept offer' })) return; const b = Object.assign({}, o); delete b._id; b.status = 'Accepted'; b.acceptedAt = now; await save('punch_offer/' + S.self, b, 'Offer accepted'); return; }
+    case 'of-print': { const o = D.offer.find(z => z._id === S.self); if (o && window.OfferLetter) { if (ofStage(o) === 'letter') OfferLetter.print(o, { name: 'SN Logistics' }); else OfferLetter.ctcPrint(o, { name: 'SN Logistics' }, o.ctcAt); } return; }
+    case 'of-ctc': { const o = D.offer.find(z => z._id === S.self); if (o && window.OfferLetter) OfferLetter.ctcPrint(o, { name: 'SN Logistics' }, o.ctcAt); return; }
+    case 'of-accept': { const o = D.offer.find(z => z._id === S.self); if (!o || !await ask(ofStage(o) === 'letter' ? 'Accept this offer on the terms in the letter?' : 'Accept this compensation (CTC)?', { ok: 'Accept' })) return; const b = Object.assign({}, o); delete b._id; b.status = 'Accepted'; b.acceptedAt = now; await save('punch_offer/' + S.self, b, 'Offer accepted'); return; }
     case 'em-new': S.edit = 'new'; render(); window.scrollTo(0, 0); return;
     case 'em-edit': S.edit = x; render(); window.scrollTo(0, 0); return;
     case 'em-cancel': S.edit = null; render(); return;

@@ -101,7 +101,7 @@ th{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut
 <div class="menu" id="menu" role="menu" hidden></div>
 <div class="shell"><nav class="nav" id="nav" aria-label="Mail folders"></nav><main id="main"><div class="empty">Loading…</div></main></div>
 <div id="cmpHost"></div>
-<script src="../portal/fb.js?v=20261027d"></script><script src="../portal/offer.js?v=5"></script>
+<script src="../portal/fb.js?v=20261027d"></script><script src="../portal/offer.js?v=6"></script>
 <script src="../seen.js?v=1"></script>
 <script>
 (async function () {
@@ -266,9 +266,9 @@ async function attAct(b) {
   let L; try { L = await attLoad(x); } catch (e) { toast(e && e.code === 'permission-denied' ? 'Only the employee and HR can open this letter.' : 'This letter is no longer available.'); return; }
   ATT = { x, L }; if (mode === 'd') { attPrint(ATT); return; }
   const v = document.createElement('div'); v.className = 'attv'; v.id = 'attv'; v.setAttribute('role', 'dialog');
-  v.innerHTML = '<div class="bar"><button class="btn" type="button" data-attx="close">← Back to mail</button><b>' + esc(x.name || '') + '</b><button class="btn p" type="button" data-attx="dl">Download / Print</button></div><div style="overflow-x:auto">' + (x.kind === 'rev' ? OfferLetter.revHtml(L.o, L.r, { name: 'SN Logistics' }, L.r.at) : OfferLetter.html(L.o, { name: 'SN Logistics' })) + '</div>';
+  v.innerHTML = '<div class="bar"><button class="btn" type="button" data-attx="close">← Back to mail</button><b>' + esc(x.name || '') + '</b><button class="btn p" type="button" data-attx="dl">Download / Print</button></div><div style="overflow-x:auto">' + (x.kind === 'rev' ? OfferLetter.revHtml(L.o, L.r, { name: 'SN Logistics' }, L.r.at) : x.kind === 'ctc' ? OfferLetter.ctcHtml(L.o, { name: 'SN Logistics' }, L.o.ctcAt) : OfferLetter.html(L.o, { name: 'SN Logistics' })) + '</div>';
   document.body.appendChild(v); }
-function attPrint(a) { if (a.x.kind === 'rev') OfferLetter.revPrint(a.L.o, a.L.r, { name: 'SN Logistics' }, a.L.r.at); else OfferLetter.print(a.L.o, { name: 'SN Logistics' }); }
+function attPrint(a) { if (a.x.kind === 'rev') OfferLetter.revPrint(a.L.o, a.L.r, { name: 'SN Logistics' }, a.L.r.at); else if (a.x.kind === 'ctc') OfferLetter.ctcPrint(a.L.o, { name: 'SN Logistics' }, a.L.o.ctcAt); else OfferLetter.print(a.L.o, { name: 'SN Logistics' }); }
 
 /* ----- events ----- */
 document.addEventListener('click', async ev => {

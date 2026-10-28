@@ -112,6 +112,27 @@ function ensureCss() { if (document.getElementById('offerCss')) return; const s 
     '#offerPrint .slip.off{width:210mm!important;margin:0!important;font-size:10pt;line-height:1.42}' +
     '#offerPrint .slip.off .pg{width:210mm!important;height:296mm!important;min-height:0!important;padding:14mm 16mm 20mm!important;margin:0!important;border:0!important;border-radius:0!important;box-sizing:border-box;overflow:hidden;position:relative;break-before:auto!important;page-break-before:auto!important;break-after:page;page-break-after:always}' +
     '#offerPrint .slip.off .pg:last-child{break-after:auto;page-break-after:auto}#offerPrint .slip.off .lf{left:16mm!important;right:16mm!important;bottom:8mm!important}}'; document.head.appendChild(s); }
+/** CTC letter: released before joining – compensation only. The full offer letter follows once the employee joins. */
+function ctcLetter(e,issued){const c=CO(),k=ctc(e),n=issued?new Date(issued):new Date(),first=String(e.name||'').split(/\s+/)[0],dt=n.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const co=esc(c.name)||'the Company',ref=`${esc(c.ref).replace(/OFFER/i,'CTC')}/${n.getFullYear()}/${esc(e.eid)}`,jd=e.join?new Date(e.join+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'—';
+  const row=(l,m,b)=>`<tr${b?' class="b"':''}><td>${l}</td><td class="r">${money(m)}</td><td class="r">${money(m*12)}</td></tr>`;
+  const sign=`<div class="sgb"><p>Yours sincerely,<br>For <b>${co}</b></p><div class="sl"></div><p><b>${esc(c.sig)||'Authorised Signatory'}</b><br>${esc(c.sigD)}</p></div>`;
+  return `<div class="pg">${__lh()}
+<div class="olh"><span><b>Ref:</b> ${ref}</span><span><b>Date:</b> ${dt}</span></div>
+<div class="conf">Private &amp; Confidential</div>
+<p class="to">To,<br><b>${esc(e.name)}</b>${e.addr?'<br>'+esc(e.addr):''}${e.mob?'<br>Mobile: '+esc(e.mob):''}</p>
+<p class="sub2"><b>Subject: Compensation (CTC) – ${esc(e.desg||'')}</b></p>
+<p>Dear ${esc(first)},</p>
+<p>Further to our discussions, we are pleased to confirm the compensation offered to you for the position of <b>${esc(e.desg||'')}</b>${e.grade?` (Grade ${esc(e.grade)})`:''} with <b>${co}</b>. Your annual Cost to Company (CTC) will be <b>₹${money(k.y)}</b>, with your expected date of joining on <b>${jd}</b>.</p>
+<table class="st oct"><thead><tr><th>Component</th><th>Per month (₹)</th><th>Per annum (₹)</th></tr></thead><tbody>
+<tr class="h2"><td colspan="3">A. Earnings</td></tr>${row('Basic salary',k.b)}${k.h?row('House rent allowance',k.h):''}${k.c?row('Conveyance allowance',k.c):''}${k.sp?row('Special allowance',k.sp):''}${row('Gross salary (A)',k.gross,1)}
+<tr class="h2"><td colspan="3">B. Employer contributions</td></tr>${k.pfR?row(`Provident Fund (${fN(e.pfPct)}% of Basic)`,k.pfR):''}${k.gr?row('Gratuity (4.81% of Basic)',k.gr):''}${row('Total (B)',k.pfR+k.gr,1)}
+<tr class="ctc"><td>Cost to company (A + B)</td><td class="r">${money(k.m)}</td><td class="r">${money(k.y)}</td></tr>
+<tr class="h2"><td colspan="3">C. Deductions from gross salary</td></tr>${k.pfE?row(`Employee Provident Fund (${fN(e.pfPct)}% of Basic)`,k.pfE):''}${k.pt?row('Professional tax',k.pt):''}${row('Estimated take-home (A − C)',k.net,1)}</tbody></table>
+<p class="nt">Income tax (TDS) is deducted as applicable. Salary is pro-rated for the days paid in a month. This compensation is confidential.</p>
+<p>Your offer letter, with the full terms and conditions of employment, will be issued on the day you join. Please accept this compensation in SN People › My documents.</p>
+<div class="sg"><div>${sign}</div><div class="sgb"><p><b>Accepted by</b></p><div class="sl"></div><p><b>${esc(e.name)}</b><br>Date: ______________</p></div></div>
+<div class="lf"><span>${esc(c.name)}${c.cin?' · CIN '+esc(c.cin):''}</span><span>CTC letter</span><span>Page 1 of 1</span></div></div>`;}
 /** Hike list in order, with the factor before and after each one. */
 function hikeSteps(hikes){let f=1;return (hikes||[]).filter(h=>+h.p&&h.f).slice().sort((a,b)=>a.f<b.f?-1:1).map(h=>{const b=f;f=f*(1+(+h.p)/100);return{p:+h.p,f:h.f,before:b,after:f}})}
 function scaled(e,x){return Object.assign({},e,{basic:R2((+e.basic||0)*x),hra:R2((+e.hra||0)*x),conv:R2((+e.conv||0)*x),spl:R2((+e.spl||0)*x)})}
@@ -139,6 +160,8 @@ function printDoc(inner,title){let p=document.getElementById('offerPrint');if(!p
   const t0=document.title;document.title=title;const done=()=>{document.body.classList.remove('printing-offer');p.innerHTML='';pg.textContent='';document.title=t0;removeEventListener('afterprint',done)};addEventListener('afterprint',done);setTimeout(()=>window.print(),50)}
 window.OfferLetter = {
   hikeSteps,
+  ctcHtml(e, company, issued) { COMPANY = company || {}; ensureCss(); return '<div class="slip off">' + ctcLetter(e, issued) + '</div>'; },
+  ctcPrint(e, company, issued) { COMPANY = company || {}; ensureCss(); printDoc(ctcLetter(e, issued), 'CTC letter - ' + (e.name || '')); },
   revHtml(e, h, company, issued) { COMPANY = company || {}; ensureCss(); return '<div class="slip off">' + revLetter(e, h, issued) + '</div>'; },
   revPrint(e, h, company, issued) { COMPANY = company || {}; ensureCss(); printDoc(revLetter(e, h, issued), 'Salary revision letter - ' + (e.name || '')); },
   ctc,
