@@ -677,10 +677,10 @@ function empForm() {
 function vHrEmployees() {
   const q = lc(S.q.emp || ''), E = D.emp.filter(e => !q || lc([e.name, e.eid, e.desg, e.cat].join(' ')).includes(q)).sort((a, b) => lc(a.name) < lc(b.name) ? -1 : 1), ym = ymNow(), np = D.emp.filter(e => e.noPunch).length;
   return ph('Employees', D.emp.length + ' employees · ' + (D.emp.length - np) + ' on Punch' + (np ? ' · ' + np + ' without a Punch login' : ''), '<input id="q-emp" type="search" class="btn" placeholder="Name or ID" value="' + esc(S.q.emp || '') + '" style="min-width:min(200px,100%)"><button class="btn p" type="button" data-a="em-new">＋ New employee</button>' + (np && canAppr() ? '<span class="mute small">Creating Punch IDs…</span>' : '')) +
-    credCard() + (S.edit ? empForm() : '') +
+    credCard() + (S.edit ? empForm() : '') + (S.edit ? '' :
     tbl(['Name', 'Designation', 'Department', 'Joined', 'Punch', '#Present', 'Offer', ''], E.map(e => { const o = D.offer.find(x => x._id === e._id);
       return '<tr><td><b>' + esc(e.name) + '</b><div class="mute small">' + esc(e.eid || 'No ID') + '</div></td><td class="w" style="min-width:160px">' + esc([e.desg, e.grade].filter(Boolean).join(' · ')) + '</td><td>' + esc(e.cat || '') + '</td><td>' + esc(fmtD(e.join)) + '</td><td>' + (e.noPunch ? (canAppr() ? '<button class="btn s p" type="button" data-a="pl-one" data-x="' + esc(e._id) + '">Create Punch login</button>' : pill('No Punch login', 'warn')) : pill('Punch ID ' + (loginOf(e._id) || e.eid || ''), 'good')) + '</td><td class="n">' + (e.noPunch ? '—' : monthSum(e, ym).p) + '</td><td>' + (o ? stPill(o.status) : canSal() && !e.noPunch ? '<span class="mute">—</span>' : '') + '</td>' +
-        '<td style="white-space:nowrap;position:sticky;right:0;background:var(--card)"><button class="btn s" type="button" data-a="em-edit" data-x="' + esc(e._id) + '">Edit</button> <button class="btn s d" type="button" data-a="em-left" data-x="' + esc(e._id) + '">Mark left</button></td></tr>'; }), 'No employees match.');
+        '<td style="white-space:nowrap;position:sticky;right:0;background:var(--card)"><button class="btn s" type="button" data-a="em-edit" data-x="' + esc(e._id) + '">Edit</button> <button class="btn s d" type="button" data-a="em-left" data-x="' + esc(e._id) + '">Mark left</button></td></tr>'; }), 'No employees match.'));
 }
 function vOnboarding() {
   const E = D.emp.filter(e => e.noPunch || !e.join || e.join >= iso(new Date(Date.now() - 90 * 864e5)) || docStat(e._id).ok < docStat(e._id).n).sort((a, b) => String(b.join) < String(a.join) ? -1 : 1), cur = S.docFor && empOf(S.docFor);
@@ -1045,7 +1045,7 @@ async function act(a, x, t) {
     case 'of-accept': { const o = D.offer.find(z => z._id === S.self); if (!o || !await ask(ofStage(o) === 'letter' ? 'Accept this offer on the terms in the letter?' : 'Accept this compensation (CTC)?', { ok: 'Accept' })) return; const b = Object.assign({}, o); delete b._id; b.status = 'Accepted'; b.acceptedAt = now; await save('punch_offer/' + S.self, b, 'Offer accepted'); return; }
     case 'em-new': S.edit = 'new'; render(); window.scrollTo(0, 0); return;
     case 'em-edit': S.edit = x; render(); window.scrollTo(0, 0); return;
-    case 'em-cancel': S.edit = null; render(); return;
+    case 'em-cancel': S.edit = null; render(); window.scrollTo(0, 0); return;
     case 'em-save': {
       if (!isHR()) return; const id = S.edit, p = id && id !== 'new' ? empOf(id) : null;
       /* Employee ID is automatic: a new employee gets the next free number when saved, an existing one keeps theirs */
