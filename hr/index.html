@@ -236,7 +236,7 @@ const credText = x => { const e = D.emp.find(o => o._id === x.uid) || {}, base =
     '\nHow to start\n1. Install the Punch app: ' + base + 'Punch.apk\n2. Sign in with your Punch ID and password.\n3. Set your own password: ' + base + 'hr/#/settings\n4. SN People (leave, payslips, HR tickets): ' + base + 'hr/\n5. SN Mail (internal mail): ' + base + 'mail/\n\nThe same login works in all of them. Please do not share your password.\n\nRegards,\nHR – SN Logistics'; };
 /** Mail a released letter to the employee's SN Mail: a short note, with the letter itself attached (opens and downloads as a PDF in SN Mail). */
 async function mailLetter(e, subject, body, att) {
-  const box = id => { const ml = mailOf(id); return ml ? D.users.filter(u => u.mail === ml).map(u => u._id).concat([id]) : [id]; }, to = [...new Set(box(e._id))], toNames = {}; to.forEach(u => toNames[u] = e.name);
+  const to = [e._id], toNames = {}; to.forEach(u => toNames[u] = e.name);
   const ref = fs.collection('mail').doc();
   try { await ref.set({ from: S.uid, fromName: S.me.name, fromMail: mailOf(S.uid), toMail: [mailOf(e._id)].filter(Boolean), ccMail: [], to, cc: [], rcpt: to, toNames, subject, body, att: [att], at: Date.now(), thread: ref.id, st: { [S.uid]: { r: 1 } } }); return true; }
   catch (x) { toast('Released, but the mail to ' + e.name + ' failed (' + (x.code || 'error') + ').'); return false; } }
@@ -283,6 +283,9 @@ let auBusy = false, auLast = 0;
 async function autoHR() {
   if (auBusy || !canSalE() || !isHR() || !S.ready || Date.now() - auLast < 60000 || !window.OfferLetter) return; auBusy = true; auLast = Date.now();
   try { const t = today(), ym = ymNow();
+    for (const v of D.pay.slice()) { const H = v.hikes || [], u = Object.values(H.filter(h => num(h.p) && h.f).reduce((m, h) => (m[h.f] = { p: num(h.p), f: h.f }, m), {})).sort((a2, b2) => a2.f < b2.f ? -1 : 1);
+      if (u.length !== H.length) { const b = Object.assign({}, v); delete b._id; b.hikes = u; if (await save('punch_pay/' + v._id, b)) v.hikes = u; } }
+    for (const o of D.offer.slice()) { const R = o.revs || [], u = Object.values(R.reduce((m, r) => (m[r.f] = r, m), {})); if (u.length !== R.length) { const b = Object.assign({}, o); delete b._id; b.revs = u; if (await save('punch_offer/' + o._id, b)) o.revs = u; } }
     // joined: first Punch check-in on or after the joining date → mark joined, then release the offer letter (if joining details are complete)
     for (const o of D.offer.slice()) { const e = D.emp.find(z => z._id === o._id); if (!e || ofStage(o) !== 'ctc' || !o.join || o.join > t || !inSince(e._id, o.join)) continue;
       if (await markJoined(e, true)) await relOffer(e, true); }
@@ -795,7 +798,7 @@ async function savePkg(release, noAsk) {
   const v = Object.assign({}, payOf(e._id) || {}); delete v._id; 
   Object.assign(v, { basicAmt: num(o.basic), hraAmt: num(o.hra), convAmt: num(o.conv), splAmt: num(o.spl), pfPct: num(o.pfPct), pfMode: (ps && ps.pfMode) || v.pfMode || 'pct', pt: num(o.pt), v2: 1, updatedAt: now, by: S.uid });
   if (ps) { Object.assign(v, { pf: num(ps.pf), vpf: num(ps.vpf), esi: num(ps.esi), oth: num(ps.oth), hkCyc: num(ps.hkCyc) || 12, ot: ps.ot === '0' ? 0 : (num(v.ot) || 1.5), vpfFrom: ps.vpfFrom || '', esiFrom: ps.esiFrom || '', othFrom: ps.othFrom || '', basis: ps.basis || 'cal', leavePaid: ps.leavePaid, holPaid: ps.holPaid });
-    v.hikes = (ps.hikes || []).map(h => ({ p: num(h.p), f: h.f })).filter(h => h.p && h.f); }
+    v.hikes = Object.values((ps.hikes || []).map(h => ({ p: num(h.p), f: h.f })).filter(h => h.p && h.f).reduce((m, h) => (m[h.f] = h, m), {})).sort((a2, b2) => a2.f < b2.f ? -1 : 1); }
   if (!(await save('punch_pay/' + e._id, v))) return; S.psDraft = null;
   await patchEmp(e, { desg: o.desg, grade: o.grade, cat: o.cat, join: o.join, mgr: o.mgr });
   if (release) { const first = String(e.name || '').split(/\s+/)[0];
