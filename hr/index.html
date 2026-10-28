@@ -279,6 +279,14 @@ function hrAlerts() { const t = today(), now = Date.now(), L = [], E = id => D.e
 function vAlerts() { const L = hrAlerts();
   return ph('Needs attention', 'Letters and joining steps that need HR. Joining, the offer letter, hike letters and payslip mails also run on their own while SN People is open.') +
     (L.length ? '<div class="list">' + L.map(a => '<div class="li"><span class="pill ' + a.kind + '">' + (a.kind === 'bad' ? 'Overdue' : a.kind === 'warn' ? 'Pending' : 'Coming up') + '</span><div class="g1"><span>' + esc(a.text) + '</span></div><button class="btn s" type="button" data-a="al-open" data-x="' + esc(a.uid) + '">Open package</button>' + (a.conf && canSalE() ? '<button class="btn s p" type="button" data-a="al-conf" data-x="' + esc(a.uid) + '">Confirmed</button>' : '') + '</div>').join('') + '</div>' : '<div class="empty">All caught up – nothing needs HR right now.</div>'); }
+/** Keep the SN Mail ID → employee ID list up to date (the Punch app uses it to sign in with a mail ID). */
+let miDone = 0;
+async function syncMailIds() { if (!isHR() || Date.now() - miDone < 600000) return; miDone = Date.now();
+  try { const q = await fs.collection('mailid').get(), cur = {}; q.docs.forEach(d => cur[d.id] = d.data());
+    const want = {}; D.users.forEach(u => { const ml = String(u.mail || '').toLowerCase(), un = String(u.username || '').trim(); if (ml && un && /@snlogistics$/.test(ml)) want[ml] = { user: un, uid: u._id }; });
+    for (const [ml, w] of Object.entries(want)) if (!cur[ml] || cur[ml].user !== w.user || cur[ml].uid !== w.uid) await fs.doc('mailid/' + ml).set(Object.assign({ at: Date.now() }, w));
+    for (const ml of Object.keys(cur)) if (!want[ml]) await fs.doc('mailid/' + ml).delete().catch(() => {});
+  } catch (e) { miDone = Date.now() - 540000; } }
 let auBusy = false, auLast = 0;
 async function autoHR() {
   if (auBusy || !canSalE() || !isHR() || !S.ready || Date.now() - auLast < 60000 || !window.OfferLetter) return; auBusy = true; auLast = Date.now();
@@ -903,7 +911,7 @@ ext('Apps', 'Website', 'home', '../', E_);
 function render() {
   resolvePeople();
   if (!S.ready && D.users.length && (D.pemp.length || D.staff.length)) S.ready = Date.now() + 3000;
-  if (S.ready && Date.now() > S.ready) { setTimeout(autoPunch, 0); setTimeout(autoHR, 400); } else if (S.ready && !S.readyT) S.readyT = setTimeout(() => render(), 3200);
+  if (S.ready && Date.now() > S.ready) { setTimeout(autoPunch, 0); setTimeout(autoHR, 400); setTimeout(syncMailIds, 800); } else if (S.ready && !S.readyT) S.readyT = setTimeout(() => render(), 3200);
   const want = (location.hash.match(/^#\/([\w-]+)/) || [])[1], vis = V.filter(v => v.id && v.ok());
   let cur = vis.find(v => v.id === want);
   if (cur && sideOf(cur) !== 'both' && sideOf(cur) !== S.mode && !cur.hide) { S.mode = sideOf(cur); try { localStorage.setItem('hr.mode', S.mode); } catch (e) {} }

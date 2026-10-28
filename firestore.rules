@@ -227,6 +227,13 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stage', 'loadScan', 'delScan', 'results', 'cod', 'events', 'startedAt', 'startGps', 'closedAt', 'deliveredCount', 'codCollected', 'codShort', 'codPosted', 'updatedAt']);
     }
 
+    // SN Mail ID → employee ID, so the Punch app can sign in with an SN Mail ID. Anyone may look up one exact
+    // address (before login); only HR can list or change them. Holds no password – sign-in still needs it.
+    match /mailid/{m} {
+      allow get: if true;
+      allow list, write: if hrAll();
+    }
+
     // "Is the portal set up yet?" – readable before login so the first screen knows what to show.
     match /public/{d} {
       allow read: if true;
@@ -294,12 +301,12 @@ service cloud.firestore {
     // Everything else: shipments, pickups, trips, invoices, payments, staff, leave, payroll, tickets …
     // Punch employees are kept out of all of this; Punch data has its own rules above.
     match /{coll}/{id} {
-      allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*') && !(coll in ['mail', 'queries', 'pvendors', 'pvdocs', 'seen']);
+      allow read: if isMember() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*') && !(coll in ['mail', 'mailid', 'queries', 'pvendors', 'pvdocs', 'seen']);
       allow create, update: if canWrite() && !isEmpOnly() && !punchColl(coll) && !coll.matches('hr_.*')
-        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'queries', 'pvendors', 'pvdocs', 'counters', 'seen']);
+        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'mailid', 'queries', 'pvendors', 'pvdocs', 'counters', 'seen']);
       // deleting records is Super admin only – everyone else raises a cancel / delete request in Approvals
       allow delete: if (isOwner() || (isMember() && myRoles().hasAny(['superadmin']))) && !punchColl(coll) && !coll.matches('hr_.*')
-        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'queries', 'pvendors', 'pvdocs', 'counters', 'seen']);
+        && !(coll in ['members', 'roles', 'settings', 'users', 'public', 'ticketids', 'gmail', 'mail', 'mailid', 'queries', 'pvendors', 'pvdocs', 'counters', 'seen']);
     }
   }
 }
