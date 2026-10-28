@@ -1,4 +1,4 @@
 {
-  "base": "",
+  "base": "https://snlogistics.app.n8n.cloud/webhook",
   "on": true
 }
