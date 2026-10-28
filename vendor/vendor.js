@@ -141,7 +141,7 @@ document.addEventListener('submit', async e => {
     const doc = { no, source: 'vendor', vendorId: v._id, vendorUid: V.me, customer: v.name, shipper: { id: v._id, name: v.name, code: v.code, gstin: v.gstin, phone: v.phone, address: v.address, pin: v.pin, city: v.city, state: v.state, uid: V.me },
       date: d.date, slot: d.slot, pieces: +d.pieces || '', ref: d.ref, fromPin: v.pin, fromCity: v.city, fromState: v.state, fromAddress: v.address, toPin: d.toPin, toCity: to ? to.city : '', toState: to ? to.state : '',
       consigneeHint: { name: d.cname, address: d.caddr }, toAddress: d.caddr, notes: d.notes, stage: 'Requested', events: [{ s: 'Requested', t: now, n: 'Raised by vendor ' + v.code }], createdAt: now, updatedAt: now, createdBy: V.me };
-    try { await fs.collection('pickups').doc().set(doc); toast('Pickup requested · ' + no); V.tab = 'list'; render(); } catch (x) { er.textContent = 'Could not send (' + (x.code || 'error') + ').'; }
+    try { await fs.collection('pickups').doc().set(doc); if (window.snHook) window.snHook('pickup', { pickup_no: no, client: v.name, vendor: v.name, vendor_code: v.code || '', from: v.city || '', to: to ? to.city : '', from_pincode: v.pin || '', to_pincode: d.toPin || '', boxes: +d.pieces || '', executive: '', date: d.date || '', slot: d.slot || '', ref: d.ref || '', source: 'Vendor portal' }); toast('Pickup requested · ' + no); V.tab = 'list'; render(); } catch (x) { er.textContent = 'Could not send (' + (x.code || 'error') + ').'; }
     return; }
   if (f.id === 'pf') { const er = $('#pe');
     try { const u = auth.currentUser; await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, f.o.value)); await u.updatePassword(f.n.value); f.reset(); toast('Password changed.'); }

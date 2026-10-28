@@ -90,6 +90,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-l
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="../seen.js?v=1"></script>
+<script src="../n8n.js?v=1"></script>
 <script>
 (function () {
 'use strict';
@@ -547,7 +548,7 @@ document.addEventListener('submit', async e => {
       stage: 'Requested', events: [{ s: 'Requested', t: now, n: 'Created in SN Pickup' }], createdAt: now, updatedAt: now, createdBy: S.me }, vendorPatch(vv));
     if (d.fromAddress) doc.fromAddress = (vv.address || '') + (vv.address ? '\n' : '') + d.fromAddress;
     if (who) Object.assign(doc, { exec: who.uid, execName: who.label || who.name, hht: 'Assigned', assignedBy: S.name, assignedAt: now });
-    try { await fs.collection('pickups').doc().set(doc); toast('Pickup ' + doc.no + ' created' + (who ? ' and assigned to ' + who.name : '')); S.tab = 'assign'; go(null); } catch (x) { $('#ne').textContent = 'Could not save (' + (x.code || 'error') + ').'; }
+    try { await fs.collection('pickups').doc().set(doc); hookPickup(doc); toast('Pickup ' + doc.no + ' created' + (who ? ' and assigned to ' + who.name : '')); S.tab = 'assign'; go(null); } catch (x) { $('#ne').textContent = 'Could not save (' + (x.code || 'error') + ').'; }
     return;
   }
   const p = cur(); if (!p) return;
@@ -762,7 +763,21 @@ async function tripMove(t, arrive, short) {
     toast('Trip ' + t.no + (arrive ? ' arrived – ' + b.ships.length + ' LRs ' + to : ' dispatched – ' + b.ships.length + ' LRs ' + to) + '.'); S.open = null; S.force = true; render();
   } catch (x) { toast('Could not update (' + (x.code || 'error') + ').', true); }
 }
+/* n8n: one call per new pickup and per shipment status change (status moves only by scan, so each call is a scan) */
+function hookPickup(d) {
+  if (!window.snHook) return; const sp = d.shipper || {};
+  window.snHook('pickup', { pickup_no: d.no || '', client: d.customer || sp.name || '', vendor: sp.name || d.vname || '', vendor_code: sp.code || '',
+    from: d.fromCity || sp.city || '', to: d.toCity || '', from_pincode: d.fromPin || sp.pin || '', to_pincode: d.toPin || '', boxes: num(d.pieces) || '',
+    executive: d.execName || '', date: d.date || '', slot: d.slot || '', ref: d.ref || '', source: d.source || 'SN Pickup' });
+}
+function hookScan(sh) {
+  if (!window.snHook || !sh || !sh.awb) return; const e = (sh.events || [])[(sh.events || []).length - 1] || {};
+  window.snHook('scan', { lr_no: String(sh.awb), status: sh.stage || '', note: e.n || '', pickup_no: sh.pickupNo || '', client: sh.customer || '', consignee: sh.consignee || '',
+    from: sh.originCity || '', to: sh.destCity || '', boxes: num(sh.pieces) || '', weight: num(sh.weight) || '', trip_no: sh.tripNo || '',
+    location: sh.destHub || sh.origin || '', scanned_by: S.name || '', delivered: /deliver/i.test(sh.stage || '') && !/out for/i.test(sh.stage || '') });
+}
 async function writeTrack(sh) {
+  try { hookScan(sh); } catch (e) {}
   const key = v => String(v || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
   const body = { awb: sh.awb, stage: sh.stage, from: sh.originCity || '', to: sh.destCity || '', pieces: num(sh.pieces), promised: sh.promised || '', deliveredAt: num(sh.deliveredAt) || 0, events: (sh.events || []).slice(-30).map(e => ({ s: String(e.s || ''), t: num(e.t) })), updatedAt: Date.now() };
   const ids = [key(sh.awb)].concat(key(sh.ref).length >= 4 ? ['R-' + key(sh.ref)] : []);

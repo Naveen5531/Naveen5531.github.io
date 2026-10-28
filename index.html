@@ -372,6 +372,7 @@ footer { color: var(--ink-2); }
 <datalist id="cities"></datalist>
 <div class="toast" id="toast" hidden></div>
 
+<script src="n8n.js?v=1"></script>
 <script>
 (function () {
   const GEO_STATES = [
@@ -538,6 +539,7 @@ footer { color: var(--ink-2); }
       const r = await fetch('https://firestore.googleapis.com/v1/projects/' + FB.project + '/databases/(default)/documents/queries?key=' + FB.key, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }) });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       msg.textContent = 'Sent to the admin desk. Your reference is ' + ref + '. We will call or mail you back.'; msg.className = 'status ok';
+      if (window.snHook) window.snHook('enquiry', { ticket_id: ref, name: q.name, phone: q.phone, email: q.email, company: q.company, service: kind, from: q.from, to: q.to, vehicle: q.vehicle, date: q.date, message: q.notes });
       $('#enq').reset(); toast('Enquiry sent · ' + ref);
     } catch (err) {
       msg.textContent = 'Could not send right now. Please try again, or use Copy enquiry.'; msg.className = 'status bad';

@@ -449,7 +449,7 @@ tr.click { cursor: pointer; }
 <div id="layer"></div>
 <div class="tip" id="tip" hidden></div>
 <span id="subtitle" hidden></span><span id="tabbar" hidden></span>
-<script src="fb.js?v=20261027d"></script><script src="../seen.js?v=1"></script><script src="offer.js?v=10"></script><script>
+<script src="fb.js?v=20261027d"></script><script src="../seen.js?v=1"></script><script src="../n8n.js?v=1"></script><script src="offer.js?v=10"></script><script>
 (function () {
 'use strict';
 // ================= helpers =================
@@ -618,6 +618,9 @@ let pvSigP = {};
 function syncPvList() { if (!S.db || S.readonly) return;
   (S.data.pvendors || []).forEach(v => { const d = { name: v.name || '', code: v.code || '', gstin: v.gstin || '', phone: v.phone || '', address: v.address || '', pin: v.pin || '', city: v.city || '', state: v.state || '', status: v.status || 'Draft', uid: v.uid || '' }, h = JSON.stringify(d);
     if (pvSigP[v._id] === h) return; pvSigP[v._id] = h; S.db.collection('pvlist').doc(v._id).set(Object.assign(d, { updatedAt: Date.now() })).catch(() => { delete pvSigP[v._id]; }); }); }
+function hookPickupP(b) { if (!window.snHook || !b) return; const sp = b.shipper || {};
+  window.snHook('pickup', { pickup_no: b.no || '', client: b.customer || sp.name || '', vendor: sp.name || b.vendor || '', vendor_code: sp.code || '', from: b.fromCity || '', to: b.toCity || b.to || '',
+    from_pincode: b.fromPin || '', to_pincode: b.toPin || '', boxes: num(b.pieces) || '', executive: b.execName || b.rider || '', date: b.date || '', slot: b.slot || '', ref: b.ref || '', source: 'Portal' }); }
 let trkBusy = false;
 async function syncTrack() {
   if (trkBusy || !S.db || S.readonly) return; trkBusy = true;
@@ -1392,7 +1395,7 @@ async function submitForm() {
     if (sc.stages && !body.stage) body.stage = sc.stages[0];
     if (sc.stages && !sc.freeStage) body.events = [{ s: body.stage, t: Date.now(), n: 'Created' }];
     const id = await save(k, null, body, 'Created ' + sc.noun + ' ' + (body[sc.titleField || sc.code] || ''));
-    if (id) { if (HOOK.afterCreate[k]) await HOOK.afterCreate[k](id, body); toast('Added ' + (body[sc.titleField || sc.code] || sc.noun)); openDrawer({ mode: 'view', k, id }); }
+    if (id) { if (k === 'pickups') hookPickupP(body); if (HOOK.afterCreate[k]) await HOOK.afterCreate[k](id, body); toast('Added ' + (body[sc.titleField || sc.code] || sc.noun)); openDrawer({ mode: 'view', k, id }); }
     else if (btn) btn.disabled = false;
   } else {
     if (sc.freeStage && old && body.stage !== stageOf(k, old)) body.events = (old.events || []).concat([{ s: body.stage, t: Date.now(), n: 'Status changed' }]).slice(-60);
@@ -3946,7 +3949,7 @@ document.addEventListener('click', async e => {
       const no = nextCode('DRS', 'drs', 'no'), id = await save('drs', null, { no, hub: r.destHub || '', rider: '', date: today(), area: r.destCity || '', awbIds: [r._id], stage: 'Open', events: [{ s: 'Open', t: Date.now(), n: 'Made from shipment ' + r.awb }] }, 'Runsheet ' + no + ' for ' + r.awb);
       if (!id) return; await save('shipments', r._id, { drsId: id, drsNo: no }); await waitRec('drs', id); toast('Runsheet ' + no + ' made – choose the rider'); openDrawer({ mode: 'edit', k: 'drs', id }); return; }
     case 'ship-pickup': { const no = await nextPickupNo(), body = { no, customer: r.customer || '', date: today(), ref: r.ref || '', fromPin: r.originPin || '', fromCity: r.originCity || '', fromState: r.originState || '', to: r.origin || '', pieces: num(r.pieces) || 1, weight: num(r.weight) || '', l: num(r.l) || '', b: num(r.w) || '', h: num(r.h) || '', flow: 'Via hub (part load)', stage: 'Requested', events: [{ s: 'Requested', t: Date.now(), n: 'For shipment ' + r.awb }] };
-      const id = await save('pickups', null, body, 'Pickup ' + no + ' for ' + r.awb); if (!id) return; await save('shipments', r._id, { pickupNo: no }); await waitRec('pickups', id);
+      const id = await save('pickups', null, body, 'Pickup ' + no + ' for ' + r.awb); if (!id) return; hookPickupP(body); await save('shipments', r._id, { pickupNo: no }); await waitRec('pickups', id);
       toast('Pickup ' + no + ' made – assign an executive or vehicle'); openDrawer({ mode: 'view', k: 'pickups', id }); return; }
     case 'cand-all': $$('#layer .cand').forEach(x => { x.checked = true; }); return;
     case 'link-pickup': { const ids = ticked(); for (const id of ids) await save('shipments', id, { pickupNo: r.no }); if (ids.length && stageOf('pickups', r) === 'Requested' && r.rider) await setStage('pickups', r._id, 'Assigned', ids.length + ' shipments linked', {}, true); toast(ids.length + ' shipments linked'); return; }
