@@ -690,6 +690,7 @@ function vPackages() {
       '<div class="row mt">' + (ed ? '<button class="btn p" type="button" data-a="pk-save">Save package</button>' : '') + '<button class="btn" type="button" data-a="pk-prev">' + (S.pkgPrev ? 'Hide letter' : 'Preview CTC offer letter') + '</button><button class="btn" type="button" data-a="pk-print">Print / PDF</button>' +
         (ed && !['Released', 'Accepted'].includes(o.status) ? '<button class="btn p" type="button" data-a="pk-release">Release offer letter</button>' : '') + (ed && o.status === 'Released' ? '<button class="btn d" type="button" data-a="pk-withdraw">Withdraw</button>' : '') + '</div>' +
       (S.pkgPrev && window.OfferLetter ? '<div class="mt" style="overflow-x:auto">' + OfferLetter.html(o, { name: 'SN Logistics' }) + '</div>' : '') + '</section>'; }
+  if (cur && !cur.noPunch) return x; // one employee open: show only their package
   return x + tbl(['Name', 'ID', 'Designation', '#Gross / month', '#CTC / year', 'Offer letter', ''], E.map(e => { if (e.noPunch) return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td colspan="3" class="mute">Create the Punch login first (Employees)</td><td></td></tr>';
     const o = offerFor(e), k = ctcOf(o); return '<tr><td><b>' + esc(e.name) + '</b></td><td>' + esc(e.eid || '') + '</td><td>' + esc(o.desg || '') + '</td><td class="n">' + money(k.gross) + '</td><td class="n">' + money(k.y) + '</td><td>' + stPill(o.status) + '</td><td><button class="btn s' + (S.pkgFor === e._id ? ' p' : '') + '" type="button" data-a="pk-open" data-x="' + esc(e._id) + '">' + (ed ? 'Package' : 'View') + '</button></td></tr>'; }), 'No employees.');
 }
@@ -842,7 +843,7 @@ async function act(a, x, t) {
   switch (a) {
     case 'print': window.print(); return;
     case 'pk-open': S.pkgFor = S.pkgFor === x ? null : x; S.pkgDraft = null; S.psDraft = null; S.pkgCtc = ''; S.pkgPrev = false; render(); setTimeout(() => { const c = $('#pkCard'); if (c) c.scrollIntoView({ behavior: 'smooth' }); }, 40); return;
-    case 'pk-close': S.pkgFor = null; S.pkgDraft = null; S.psDraft = null; render(); return;
+    case 'pk-close': S.pkgFor = null; S.pkgDraft = null; S.psDraft = null; render(); window.scrollTo(0, 0); return;
     case 'pk-build': { const e = empOf(S.pkgFor); if (!e) return; const A = num(val('pk-ctc')); if (!(A >= 12000)) { toast('Enter the annual CTC in rupees, e.g. 600000.'); return; }
       const O = { bp: num(val('pk-bp')) || 40, hp: num(val('pk-hp')) || 0, conv: num(val('pk-cv')) || 0 }, o = readPkg(e); S.pkgOpt = O; S.pkgCtc = A;
       Object.assign(o, ctcSplit(A, { bp: O.bp, hp: O.hp, conv: O.conv, pfPct: num(o.pfPct), grat: o.grat })); S.pkgDraft = o; render(); toast('Structure built for CTC ' + money(A)); return; }
