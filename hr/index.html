@@ -302,11 +302,14 @@ function payslip(e, v, ym) {
   const x = monthSum(e, ym), basis = v.basis || 'cal', dim = daysIn(ym), base = basis === 'cal' ? dim : basis === 'work' ? dim - x.wo : num(basis);
   let pd = x.p + x.h / 2 + x.co + (v.leavePaid === false || v.leavePaid === 0 ? 0 : x.D.filter(d => /^Leave/.test(d.st) && !/LOP/.test(d.st)).length) + (v.holPaid === false || v.holPaid === 0 ? 0 : x.hol) + (basis === 'cal' || basis === '30' ? x.wo : 0);
   if (basis === '26' || basis === '30') pd = Math.min(pd, base);
-  const k = base ? pd / base : 0, E = { basic: r2(full.b * k), hra: r2(full.h * k), conv: r2(full.c * k), spl: r2(full.s * k) }, gross = r2(E.basic + E.hra + E.conv + E.spl);
+  const k = base ? pd / base : 0, E = { basic: r2(full.b * k), hra: r2(full.h * k), conv: r2(full.c * k), spl: r2(full.s * k) };
+  /* Overtime, same as the Punch app: hours beyond 9 on each worked day (1 h or more), paid at (salary per day / hours per day) × OT rate. */
+  const otMult = v.ot == null ? 1.5 : num(v.ot), otH = x.D.filter(d => d.st !== 'Not joined' && d.ms >= 36e5).reduce((t, d) => t + Math.max(0, d.ms - 9 * 36e5), 0) / 36e5;
+  E.ot = r2(otMult && base ? otH * (sal / base / (num(v.hpd) || 9)) * otMult : 0); const gross = r2(E.basic + E.hra + E.conv + E.spl + E.ot);
   const pf = v.pfMode === 'fix' ? num(v.pf) : Math.round(E.basic * num(v.pfPct == null ? 12 : v.pfPct) / 100), fromOk = k => !v[k + 'From'] || ym >= v[k + 'From'], ded = { pf, pt: num(v.pt), vpf: fromOk('vpf') ? num(v.vpf) : 0, esi: fromOk('esi') ? num(v.esi) : 0, oth: fromOk('oth') ? num(v.oth) : 0 };
   const g = {}; exOcc(e._id, ym + '-01', ym + '-31').forEach(o => { const k = String((o.c && o.c !== 'Other' ? o.c : '') || o.n || o.c || 'Expenses').trim().replace(/[<>&"]/g, ''); g[k] = r2((g[k] || 0) + num(o.a)); });
   const ex = Object.keys(g).length ? Object.entries(g) : [['Expenses', 0]], td = r2(Object.values(ded).reduce((a, b) => a + b, 0) + ex.reduce((t, r) => t + r[1], 0));
-  return { sal: r2(sal), pd: r2(pd), base, E, gross, ded, ex, td, net: r2(gross - td), x };
+  return { sal: r2(sal), pd: r2(pd), base, E, otH: r2(otH), gross, ded, ex, td, net: r2(gross - td), x };
 }
 
 /* ================= navigation (only what the person's roles allow) ================= */
@@ -393,7 +396,7 @@ function vRequests() {
   return ph('Attendance requests', 'Missed a check-in or need a day corrected? HR approves it and your Punch app updates.') + '<div class="grid g2"><section class="card"><h2>New request</h2><div class="form">' + fld('ar-v', 'Mark the day(s) as', 'select:Present|Week off|Holiday|Holiday + Present|Absent') + fld('ar-a', 'From', 'date', today()) + fld('ar-b', 'To', 'date', today()) + fld('ar-why', 'Reason', 'textarea') + '</div><div class="row mt"><button class="btn p" type="button" data-a="ar-send">Send to HR</button></div></section><section class="card"><h2>My requests</h2>' + reqList(R) + '</section></div>';
 }
 /** The payslip, exactly as the Punch app prints it (same rows, wording, YTD and leave balance). */
-const SLIP_E = [['Basic', 'basic'], ['HRA', 'hra'], ['Conveyance', 'conv'], ['Special allowance', 'spl']], SLIP_D = [['PF (employee)', 'pf'], ['VPF', 'vpf'], ['ESI', 'esi'], ['Professional tax', 'pt'], ['Other deduction', 'oth']];
+const SLIP_E = [['Basic', 'basic'], ['HRA', 'hra'], ['Conveyance', 'conv'], ['Special allowance', 'spl'], ['Overtime', 'ot']], SLIP_D = [['PF (employee)', 'pf'], ['VPF', 'vpf'], ['ESI', 'esi'], ['Professional tax', 'pt'], ['Other deduction', 'oth']];
 function slipData(e, v, ym, employeeView) {
   const p = payslip(e, v, ym); if (!p) return null;
   const [y, m] = ym.split('-').map(Number), fy = (m >= 4 ? y : y - 1) + '-04', jm = (e.join || '').slice(0, 7), Y = {};
@@ -401,7 +404,7 @@ function slipData(e, v, ym, employeeView) {
     const d = new Date(+k.slice(0, 4), +k.slice(5), 1); k = d.getFullYear() + '-' + pad(d.getMonth() + 1); }
   const b = balOf(e._id), x = p.x;
   return { company: { name: 'SN Logistics' }, employee: employeeView, month: ym, emp: { name: e.name, eid: e.eid, desg: e.desg, grade: e.grade, cat: e.cat, join: e.join, loc: (e.wp || {}).name },
-    earn: SLIP_E.map(([l, f]) => [l, p.E[f]]), ded: SLIP_D.map(([l, f]) => [l, p.ded[f]]).concat(p.ex), gross: p.gross, tded: p.td, net: p.net, payDays: p.pd, baseDays: p.base, worked: x.p + x.h / 2, wo: x.wo, hol: x.hol, lop: x.a + x.h / 2, ytd: Y,
+    earn: SLIP_E.filter(([, f]) => f !== 'ot' || p.E.ot).map(([l, f]) => [f === 'ot' ? 'Overtime (' + p.otH.toFixed(1) + ' h)' : l, p.E[f]]), ded: SLIP_D.map(([l, f]) => [l, p.ded[f]]).concat(p.ex), gross: p.gross, tded: p.td, net: p.net, payDays: p.pd, baseDays: p.base, worked: x.p + x.h / 2, wo: x.wo, hol: x.hol, lop: x.a + x.h / 2, ytd: Object.assign({}, Y, p.E.ot ? { ['Overtime (' + p.otH.toFixed(1) + ' h)']: Y['Overtime'] } : {}),
     leave: b ? ['PL', 'SL', 'CL', 'ML', 'PT', 'MR', 'BL', 'LOP'].concat(Object.keys(b.lv || {}).filter(t => !['PL', 'SL', 'CL', 'ML', 'PT', 'MR', 'BL', 'LOP'].includes(t))).filter(t => (b.lv || {})[t] || ['PL', 'SL', 'CL', 'LOP'].includes(t)).map(t => [(((b.lv || {})[t] || {}).name || { PL: 'Privilege leave', SL: 'Sick leave', CL: 'Casual leave', LOP: 'Loss of pay (unpaid)' }[t] || t) + ' (' + t + ')', ((b.lv || {})[t] || {}).b || 0]).concat([['Comp off', (b.co || {}).b || 0]]) : null };
 }
 function slipHtml(e, v, ym, employeeView) {
