@@ -675,6 +675,8 @@ function vPackages() {
   let x = ph('Package & offer letter', 'Enter the annual CTC – the salary structure and the CTC offer letter are built for you. Saving also sets the monthly salary in Punch.');
   if (cur && !cur.noPunch) { const T = S.pkTab || 'sal', o = S.pkgDraft || offerFor(cur), k = ctcOf(o), dis = ed ? '' : ' disabled', B = S.pkgOpt || { bp: 40, hp: 40, conv: 1600 };
     const nf = ([k2, l]) => '<label>' + esc(l) + '<input id="pk-' + k2 + '" type="number" step="0.01" value="' + esc(o[k2] == null ? '' : o[k2]) + '"' + dis + '></label>';
+    if (S.pkgPrev && window.OfferLetter) return ph('Offer letter – ' + cur.name, 'Preview of the CTC offer letter. Go back to the package to make changes.', '<button class="btn" type="button" data-a="pk-prev">← Back to package</button><button class="btn p" type="button" data-a="pk-print">Print / PDF</button>') +
+      '<section class="card" id="pkCard"><div style="overflow-x:auto">' + OfferLetter.html(o, { name: 'SN Logistics' }) + '</div><div class="row mt"><button class="btn" type="button" data-a="pk-prev">← Back to package</button><button class="btn p" type="button" data-a="pk-print">Print / PDF</button></div></section>';
     x += '<section class="card" style="margin-bottom:14px" id="pkCard"><h2>' + svg('pay') + ' ' + esc(cur.name) + ' · ' + esc(cur.eid || '') + ' ' + stPill(o.status) + '<button class="btn s more" type="button" data-a="pk-close">Close</button></h2>' +
       '<div class="row" role="tablist" style="flex-wrap:wrap;margin:10px 0 4px">' + [['sal', 'Salary & CTC'], ['pay', 'Pay settings'], ['join', 'Joining details'], ['terms', 'Offer terms']].map(([t, l]) => '<button class="btn s' + (T === t ? ' p' : '') + '" type="button" role="tab" aria-selected="' + (T === t) + '" data-a="pk-tab" data-x="' + t + '">' + l + '</button>').join('') + '</div>' +
       (T === 'sal' ? ''
@@ -692,9 +694,9 @@ function vPackages() {
       + '<h3 class="mt">Joining details <span class="mute small">(all required to release)</span></h3><div class="form">' + OFF_J.map(([k2, l, t]) => k2 === 'mgr' ? '<label>' + l + '<select id="pk-mgr"' + dis + '><option value=""></option>' + D.emp.filter(z => z._id !== cur._id).map(z => '<option' + (normN(z.name) === normN(o.mgr) ? ' selected' : '') + '>' + esc(z.name) + '</option>').join('') + '</select></label>' : k2 === 'grade' ? '<label>' + l + '<select id="pk-grade"' + dis + '><option value=""></option>' + GRADES.concat(o.grade && !GRADES.includes(o.grade) ? [o.grade] : []).map(g => '<option' + (g === o.grade ? ' selected' : '') + '>' + esc(g) + '</option>').join('') + '</select></label>' : fld('pk-' + k2, l, t || 'text', o[k2], dis)).join('') + '</div>' : '') +
       (T === 'terms' ? ''
       + '<h3 class="mt">Terms</h3><div class="form">' + OFF_T.map(nf).join('') + '</div>' : '') +
-      '<div class="row mt">' + (ed ? '<button class="btn p" type="button" data-a="pk-save">Save package</button>' : '') + '<button class="btn" type="button" data-a="pk-prev">' + (S.pkgPrev ? 'Hide letter' : 'Preview CTC offer letter') + '</button><button class="btn" type="button" data-a="pk-print">Print / PDF</button>' +
+      '<div class="row mt">' + (ed ? '<button class="btn p" type="button" data-a="pk-save">Save package</button>' : '') + '<button class="btn" type="button" data-a="pk-prev">' + 'Preview CTC offer letter' + '</button><button class="btn" type="button" data-a="pk-print">Print / PDF</button>' +
         (ed && !['Released', 'Accepted'].includes(o.status) ? '<button class="btn p" type="button" data-a="pk-release">Release offer letter</button>' : '') + (ed && o.status === 'Released' ? '<button class="btn d" type="button" data-a="pk-withdraw">Withdraw</button>' : '') + '</div>' +
-      (S.pkgPrev && window.OfferLetter ? '<div class="mt" style="overflow-x:auto">' + OfferLetter.html(o, { name: 'SN Logistics' }) + '</div>' : '') + '</section>'; }
+      '</section>'; }
   if (cur && !cur.noPunch) return x; // one employee open: show only their package
   return x + tbl(['Name', 'ID', 'Designation', '#Gross / month', '#CTC / year', 'Offer letter', ''], E.map(e => { if (e.noPunch) return '<tr><td>' + esc(e.name) + '</td><td>' + esc(e.eid || '') + '</td><td>' + esc(e.desg || '') + '</td><td colspan="3" class="mute">Create the Punch login first (Employees)</td><td></td></tr>';
     const o = offerFor(e), k = ctcOf(o); return '<tr><td><b>' + esc(e.name) + '</b></td><td>' + esc(e.eid || '') + '</td><td>' + esc(o.desg || '') + '</td><td class="n">' + money(k.gross) + '</td><td class="n">' + money(k.y) + '</td><td>' + stPill(o.status) + '</td><td><button class="btn s' + (S.pkgFor === e._id ? ' p' : '') + '" type="button" data-a="pk-open" data-x="' + esc(e._id) + '">' + (ed ? 'Package' : 'View') + '</button></td></tr>'; }), 'No employees.');
@@ -848,12 +850,12 @@ async function act(a, x, t) {
   switch (a) {
     case 'print': window.print(); return;
     case 'pk-tab': { const e = empOf(S.pkgFor); if (!e) return; S.pkgDraft = readPkg(e); const ps = readPs(); if (ps) S.psDraft = ps; S.pkTab = x; render(); return; }
-    case 'pk-open': S.pkTab = 'sal'; S.pkgFor = S.pkgFor === x ? null : x; S.pkgDraft = null; S.psDraft = null; S.pkgCtc = ''; S.pkgPrev = false; render(); setTimeout(() => { const c = $('#pkCard'); if (c) c.scrollIntoView({ behavior: 'smooth' }); }, 40); return;
-    case 'pk-close': S.pkgFor = null; S.pkgDraft = null; S.psDraft = null; render(); window.scrollTo(0, 0); return;
+    case 'pk-open': S.pkTab = 'sal'; S.pkgPrev = false; S.pkgFor = S.pkgFor === x ? null : x; S.pkgDraft = null; S.psDraft = null; S.pkgCtc = ''; S.pkgPrev = false; render(); setTimeout(() => { const c = $('#pkCard'); if (c) c.scrollIntoView({ behavior: 'smooth' }); }, 40); return;
+    case 'pk-close': S.pkgPrev = false; S.pkgFor = null; S.pkgDraft = null; S.psDraft = null; render(); window.scrollTo(0, 0); return;
     case 'pk-build': { const e = empOf(S.pkgFor); if (!e) return; const A = num(val('pk-ctc')); if (!(A >= 12000)) { toast('Enter the annual CTC in rupees, e.g. 600000.'); return; }
       const O = { bp: num(val('pk-bp')) || 40, hp: num(val('pk-hp')) || 0, conv: num(val('pk-cv')) || 0 }, o = readPkg(e); S.pkgOpt = O; S.pkgCtc = A;
       Object.assign(o, ctcSplit(A, { bp: O.bp, hp: O.hp, conv: O.conv, pfPct: num(o.pfPct), grat: o.grat })); S.pkgDraft = o; render(); toast('Structure built for CTC ' + money(A)); return; }
-    case 'pk-prev': { const e = empOf(S.pkgFor); if (!e) return; S.pkgDraft = readPkg(e); S.pkgPrev = !S.pkgPrev; render(); return; }
+    case 'pk-prev': { const e = empOf(S.pkgFor); if (!e) return; if (!S.pkgPrev) { S.pkgDraft = readPkg(e); const ps = readPs(); if (ps) S.psDraft = ps; } S.pkgPrev = !S.pkgPrev; render(); window.scrollTo(0, 0); return; }
     case 'pk-print': { const e = empOf(S.pkgFor); if (!e || !window.OfferLetter) return; OfferLetter.print(readPkg(e), { name: 'SN Logistics' }); return; }
     case 'pk-save': await savePkg(false); return;
     case 'pk-release': await savePkg(true); return;
