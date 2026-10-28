@@ -158,7 +158,14 @@ function printDoc(inner,title){let p=document.getElementById('offerPrint');if(!p
   p.innerHTML='<div class="slip off">'+inner+'</div>';document.body.classList.add('printing-offer');
   let pg=document.getElementById('offerPage');if(!pg){pg=document.createElement('style');pg.id='offerPage';document.head.appendChild(pg)}pg.textContent='@page{size:A4;margin:0}';
   const t0=document.title;document.title=title;const done=()=>{document.body.classList.remove('printing-offer');p.innerHTML='';pg.textContent='';document.title=t0;removeEventListener('afterprint',done)};addEventListener('afterprint',done);setTimeout(()=>window.print(),50)}
+/* Fit to screen: A4 pages (794 px wide) are shrunk to the width of the box they sit in, so the whole page shows on a phone. Print is unaffected. */
+function fitAll(){document.querySelectorAll('.slip.off').forEach(el=>{if(el.closest('#offerPrint'))return;const box=el.parentElement;if(!box)return;el.style.zoom='';
+  const cs=getComputedStyle(box),w=box.clientWidth-parseFloat(cs.paddingLeft||0)-parseFloat(cs.paddingRight||0),nat=el.scrollWidth;if(w>0&&nat>w+1)el.style.zoom=String(Math.floor(w/nat*1000)/1000)})}
+let fitQ=0;const fitSoon=()=>{if(fitQ)return;fitQ=requestAnimationFrame(()=>{fitQ=0;fitAll()})};
+const fitStart=()=>{try{new MutationObserver(fitSoon).observe(document.body,{childList:true,subtree:true});addEventListener('resize',fitSoon);fitSoon()}catch(e){}};
+if(typeof document!=='undefined'&&document.addEventListener){if(document.body)fitStart();else document.addEventListener('DOMContentLoaded',fitStart)}
 window.OfferLetter = {
+  fit: fitAll,
   hikeSteps,
   ctcHtml(e, company, issued) { COMPANY = company || {}; ensureCss(); return '<div class="slip off">' + ctcLetter(e, issued) + '</div>'; },
   ctcPrint(e, company, issued) { COMPANY = company || {}; ensureCss(); printDoc(ctcLetter(e, issued), 'CTC letter - ' + (e.name || '')); },
