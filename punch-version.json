@@ -1,9 +1,11 @@
 {
-  "versionCode": 59,
-  "versionName": "7.5",
-  "date": "27 Oct 2026",
-  "size": 3056448,
+  "versionCode": 60,
+  "versionName": "7.6",
+  "date": "28 Oct 2026",
+  "size": 3056548,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Access by role, set by your admin.",
-  "list": ["Only roles allowed by your admin can sign in to Punch."]
+  "notes": "Deductions start from the month HR sets.",
+  "list": [
+    "VPF, ESI and Other deduction now start from the From month set by HR (salary, payslip and YTD)."
+  ]
 }
