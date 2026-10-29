@@ -1,13 +1,12 @@
 {
-  "versionCode": 64,
-  "versionName": "8.0",
-  "date": "28 Oct 2026",
-  "size": 3059300,
+  "versionCode": 66,
+  "versionName": "8.2",
+  "date": "29 Oct 2026",
+  "size": 3059972,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Promotion letters in Mail.",
+  "notes": "Payslip shows total month days and payable days.",
   "list": [
-    "Mail opens every letter HR sends, including promotion letters.",
-    "More › Mail: read your SN Mail in the app.",
-    "Sign in with your Employee ID or SN Mail ID."
+    "Payslip shows Total Month Days and Total Payable Days.",
+    "Login on this phone shows this phone's own profile and check-ins."
   ]
 }
