@@ -40,7 +40,7 @@ service cloud.firestore {
     // Gmail sign-in: an admin approves an address (collection "gmail", document id = the address) with a role.
     function gmailDoc() { return /databases/$(db)/documents/gmail/$(request.auth.token.email.lower()); }
     function gmailOk(r) { return signedIn() && request.auth.token.email_verified == true && exists(gmailDoc()) && get(gmailDoc()).data.role == r; }
-    function punchColl(c) { return c in ['punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer', 'punch_exp']; }
+    function punchColl(c) { return c in ['punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer', 'punch_exp', 'punch_state']; }
 
     // Employee profile for the app (designation, workplace, weekly offs …): HR keeps it, the employee reads their own.
     // Everyone signed in may read these basic profiles (Employee directory); salary is in punch_pay, not here.
@@ -79,6 +79,12 @@ service cloud.firestore {
     // Personal salary deductions the employee enters in the Punch app (RD, FD, chit …): the app writes its own; salary viewers read them for the payslip.
     match /punch_exp/{uid} {
       allow read: if mine(uid) || salView();
+      allow write: if mine(uid) && request.resource.data.uid == request.auth.uid;
+    }
+    // Everything the Punch app keeps on the phone (check-ins, trips, places, expenses, settings …), saved on the web
+    // so it comes back on any phone. Each person reads and writes only their own copy; HR can read them.
+    match /punch_state/{uid} {
+      allow read: if mine(uid) || hrAll();
       allow write: if mine(uid) && request.resource.data.uid == request.auth.uid;
     }
     // Leave, comp off and attendance-change requests.

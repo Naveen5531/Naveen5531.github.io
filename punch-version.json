@@ -1,15 +1,15 @@
 {
-  "versionCode": 70,
-  "versionName": "8.5",
+  "versionCode": 71,
+  "versionName": "8.6",
   "date": "04 Nov 2026",
-  "size": 3064672,
+  "size": 3072028,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Employees page shows all portal employees with attendance and requests to approve.",
+  "notes": "Everything in Punch is saved on the web; real festival animation.",
   "list": [
-    "Employees: all portal employees with today's status and waiting requests (HR login).",
-    "Tap an employee: their requests with Approve / Reject and the month's attendance.",
-    "Requests show ✓ Sent to HR or ⚠ On this phone only, and are re-sent automatically.",
-    "All HR roles get Admin and Team access.",
+    "Everything Punch keeps on the phone is saved on the web and comes back on any phone (portal login).",
+    "Settings › Saved on the web: last save time and Save now.",
+    "Festival themes: real animation (fireworks, diyas, petals, colours, snow, kites) instead of stickers, behind the content.",
+    "Employees page with portal employees, attendance and requests to approve.",
     "Attendance logic unchanged."
   ]
 }
