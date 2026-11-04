@@ -1,15 +1,15 @@
 {
-  "versionCode": 69,
-  "versionName": "8.4.1",
+  "versionCode": 70,
+  "versionName": "8.5",
   "date": "04 Nov 2026",
-  "size": 3061508,
+  "size": 3064672,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Employee requests now reach HR.",
+  "notes": "Employees page shows all portal employees with attendance and requests to approve.",
   "list": [
-    "Requests show ✓ Sent to HR or ⚠ On this phone only.",
-    "Requests saved on the phone are sent to HR automatically after signing in with the portal login.",
-    "Warning when signed in on this phone only (portal sign-in failed).",
-    "Team tab: red badge with waiting requests, and the reason if requests cannot be loaded.",
+    "Employees: all portal employees with today's status and waiting requests (HR login).",
+    "Tap an employee: their requests with Approve / Reject and the month's attendance.",
+    "Requests show ✓ Sent to HR or ⚠ On this phone only, and are re-sent automatically.",
+    "All HR roles get Admin and Team access.",
     "Attendance logic unchanged."
   ]
 }
