@@ -192,7 +192,7 @@
 
   // ---------- staff accounts, password, sign out (used by the portal screens) ----------
   // ---------- SN Mail IDs: firstname.lastname@snlogistics, made from the person's name, never repeated ----------
-  const MAIL_DOMAIN = 'snlogistics';
+  const MAIL_DOMAIN = (window.BRAND && window.BRAND.mailDomain) || 'snlogistics';
   const mailBase = n => String(n || '').toLowerCase().normalize('NFKD').replace(/[^a-z\s]/g, ' ').trim().split(/\s+/).filter(Boolean).join('.') || 'user';
   const freeMail = (name, used) => { const b = mailBase(name); let m = b + '@' + MAIL_DOMAIN, i = 2; while (used.has(m)) m = b + (i++) + '@' + MAIL_DOMAIN; used.add(m); return m; };
   const usedMails = async () => new Set((await fs.collection('users').get()).docs.map(d => d.data().mail).filter(Boolean));

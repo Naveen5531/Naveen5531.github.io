@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><script src="../brand.js?v=1"></script><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><title>SN People</title><link rel="icon" href="../brand/sn-icon-64.png"><link rel="apple-touch-icon" href="../brand/sn-apple-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&display=swap">
 <style>
@@ -308,7 +308,7 @@ function vAlerts() { const L = hrAlerts();
 let miDone = 0;
 async function syncMailIds() { if (!isHR() || Date.now() - miDone < 600000) return; miDone = Date.now();
   try { const q = await fs.collection('mailid').get(), cur = {}; q.docs.forEach(d => cur[d.id] = d.data());
-    const want = {}; D.users.forEach(u => { const ml = String(u.mail || '').toLowerCase(), un = String(u.username || '').trim(); if (ml && un && /@snlogistics$/.test(ml)) want[ml] = { user: un, uid: u._id }; });
+    const want = {}; D.users.forEach(u => { const ml = String(u.mail || '').toLowerCase(), un = String(u.username || '').trim(); if (ml && un && new RegExp('@' + ((window.BRAND && BRAND.mailDomain) || 'snlogistics') + '$').test(ml)) want[ml] = { user: un, uid: u._id }; });
     for (const [ml, w] of Object.entries(want)) if (!cur[ml] || cur[ml].user !== w.user || cur[ml].uid !== w.uid) await fs.doc('mailid/' + ml).set(Object.assign({ at: Date.now() }, w));
     for (const ml of Object.keys(cur)) if (!want[ml]) await fs.doc('mailid/' + ml).delete().catch(() => {});
   } catch (e) { miDone = Date.now() - 540000; } }

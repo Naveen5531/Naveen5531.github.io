@@ -1,5 +1,5 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="../brand/sn-icon-64.png"><link rel="apple-touch-icon" href="../brand/sn-apple-180.png"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}
+<html lang="en"><head><meta charset="utf-8"><script src="../brand.js?v=1"></script><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f2f3f7"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.json"><link rel="icon" href="../brand/sn-icon-64.png"><link rel="apple-touch-icon" href="../brand/sn-apple-180.png"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}
 /* ===== Punch live home ===== */
 .live-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
 .live-dot { display: inline-flex; align-items: center; gap: 7px; font-size: .78rem; font-weight: 600; color: var(--good); background: var(--good-bg); padding: 4px 10px; border-radius: 999px; }
@@ -659,6 +659,7 @@ async function save(k, id, body, auditText) {
       const ref = S.db.collection(k).doc();
       await ref.set(Object.assign({}, body, { createdAt: now, updatedAt: now, createdBy: (S.me && S.me.id) || null }));
       id = ref.id;
+      if (k === 'approvals') { const nb = Object.assign({ _id: id, createdBy: (S.me && S.me.id) || null }, body); setTimeout(() => { try { alertStep(nb); } catch (e) {} }, 0); }
     }
     if (auditText) audit(k, auditText);
     return id;
@@ -2444,13 +2445,14 @@ HOOK.actions.approvals = r => {
 async function approve(r) {
   const s = stepOf(r); if (!s) return; if (!canStep(r, s)) { toast('Your role cannot approve this step.'); return; }
   const ch = chainOf(r), i = ch.indexOf(s), who = (S.me && S.me.name) || 'approver', by = (r.apprBy || []).concat([{ step: s, id: (S.me && S.me.id) || null, name: who, at: Date.now() }]);
-  if (i < ch.length - 1) { const nx = ch[i + 1]; return setStage('approvals', r._id, STEP_ST[nx], STEP_NAME[s] + ' approved (' + who + ')', { apprBy: by, l1By: (r.l1By || (s === 'L1' ? S.me.id : null)) }); }
+  if (i < ch.length - 1) { const nx = ch[i + 1], ok = await setStage('approvals', r._id, STEP_ST[nx], STEP_NAME[s] + ' approved (' + who + ')', { apprBy: by, l1By: (r.l1By || (s === 'L1' ? S.me.id : null)) }); if (ok) alertStep(Object.assign({}, r, { stage: STEP_ST[nx], apprBy: by })); return ok; }
   const tg = r.target || {}, t = tg.k && tg.id ? rec(tg.k, tg.id) : null;
   if (isCancelKind(r) || r.kind === 'Delete record') {
     if (t && tg.k && CANCEL_TO[tg.k] && r.kind !== 'Delete record') { S.gateOff = true; try { await setStage(tg.k, tg.id, CANCEL_TO[tg.k], 'Cancelled on ticket ' + (r.no || '') + ' · ' + (r.notes || ''), { cancelTicket: r.no || '', cancelledBy: who, cancelledAt: Date.now() }, true); } finally { S.gateOff = false; } }
     else if (t) { if (!(await ask('Approve and delete ' + (tg.label || tg.k) + ' ' + (tg.code || '') + ' now? This cannot be undone.', { ok: 'Approve & delete', danger: 1 }))) return; if (!(await remove(tg.k, tg.id, 'Deleted on approved ticket ' + (r.no || '')))) return; }
   } else if (r.kind === 'Stage approval' && t && tg.to) { S.gateOff = true; try { await setStage(tg.k, tg.id, tg.to, 'Approved on ' + (r.no || '') + ' by ' + who, { approvedOn: r.no || '', approvedBy: who }, true); } finally { S.gateOff = false; } }
   await setStage('approvals', r._id, 'Approved', STEP_NAME[s] + ' approved (' + who + ')' + (r.kind === 'Change record' ? ' – make the change on the record' : ''), { apprBy: by });
+  alertResult(r, true);
   toast((r.no || 'Request') + ' approved' + (isCancelKind(r) ? ' – ' + (tg.code || 'record') + ' cancelled' : r.kind === 'Stage approval' ? ' – ' + (tg.code || '') + ' moved to ' + (tg.to || '') : ''));
   if (r.kind === 'Change record' && t) openDrawer({ mode: 'edit', k: tg.k, id: tg.id });
   if (['Expense claim', 'Advance'].includes(r.kind) && num(r.amount)) {
@@ -2458,6 +2460,35 @@ async function approve(r) {
     toast('Payment queued for ' + r.requestedBy);
   }
 }
+
+/* ---- alerts: SN Mail to everyone who can act on the next step; the requester hears the result ---- */
+const ownerUid = () => ((S.data.settings || []).find(d => d._id === 'owner') || {}).uid || '';
+function memberCan(m, r, step) {
+  if (!m || m.status === 'Suspended') return false; const ids = rolesOfMember(m), P = ids.map(id => roleById(id).perms || {}), pl = mod => Math.max(0, ...P.map(p => num(p[mod])));
+  if (ids.includes('superadmin')) return step === 'SA' || false;
+  if (deciders(r).includes(m._id)) return false;
+  const board = ids.some(x => BOARD_ROLES.includes(x)), tier = board ? 3 : ids.some(x => HEAD_ROLES.includes(x)) ? 2 : ids.some(x => MGR_ROLES.includes(x)) ? 1 : 0;
+  const tk = (r.target || {}).k, mod = tk ? (COLL_MOD[tk] || '') : '', modFull = mod ? pl(mod) >= 3 : false, ch = chainOf(r);
+  if (step === 'SA') return false; if (step === 'Board') return board;
+  if (step === 'L2') return board ? !ch.includes('Board') : ((tier >= 2 && (modFull || pl('admin') >= 3)) || (num(r.amount) > 0 && (pl('accounts') >= 3 || pl('payments') >= 3)));
+  if (step === 'L1') { if (board) return !ch.includes('Board'); if (tier >= 2) return !ch.includes('L2'); if (tier === 1) return tk ? pl(mod) >= 2 : pl('admin') >= 3; return tk ? modFull : pl('admin') >= 3; }
+  return false;
+}
+function approversFor(r, step) {
+  let ids = (S.data.members || []).filter(m => memberCan(m, r, step)).map(m => m._id);
+  const ow = ownerUid(); if ((step === 'SA' || !ids.length) && ow) ids.push(ow); // Super admin always hears about a step nobody else can take
+  return uniq(ids.filter(x => x && !(S.me && x === S.me.id))).slice(0, 50);
+}
+async function sendAlert(to, subject, body) {
+  if (!S.db || !S.me || !to.length) return;
+  try { const ref = S.db.collection('mail').doc(); await ref.set({ from: S.me.id, fromName: (S.me.name || 'SN portal') + ' (approvals)', to, cc: [], rcpt: to, toNames: {}, subject, body, att: [], at: Date.now(), thread: ref.id || '', st: { [S.me.id]: { r: 1, t: 0 } } }); } catch (e) { /* alerts are best-effort */ }
+}
+const portalLink = () => location.origin + location.pathname.replace(/[^/]*$/, '');
+function reqText(r) { const tg = r.target || {}; return [r.title || r.kind || 'Request', r.no ? 'Ticket: ' + r.no : '', r.kind ? 'Type: ' + r.kind : '', num(r.amount) ? 'Amount: ' + money(r.amount) : '', tg.code ? 'Record: ' + (tg.label || tg.k) + ' ' + tg.code + (tg.to ? ' → ' + tg.to : '') : '', r.requestedBy ? 'Raised by: ' + r.requestedBy : '', r.notes ? 'Details: ' + r.notes : '', 'Steps: ' + chainOf(r).map(x => STEP_NAME[x]).join(' → ')].filter(Boolean).join('\n'); }
+function alertStep(r) { const st = stepOf(r); if (!st) return; const to = approversFor(r, st);
+  sendAlert(to, 'Approval needed (' + STEP_NAME[st] + '): ' + (r.title || r.kind || 'request') + (r.no ? ' · ' + r.no : ''), reqText(r) + '\n\nOpen the portal › Approvals › Waiting for me:\n' + portalLink()); }
+function alertResult(r, ok, why) { if (!r.createdBy || (S.me && r.createdBy === S.me.id)) return;
+  sendAlert([r.createdBy], (ok ? 'Approved: ' : 'Rejected: ') + (r.title || r.kind || 'your request') + (r.no ? ' · ' + r.no : ''), reqText(r) + '\n\n' + (ok ? 'It is fully approved by ' + ((S.me && S.me.name) || 'the approver') + '.' : 'Rejected by ' + ((S.me && S.me.name) || 'the approver') + (why ? ': ' + why : '.'))); }
 /* A status that needs approval: raise (or point to) the request instead of moving the record. */
 const pendingFor = (k, id) => (S.data.approvals || []).filter(a => a.target && a.target.k === k && a.target.id === id && stepOf(a));
 async function gateRequest(k, r, to, note) {
@@ -4315,7 +4346,7 @@ document.addEventListener('click', async e => {
     case 'ex-save': { const amt = num($('#ex-amt').value); if (!amt) { toast('Enter the amount.'); return; } const g = r2(amt * num($('#ex-gst').value) / 100); const from = $('#ex-from').value; const acct = $('#ex-acct').value; const ok = await postJournal($('#ex-date').value, acct + ($('#ex-party').value ? ' · ' + $('#ex-party').value : '') + ($('#ex-narr').value ? ' · ' + $('#ex-narr').value : ''), [{ a: acct, dr: amt }, { a: 'GST input credit', dr: g }, { a: from, cr: amt + g }], 'Expense'); if (ok) { audit('journal', 'Expense ' + acct + ' ' + money(amt + g)); toast('Expense posted'); closeDrawer(); } return; }
     case 'appr-yes': await approve(r); return;
     case 'appr-no': D.sub = 'reject'; drawDrawer(true); return;
-    case 'appr-no-save': { const why = $('#rej-reason').value.trim(); if (!why) { toast('Give a reason.'); return; } D.sub = null; await setStage('approvals', r._id, 'Rejected', why); return; }
+    case 'appr-no-save': { const why = $('#rej-reason').value.trim(); if (!why) { toast('Give a reason.'); return; } D.sub = null; if (await setStage('approvals', r._id, 'Rejected', why)) alertResult(r, false, why); return; }
     case 'att-allp': { const people = S.data.staff.filter(s => stageOf('staff', s) !== 'Left' && (!S.attHub || lc(s.hub) === lc(S.attHub))).map(s => s.name); const doc = S.data.attendance.find(d => d._id === S.attDate); const marks = Object.assign({}, (doc && doc.marks) || {}); people.forEach(n => { if (!marks[n]) marks[n] = 'P'; }); await setDoc('attendance', S.attDate, { marks }); toast('Unmarked staff set to Present'); return; }
     case 'set-save': saveSettings(); return;
     case 'nav-open': document.body.classList.add('navopen'); return;
