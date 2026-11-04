@@ -1,8 +1,8 @@
 {
-  "versionCode": 6,
-  "versionName": "1.5",
-  "date": "27 Oct 2026",
-  "size": 96596,
+  "versionCode": 7,
+  "versionName": "1.6",
+  "date": "04 Nov 2026",
+  "size": 99344,
   "url": "https://naveen5531.github.io/SNPickup.apk",
-  "list": ["Clearer, shorter barcodes on box labels that scan faster.", "When a new version is out, the app shows the update screen on opening."]
+  "list": ["Driver trip keeps sharing your location with the office when SN Pickup is in the background or the screen is off.", "A \"Trip running\" notification shows while a trip runs; it stops when you end the trip."]
 }
