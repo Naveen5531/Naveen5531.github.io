@@ -305,7 +305,7 @@ input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
 .kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 .kv > div { background: var(--surface-2); border-radius: var(--r-sm); padding: 10px 12px; }
 .mini { font-size: .76rem; color: var(--muted); }
-.ok-t { color: var(--good); } .bad-t { color: var(--bad); } .good-t { color: var(--good, #0f8a6d); } .warn-t { color: var(--warn); }
+.ok-t { color: var(--good); } .bad-t { color: var(--bad); } .banner-info { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, #f59e0b 14%, transparent); border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13.5px; } .banner-info .btn { margin-left: auto; } .steps-line { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; font-size: 12.5px; } .steps-line span { padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line, #e3e6ea); } .steps-line span.done { background: color-mix(in srgb, #0f8a6d 14%, transparent); border-color: transparent; color: #0f8a6d; font-weight: 600; } .steps-line span.now { border-color: #f59e0b; color: #b45309; font-weight: 700; } .steps-line i { font-style: normal; opacity: .5; } .good-t { color: var(--good, #0f8a6d); } .warn-t { color: var(--warn); }
 .att td { text-align: center; } .att td:first-child, .att th:first-child { text-align: left; }
 .att button { border: 1px solid var(--line-2); background: var(--surface); border-radius: 8px; width: 34px; padding: 4px 0; font-weight: 700; }
 .att button.P { background: var(--good-bg); color: var(--good); border-color: transparent; } .att button.A { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
@@ -492,7 +492,7 @@ const DEFAULT_SETTINGS = {
   volDivisor: 5000, fuelPct: 12, docket: 50, codPct: 2, codMin: 50, gstPct: 18, minCharge: 150, roundTo: 0.5,
   rLocal: 18, rRegional: 24, rMetro: 30, rNational: 38, rSpecial: 55,
   tLocal: 1, tRegional: 2, tMetro: 3, tNational: 5, tSpecial: 7,
-  maxAttempts: 3, approvalL1: 10000,
+  maxAttempts: 3, approvalL1: 10000, approvalBoard: 500000,
   slaP1: 4, slaP2: 8, slaP3: 24, slaP4: 72,
   roadFactor: 1.25, defaultRatePerKm: 40, minTrip: 0, specialPct: 25, hillPct: 15, tollSCV: 0.8, tollLCV: 1.5, tollICV: 2.5, tollHCV: 3.8, tollTrailer: 4.8, loadingCharge: 0, marginPct: 15, gtaGst: '5% RCM', kmPerDay: 350,
   itHardware: '', itSoftware: '', itNetwork: '', itAccess: '', itScanner: '', itOther: ''
@@ -946,7 +946,7 @@ const tripKind = r => r.kind || (r.pickupNo ? 'Direct (FTL)' : 'Mid mile');
 const PAY_MODES = ['UPI', 'NEFT', 'RTGS', 'IMPS', 'Cash', 'Cheque', 'Card'];
 
 const SCHEMA = {
-  shipments: { label: 'Shipments', noun: 'shipment', code: 'awb', prefix: 'MV', stages: SHIP_STAGES, extraStages: ['NDR', 'RTO', 'Lost / damaged'], doneStages: ['Delivered', 'RTO', 'Lost / damaged'],
+  shipments: { label: 'Shipments', noun: 'shipment', code: 'awb', prefix: 'MV', stages: SHIP_STAGES, extraStages: ['NDR', 'RTO', 'Lost / damaged', 'Cancelled'], doneStages: ['Delivered', 'RTO', 'Lost / damaged', 'Cancelled'],
     fields: [F('awb', 'AWB no', 'code'), F('ref', 'Client ref / delivery no'), F('customer', 'Customer', 'text', { req: 1, list: 'customers' }),
       F('origin', 'Origin warehouse', 'ref', { src: 'hubs' }), F('originPin', 'Origin pincode', 'text', { pin: 'origin' }), F('originCity', 'Origin city', 'text', { list: 'cities' }), F('originState', 'Origin state', 'select', { opts: GEO_STATES.map(x => x[0]).sort() }),
       F('consignee', 'Consignee name', 'text', { req: 1 }), F('phone', 'Consignee phone'), F('address', 'Delivery address', 'textarea'),
@@ -1009,8 +1009,8 @@ const SCHEMA = {
     fields: [F('no', 'Request no', 'code'), F('person', 'For person', 'text', { req: 1, list: 'staff' }), F('system', 'System', 'select', { req: 1, opts: ['TMS / portal', 'WMS', 'ERP / accounts', 'Email', 'VPN', 'Handheld app', 'Shared drive', 'Other'] }),
       F('level', 'Access level', 'select', { opts: ['Read only', 'User', 'Supervisor', 'Admin'] }), F('approver', 'Approver', 'text', { list: 'staff' }), F('till', 'Valid till', 'date'), F('reason', 'Reason', 'textarea')],
     cols: ['no', 'person', 'system', 'level', 'approver', 'till', 'stage'] },
-  approvals: { label: 'Approvals', noun: 'request', code: 'no', prefix: 'APR', stages: ['Pending L1', 'Pending L2', 'Approved'], extraStages: ['Rejected', 'Cancelled'], doneStages: ['Approved', 'Rejected', 'Cancelled'], noBulk: true,
-    fields: [F('no', 'Request no', 'code'), F('title', 'Request', 'text', { req: 1 }), F('kind', 'Type', 'select', { req: 1, opts: ['Expense claim', 'Purchase', 'Advance', 'Leave', 'Vehicle repair', 'Rate change', 'Cancel / delete record', 'Change record', 'Other'] }),
+  approvals: { label: 'Approvals', noun: 'request', code: 'no', prefix: 'APR', stages: ['Pending L1', 'Pending L2', 'Pending Board', 'Pending Super admin', 'Approved'], extraStages: ['Rejected', 'Cancelled'], doneStages: ['Approved', 'Rejected', 'Cancelled'], noBulk: true,
+    fields: [F('no', 'Request no', 'code'), F('title', 'Request', 'text', { req: 1 }), F('kind', 'Type', 'select', { req: 1, opts: ['Expense claim', 'Purchase', 'Advance', 'Leave', 'Vehicle repair', 'Rate change', 'Cancellation', 'Stage approval', 'Delete record', 'Cancel / delete record', 'Change record', 'Other'] }),
       F('amount', 'Amount', 'money'), F('requestedBy', 'Requested by', 'text', { req: 1, list: 'staff' }), F('center', 'Hub / department', 'text', { list: 'hubs' }), F('due', 'Needed by', 'date'), F('notes', 'Details', 'textarea')],
     cols: ['no', 'title', 'kind', 'amount', 'requestedBy', 'levels', 'due', 'stage'] },
   staff: { label: 'Staff', noun: 'person', code: 'empId', prefix: 'EMP', titleField: 'name', stages: ['Active', 'On leave', 'Left'], doneStages: ['Left'], freeStage: true,
@@ -1080,7 +1080,7 @@ const svg = k => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 function stageClass(s) {
   if (['NDR', 'RTO', 'Lost / damaged', 'Failed', 'Rejected', 'Overdue', 'In repair', 'Maintenance', 'Left', 'Cancelled', 'Revoked'].includes(s)) return 'bad';
   if (['Delivered', 'Paid', 'Approved', 'Active', 'Available', 'Issued', 'Closed', 'Resolved', 'Provisioned', 'Picked', 'Arrived'].includes(s)) return 'good';
-  if (['Pending', 'Pending L1', 'Pending L2', 'Waiting on user', 'On leave', 'Part paid', 'On trip', 'Requested', 'Received', 'Verified'].includes(s)) return 'warn';
+  if (['Pending', 'Pending L1', 'Pending L2', 'Pending Board', 'Pending Super admin', 'Waiting on user', 'On leave', 'Part paid', 'On trip', 'Requested', 'Received', 'Verified'].includes(s)) return 'warn';
   if (['Retired', 'Inactive', 'In stock'].includes(s)) return 'neutral';
   return 'info';
 }
@@ -1218,6 +1218,7 @@ function drawDrawer(keepScroll) {
         if (sc.stages && !sc.freeStage) { const idx = sc.stages.indexOf(stageOf(D.k, r)); panel += '<div class="stepper" aria-label="Progress">' + sc.stages.map((x, i) => '<span class="' + (i < idx ? 'done' : i === idx ? 'now' : '') + '">' + esc(x) + '</span>').join('') + '</div>'; }
       }
       if (writable(D.k)) panel += isReq(D.k) && !reqHandler(D.k) ? ownerActions(D.k, r) : (HOOK.actions[D.k] ? HOOK.actions[D.k](r) : defaultActions(D.k, r)) + (isReq(D.k) && myReq(D.k, r) && !reqDone(D.k, r) ? ownerActions(D.k, r) : '');
+      panel += pendingBanner(D.k, r);
       if (HOOK.detail[D.k]) panel += HOOK.detail[D.k](r);
       const keyFacts = (secs[0] ? secs[0][1] : []).map(key => sc.fields.find(f => f.k === key)).filter(f => f && r[f.k] !== undefined && r[f.k] !== '' && r[f.k] !== null && f.type !== 'textarea');
       if (keyFacts.length) panel += '<h4 class="section-title">' + esc(secs[0][0]) + '</h4><dl class="facts">' + keyFacts.map(f => '<div><dt>' + esc(f.label) + '</dt><dd>' + factValue(f, r[f.k]) + '</dd></div>').join('') + '</dl>';
@@ -1232,7 +1233,7 @@ function drawDrawer(keepScroll) {
     }
     if (D.confirmDelete) panel += '<div class="confirm">Delete this ' + esc(sc.noun) + ' for everyone?' + (D.k === 'staff' && r && r.puid ? ' They are also removed from the Punch app (their login and attendance history stay).' : '') + ' <button class="btn small danger solid" type="button" data-act="delete-yes">Delete</button><button class="btn small" type="button" data-act="delete-no">Keep</button></div>';
     body = '<div class="rec">' + sideTabs(tabs, cur, 'data-vtab') + '<div class="rec-body">' + panel + '</div></div>';
-    if (writable(D.k) && !(isReq(D.k) && !reqHandler(D.k))) foot = (canDelete(D.k) ? '<button class="btn danger" type="button" data-act="delete">Delete</button>' : D.k !== 'approvals' ? '<button class="btn" type="button" data-act="req-change" data-how="del">Request cancel / delete</button><button class="btn" type="button" data-act="req-change">Request change</button>' : '') + (sc.noForm ? '' : '<button class="btn primary" type="button" data-act="edit">Edit</button>');
+    if (writable(D.k) && !(isReq(D.k) && !reqHandler(D.k))) foot = (canDelete(D.k) ? '<button class="btn danger" type="button" data-act="delete">Delete</button>' : D.k !== 'approvals' ? '<button class="btn" type="button" data-act="req-change" data-how="del">Raise cancellation ticket</button><button class="btn" type="button" data-act="req-change">Request change</button>' : '') + (sc.noForm ? '' : '<button class="btn primary" type="button" data-act="edit">Edit</button>');
   } else if (D.mode === 'edit' || D.mode === 'new') {
     const r = D.mode === 'edit' ? rec(D.k, D.id) || {} : (D.draft || {});
     head = D.mode === 'new' ? 'New ' + esc(sc.noun) : 'Edit ' + esc(r[sc.titleField || sc.code] || sc.noun);
@@ -1357,6 +1358,7 @@ async function setStage(k, id, to, note, extra, quiet) {
   const r = rec(k, id); if (!r) return false;
   const from = stageOf(k, r);
   extra = extra || {};
+  if (gateNeeded(k, r, to)) return gateRequest(k, r, to, note);
   /* First mile order: Picked up → Pickup in transit → (hub staff receive) At origin hub (reached inbound) → mid mile → last mile.
      A shipment still on its way to the hub cannot jump ahead until the hub receives it. */
   if (k === 'shipments' && ['Booked', 'Picked up', 'Pickup in transit'].includes(from) && SHIP_STAGES.indexOf(to) > SHIP_STAGES.indexOf('At origin hub')) { toast('Receive this LR at the hub first (Inbound in SN Pickup, or set "At origin hub").'); return false; }
@@ -1390,6 +1392,7 @@ async function submitForm() {
   if (codeF && !codeF.manual && codeF.type === 'code' && !body[sc.code] && sc.prefix) body[sc.code] = nextCode(sc.prefix, k, sc.code);
   if (codeF && codeF.manual && D.mode === 'new' && S.data[k].some(r => lc(r[sc.code]) === lc(body[sc.code]))) { $('#formErr').textContent = codeF.label + ' ' + body[sc.code] + ' already exists.'; return; }
   const old = D.mode === 'edit' ? rec(k, D.id) : null;
+  { const ge = gateErr(k, body, old); if (ge) { $('#formErr').textContent = ge; return; } }
   if (HOOK.beforeSave[k]) { const err = HOOK.beforeSave[k](body, old); if (err) { $('#formErr').textContent = err; return; } }
   const btn = $('[data-act="save"]'); if (btn) btn.disabled = true;
   if (D.mode === 'new') {
@@ -2382,38 +2385,92 @@ HOOK.cell.assets = { book: r => num(r.cost) ? money(bookValue(r)) : '', warranty
 HOOK.detail.assets = r => { const t = S.data.tickets.filter(x => x.asset && lc(x.asset) === lc(r.tag)); return '<p class="mini">Straight-line depreciation over ' + (num(r.life) || 3) + ' years · book value ' + money(bookValue(r)) + '</p>' + (t.length ? '<h4 class="section-title">Tickets on this asset (' + t.length + ')</h4>' + t.map(x => '<div class="pickrow" data-open="tickets|' + x._id + '"><span class="code">' + esc(x.no) + '</span><span class="grow">' + esc(x.title) + '</span>' + pill(stageOf('tickets', x)) + '</div>').join('') : ''); };
 HOOK.onStage.access = async (r, to) => { if (to === 'Provisioned' && stageOf('access', r) !== 'Approved') { toast('Approve the request before provisioning.'); return false; } return true; };
 
-// ================= approvals (two levels) =================
-HOOK.cell.approvals = { levels: r => num(r.amount) > num(SET().approvalL1) ? 'Manager → Finance' : 'Manager' };
+// ================= approvals: one chain for every request =================
+// Manager (L1) → Head / finance (above "approvalL1") → Board (above "approvalBoard") → Super admin (only to delete).
+// Nobody approves their own request or two steps of the same request. Super admin can act on any step.
+const BOARD_ROLES = ['director'], HEAD_ROLES = ['gm', 'fin_head', 'hr_head', 'admin_head', 'ops_manager'],
+  MGR_ROLES = ['branch_manager', 'fin_manager', 'hr_manager', 'admin_officer', 'it_manager', 'fleet_sup', 'linehaul', 'lastmile_lead', 'pricing', 'approver', 'hub_sup'];
+const isBoard = () => isSuperAdm() || hasRoleAny(BOARD_ROLES);
+const tierOf = () => isSuperAdm() ? 4 : hasRoleAny(BOARD_ROLES) ? 3 : hasRoleAny(HEAD_ROLES) ? 2 : hasRoleAny(MGR_ROLES) ? 1 : 0;
+const STEP_ST = { L1: 'Pending L1', L2: 'Pending L2', Board: 'Pending Board', SA: 'Pending Super admin' };
+const STEP_NAME = { L1: 'manager', L2: 'head / finance', Board: 'Board', SA: 'Super admin' };
+/* Moving a record into these statuses needs an approved request first (amount decides how many levels). */
+const GATES = {
+  purchasereq: { to: ['Approved'], amt: 'est' }, purchaseorders: { to: ['Sent to vendor'], amt: 'amount' }, vendorbills: { to: ['Approved'], amt: 'amount' },
+  payments: { to: ['Paid'], amt: 'amount', when: r => !/receipt/i.test(r.type || '') }, quotes: { to: ['Sent'], amt: 'est' }, returns: { to: ['Refund / credit'], amt: 'value' },
+  assets: { to: ['Retired'], amt: 'cost' }, contracts: { to: ['Terminated'], amt: 'value' }
+};
+/* Where an approved cancellation puts the record (kept, marked cancelled). Others are deleted by Super admin. */
+const CANCEL_TO = { shipments: 'Cancelled', pickups: 'Cancelled', trips: 'Cancelled', invoices: 'Cancelled', access: 'Cancelled', orders: 'Cancelled', ewaybills: 'Cancelled', purchasereq: 'Cancelled',
+  purchaseorders: 'Cancelled', gatepass: 'Cancelled', contracts: 'Terminated', quotes: 'Rejected', leads: 'Lost', vendorbills: 'Rejected', approvals: 'Cancelled', payments: 'Failed' };
+const AMT_OF = { purchasereq: 'est', purchaseorders: 'amount', vendorbills: 'amount', payments: 'amount', quotes: 'est', invoices: 'total', contracts: 'value', assets: 'cost', returns: 'value', pettycash: 'amount',
+  trips: 'cost', shipments: 'value', pickups: 'clientRate', fuel: 'amount', maintenance: 'cost', budgets: 'amount', ewaybills: 'value' };
+const recAmt = (k, r) => r && AMT_OF[k] ? num(r[AMT_OF[k]]) : 0;
+const gateFor = (k, r, to) => { const g = GATES[k]; return g && g.to.includes(to) && (!g.when || g.when(r || {})) ? g : null; };
+const isCancelKind = r => r.kind === 'Cancellation' || r.kind === 'Cancel / delete record';
+function chainOf(r) {
+  const a = num(r.amount), l1 = num(SET().approvalL1), bl = num(SET().approvalBoard), tk = (r.target || {}).k, ch = ['L1'];
+  if (l1 > 0 && a > l1) ch.push('L2');
+  if (bl > 0 && a > bl) ch.push('Board');
+  if (r.kind === 'Delete record' || (isCancelKind(r) && !(tk && CANCEL_TO[tk]))) ch.push('SA');
+  return ch;
+}
+const stepOf = r => { const st = stageOf('approvals', r); return Object.keys(STEP_ST).find(s => STEP_ST[s] === st) || null; };
+const deciders = r => [r.createdBy].concat((r.apprBy || []).map(x => x.id)).filter(Boolean);
+function canStep(r, step) {
+  if (!S.me) return false; if (isSuperAdm()) return true;
+  if (deciders(r).includes(S.me.id)) return false; // not your own request, not two steps
+  const tk = (r.target || {}).k, mod = tk ? (COLL_MOD[tk] || '') : '', modFull = mod ? lvl(mod) >= 3 : false, money_ = num(r.amount) > 0;
+  /* each person approves at their own level; a senior steps in at a lower level only when their own level is not in this chain */
+  const ch = chainOf(r), tier = tierOf(), board = hasRoleAny(BOARD_ROLES);
+  if (step === 'SA') return false;
+  if (step === 'Board') return board;
+  if (step === 'L2') return board ? !ch.includes('Board') : ((tier >= 2 && (modFull || lvl('admin') >= 3)) || (money_ && (lvl('accounts') >= 3 || lvl('payments') >= 3)));
+  if (step === 'L1') { if (board) return !ch.includes('Board'); if (tier >= 2) return !ch.includes('L2'); if (tier === 1) return tk ? lvl(mod) >= 2 : lvl('admin') >= 3; return tk ? modFull : lvl('admin') >= 3; }
+  return false;
+}
+function canApproveReq(r) { const s = stepOf(r); return !!s && canStep(r, s); }
+HOOK.cell.approvals = { levels: r => chainOf(r).map(s => STEP_NAME[s][0].toUpperCase() + STEP_NAME[s].slice(1)).join(' → ') };
 HOOK.actions.approvals = r => {
-  const st = stageOf('approvals', r);
-  if (!['Pending L1', 'Pending L2'].includes(st)) return '';
-  return '<div class="actions"><button class="btn primary small" type="button" data-act="appr-yes">Approve (' + (st === 'Pending L1' ? 'manager' : 'finance') + ')</button><button class="btn small danger" type="button" data-act="appr-no">Reject</button></div>' +
+  const s = stepOf(r); if (!s) return '';
+  const tg = r.target || {}, t = tg.k && tg.id && rec(tg.k, tg.id), ch = chainOf(r), last = ch[ch.length - 1] === s;
+  let h = t ? '<div class="actions"><button class="btn small" type="button" data-open="' + esc(tg.k + '|' + tg.id) + '">Open ' + esc((tg.label || tg.k) + ' ' + (tg.code || '')) + '</button></div>' : tg.k ? '<p class="help">The record is already gone.</p>' : '';
+  h += '<div class="steps-line">' + ch.map(x => { const d = (r.apprBy || []).find(y => y.step === x); return '<span class="' + (d ? 'done' : x === s ? 'now' : '') + '">' + esc(STEP_NAME[x]) + (d ? ' ✓ ' + esc(d.name || '') : '') + '</span>'; }).join('<i>→</i>') + '</div>';
+  if (!canStep(r, s)) return h + '<p class="help">Waiting for ' + esc(STEP_NAME[s]) + (S.me && deciders(r).includes(S.me.id) && !isSuperAdm() ? ' – you raised or already approved this, so someone else must.' : '.') + '</p>';
+  const lbl = last && isCancelKind(r) ? (tg.k && CANCEL_TO[tg.k] ? 'Approve – cancel record' : 'Approve & delete') : last && r.kind === 'Delete record' ? 'Approve & delete' : last && r.kind === 'Stage approval' ? 'Approve – move to ' + (tg.to || '') : 'Approve (' + STEP_NAME[s] + ')';
+  return h + '<div class="actions"><button class="btn primary small" type="button" data-act="appr-yes">' + esc(lbl) + '</button><button class="btn small danger" type="button" data-act="appr-no">Reject</button></div>' +
     (D && D.sub === 'reject' ? '<div class="form" style="align-items:end"><label class="wide">Reason for rejecting<input id="rej-reason" type="text"></label><button class="btn danger solid" type="button" data-act="appr-no-save">Reject request</button></div>' : '');
 };
 async function approve(r) {
-  if (['Cancel / delete record', 'Change record'].includes(r.kind)) {
-    if (!isSuperAdm()) { toast('Only Super admin can approve a cancel / delete or change request.'); return; }
-    const tg = r.target || {}, who = (S.me && S.me.name) || 'Super admin';
-    if (r.kind === 'Cancel / delete record' && tg.k && tg.id) {
-      if (rec(tg.k, tg.id) && !(await ask('Approve and delete ' + (tg.label || tg.k) + ' ' + (tg.code || '') + ' now? This cannot be undone.', { ok: 'Approve & delete', danger: 1 }))) return;
-      if (rec(tg.k, tg.id) && !(await remove(tg.k, tg.id, 'Deleted on approved request ' + r.no))) return;
-    }
-    await setStage('approvals', r._id, 'Approved', 'Approved by ' + who + (r.kind === 'Change record' ? ' – make the change on the record' : ' – record deleted'));
-    if (r.kind === 'Change record' && tg.k && tg.id && rec(tg.k, tg.id)) openDrawer({ mode: 'edit', k: tg.k, id: tg.id });
-    return;
-  }
-  if (!canApproveReq(r)) { toast('Your role cannot approve this step.'); return; }
-  const st = stageOf('approvals', r);
-  const big = num(r.amount) > num(SET().approvalL1);
-  const who = (S.me && S.me.name) || 'approver';
-  if (st === 'Pending L1' && big) return setStage('approvals', r._id, 'Pending L2', 'Manager approved (' + who + ')', { l1By: (S.me && S.me.id) || null });
-  if (st === 'Pending L2' && r.l1By && S.me && r.l1By === S.me.id) { toast('Finance approval must be by a different person than the manager.'); return; }
-  await setStage('approvals', r._id, 'Approved', (st === 'Pending L2' ? 'Finance' : 'Manager') + ' approved (' + who + ')');
+  const s = stepOf(r); if (!s) return; if (!canStep(r, s)) { toast('Your role cannot approve this step.'); return; }
+  const ch = chainOf(r), i = ch.indexOf(s), who = (S.me && S.me.name) || 'approver', by = (r.apprBy || []).concat([{ step: s, id: (S.me && S.me.id) || null, name: who, at: Date.now() }]);
+  if (i < ch.length - 1) { const nx = ch[i + 1]; return setStage('approvals', r._id, STEP_ST[nx], STEP_NAME[s] + ' approved (' + who + ')', { apprBy: by, l1By: (r.l1By || (s === 'L1' ? S.me.id : null)) }); }
+  const tg = r.target || {}, t = tg.k && tg.id ? rec(tg.k, tg.id) : null;
+  if (isCancelKind(r) || r.kind === 'Delete record') {
+    if (t && tg.k && CANCEL_TO[tg.k] && r.kind !== 'Delete record') { S.gateOff = true; try { await setStage(tg.k, tg.id, CANCEL_TO[tg.k], 'Cancelled on ticket ' + (r.no || '') + ' · ' + (r.notes || ''), { cancelTicket: r.no || '', cancelledBy: who, cancelledAt: Date.now() }, true); } finally { S.gateOff = false; } }
+    else if (t) { if (!(await ask('Approve and delete ' + (tg.label || tg.k) + ' ' + (tg.code || '') + ' now? This cannot be undone.', { ok: 'Approve & delete', danger: 1 }))) return; if (!(await remove(tg.k, tg.id, 'Deleted on approved ticket ' + (r.no || '')))) return; }
+  } else if (r.kind === 'Stage approval' && t && tg.to) { S.gateOff = true; try { await setStage(tg.k, tg.id, tg.to, 'Approved on ' + (r.no || '') + ' by ' + who, { approvedOn: r.no || '', approvedBy: who }, true); } finally { S.gateOff = false; } }
+  await setStage('approvals', r._id, 'Approved', STEP_NAME[s] + ' approved (' + who + ')' + (r.kind === 'Change record' ? ' – make the change on the record' : ''), { apprBy: by });
+  toast((r.no || 'Request') + ' approved' + (isCancelKind(r) ? ' – ' + (tg.code || 'record') + ' cancelled' : r.kind === 'Stage approval' ? ' – ' + (tg.code || '') + ' moved to ' + (tg.to || '') : ''));
+  if (r.kind === 'Change record' && t) openDrawer({ mode: 'edit', k: tg.k, id: tg.id });
   if (['Expense claim', 'Advance'].includes(r.kind) && num(r.amount)) {
-    await save('payments', null, { ref: nextCode('PAY', 'payments', 'ref'), type: r.kind === 'Advance' ? 'Staff advance' : 'Expense paid', account: r.kind === 'Advance' ? '' : 'Office & admin', party: r.requestedBy, amount: num(r.amount), mode: 'NEFT', due: r.due || today(), link: r.no, stage: 'Pending', events: [{ s: 'Pending', t: Date.now(), n: 'From approval ' + r.no }] });
+    await save('payments', null, { ref: nextCode('PAY', 'payments', 'ref'), type: r.kind === 'Advance' ? 'Staff advance' : 'Expense paid', account: r.kind === 'Advance' ? '' : 'Office & admin', party: r.requestedBy, amount: num(r.amount), mode: 'NEFT', due: r.due || today(), link: r.no, stage: 'Pending', apprOk: 'Paid', events: [{ s: 'Pending', t: Date.now(), n: 'From approval ' + r.no }] });
     toast('Payment queued for ' + r.requestedBy);
   }
 }
+/* A status that needs approval: raise (or point to) the request instead of moving the record. */
+const pendingFor = (k, id) => (S.data.approvals || []).filter(a => a.target && a.target.k === k && a.target.id === id && stepOf(a));
+async function gateRequest(k, r, to, note) {
+  const p = pendingFor(k, r._id)[0]; if (p) { toast('Already waiting for approval: ' + (p.no || 'request') + ' (' + STEP_NAME[stepOf(p)] + ').'); return false; }
+  const sc = SCHEMA[k], code = r[sc.titleField || sc.code] || '', amt = recAmt(k, r);
+  const id = await save('approvals', null, { title: 'Approve ' + sc.noun + ' ' + code + ' → ' + to, kind: 'Stage approval', amount: amt, requestedBy: myStaffName() || (S.me && S.me.name) || '', notes: note || '', target: { k, id: r._id, code, label: sc.label, to }, stage: 'Pending L1', events: [{ s: 'Pending L1', t: Date.now(), n: 'Raised from ' + sc.noun + ' ' + code }] });
+  if (id) { const a = (S.data.approvals || []).find(x => x._id === id); toast('Sent for approval' + (a && a.no ? ' (' + a.no + ')' : '') + ' – ' + chainOf({ amount: amt, kind: 'Stage approval' }).map(s => STEP_NAME[s]).join(' → ') + '.'); }
+  return false;
+}
+const gateNeeded = (k, r, to) => !S.gateOff && !isSuperAdm() && gateFor(k, r, to) && !(r.apprOk && r.apprOk === to);
+function gateErr(k, body, old) { const to = body.stage; if (!to || (old && stageOf(k, old) === to) || (!old && SCHEMA[k].stages && to === SCHEMA[k].stages[0])) return ''; return gateNeeded(k, Object.assign({}, old || {}, body), to) ? to + ' needs approval. Save without it, then use the status button – a request goes to Approvals.' : ''; }
+function pendingBanner(k, r) { if (k === 'approvals') return ''; const P = pendingFor(k, r._id); if (!P.length) return r.cancelTicket ? '<div class="banner-info">Cancelled on ticket ' + esc(r.cancelTicket) + (r.cancelledBy ? ' by ' + esc(r.cancelledBy) : '') + '.</div>' : '';
+  return P.map(a => '<div class="banner-info">⏳ ' + esc(a.kind === 'Stage approval' ? 'Waiting for approval to move to ' + ((a.target || {}).to || '') : isCancelKind(a) ? 'Cancellation requested' : a.kind) + ' · ticket <b>' + esc(a.no || '') + '</b> · with ' + esc(STEP_NAME[stepOf(a)]) + ' <button class="btn small" type="button" data-open="approvals|' + esc(a._id) + '">Open ticket</button></div>').join(''); }
 
 // ================= people & fleet =================
 const monthAtt = (name, month) => { let p = 0; S.data.attendance.filter(d => (d._id || '').slice(0, 7) === month).forEach(d => { const m = (d.marks || {})[name]; if (m === 'P') p += 1; if (m === 'H') p += 0.5; }); return p; };
@@ -2601,7 +2658,7 @@ const SETTING_FIELDS = [
     ['tollSCV', 'Toll ₹/km small (Ace, pickup)', 'n'], ['tollLCV', 'Toll ₹/km LCV', 'n'], ['tollICV', 'Toll ₹/km ICV (17–22 ft)', 'n'], ['tollHCV', 'Toll ₹/km HCV (24–32 ft)', 'n'], ['tollTrailer', 'Toll ₹/km trailer / container', 'n'],
     ['loadingCharge', 'Loading + unloading ₹ per trip', 'n'], ['marginPct', 'Your margin % on payout', 'n'], ['gtaGst', 'GST on transport (5% RCM / 12% forward / 18% (courier / express) / Exempt)'], ['kmPerDay', 'Truck km per day (for transit days)', 'n']]],
   ['Delivery promise (days)', [['tLocal', 'Local', 'n'], ['tRegional', 'Regional', 'n'], ['tMetro', 'Metro', 'n'], ['tNational', 'National', 'n'], ['tSpecial', 'Special', 'n'], ['maxAttempts', 'Failed attempts before auto RTO', 'n']]],
-  ['Approvals & IT', [['approvalL1', 'Manager can approve up to ₹ (above needs finance)', 'n'], ['slaP1', 'SLA hours P1', 'n'], ['slaP2', 'SLA hours P2', 'n'], ['slaP3', 'SLA hours P3', 'n'], ['slaP4', 'SLA hours P4', 'n'],
+  ['Approvals & IT', [['approvalL1', 'Manager approves up to ₹ (above: head / finance too)', 'n'], ['approvalBoard', 'Above this ₹ the Board also approves (0 = never)', 'n'], ['slaP1', 'SLA hours P1', 'n'], ['slaP2', 'SLA hours P2', 'n'], ['slaP3', 'SLA hours P3', 'n'], ['slaP4', 'SLA hours P4', 'n'],
     ['itHardware', 'Auto-assign Hardware / Printer to'], ['itSoftware', 'Software / Email to'], ['itNetwork', 'Network to'], ['itAccess', 'Access / login to'], ['itScanner', 'Scanner / handheld to'], ['itOther', 'Everything else to']]]
 ];
 function settingsView() {
@@ -2653,7 +2710,7 @@ function builtinRoles() {
   return [
     // Management
     Object.assign(R('superadmin', 'Super admin', 'Management', 'Everything, including roles, access and settings. The page owner always has this.', ALL(3), {}, false), { locked: true }),
-    R('director', 'Director / CEO', 'Management', 'Sees the whole business, approves requests, changes nothing else.', ALL(1), { admin: 3, access: 0, it: 2, leave: 2 }, false),
+    R('director', 'Board / Director', 'Management', 'Board level (about 90%): sees and changes every department and gives the final approval on large requests. Cannot change roles & access or settings, and cannot delete – only Super admin can.', ALL(3), { access: 1, settings: 1 }, false),
     R('gm', 'General manager', 'Management', 'Runs operations fully, sees finance and HR, approves requests.', { overview: 1, ops: 3, fin: 1, hr: 1, itd: 2 }, { admin: 3, leave: 3, payroll: 0 }),
     R('branch_manager', 'Branch / hub manager', 'Management', 'Runs one branch: all operations, attendance, leave approval, local approvals.', { overview: 1, ops: 3 }, { fleet: 2, billing: 1, people: 2, leave: 3, admin: 3 }),
     R('auditor', 'Auditor (read only)', 'Management', 'Reads books, bills, payroll, settings and the audit log. Changes nothing.', ALL(1), { access: 0 }, false),
@@ -2771,22 +2828,6 @@ const lvlOf = k => lvl(COLL_MOD[k] || S.mod);
 const isSuperAdm = () => !!(S.isOwner || hasRoleAny(['superadmin']));
 const canDelete = k => writable(k) && isSuperAdm();
 const serverAdmin = () => !!(S.isOwner || S.isEditor);
-function canApproveReq(r) {
-  const st = stageOf('approvals', r);
-  if (st === 'Pending L1') return lvl('admin') >= 3;
-  if (st === 'Pending L2') return lvl('accounts') >= 3 || lvl('payments') >= 3;
-  return false;
-}
-const _apActions = HOOK.actions.approvals;
-HOOK.actions.approvals = r => {
-  const st = stageOf('approvals', r);
-  if (!['Pending L1', 'Pending L2'].includes(st)) return '';
-  if (['Cancel / delete record', 'Change record'].includes(r.kind)) { const tg = r.target || {}, t = tg.k && tg.id && rec(tg.k, tg.id);
-    return (t ? '<div class="actions"><button class="btn small" type="button" data-open="' + esc(tg.k + '|' + tg.id) + '">Open ' + esc((tg.label || tg.k) + ' ' + (tg.code || '')) + '</button></div>' : '<p class="help">The record is already gone.</p>') +
-      (isSuperAdm() ? _apActions(r).replace(/Approve \((manager|finance)\)/, r.kind === 'Change record' ? 'Approve change' : 'Approve &amp; delete') : '<p class="help">Waiting for Super admin.</p>'); }
-  if (canApproveReq(r)) return _apActions(r);
-  return '<p class="help">Waiting for ' + (st === 'Pending L1' ? 'a manager (needs <b>Full</b> on Admin › Approvals)' : 'finance (needs <b>Full</b> on Finance › Accounts or Payments)') + '.</p>';
-};
 function myStaffName() { const w = whoAmI(); return w.member && w.member.staff ? w.member.staff : ''; }
 
 // names for user ids (never stored, resolved each time)
@@ -4218,11 +4259,13 @@ document.addEventListener('click', async e => {
     case 'save': submitForm(); return;
     case 'delete': D.confirmDelete = true; drawDrawer(true); return;
     case 'delete-no': D.confirmDelete = false; drawDrawer(true); return;
-    case 'req-change': { const k = D.k, sc = SCHEMA[k], code = (r && (r[sc.titleField || sc.code] || '')) || '', del = ds.how === 'del';
-      const why = await ask((del ? 'Ask Super admin to cancel / delete ' : 'Ask for a change to ') + sc.noun + ' ' + code + '. ' + (del ? 'Why should it go?' : 'What should change?'), { input: del ? 'Reason' : 'Describe the change (field, old value → new value)', ok: 'Raise request' }); if (!why) return;
-      if (S.data.approvals.some(a => a.target && a.target.k === k && a.target.id === D.id && stageOf('approvals', a).startsWith('Pending'))) { toast('A request for this ' + sc.noun + ' is already waiting for approval.'); return; }
-      const id = await save('approvals', null, { title: (del ? 'Cancel / delete ' : 'Change ') + sc.noun + ' ' + code, kind: del ? 'Cancel / delete record' : 'Change record', requestedBy: myStaffName() || (S.me && S.me.name) || '', notes: why, target: { k, id: D.id, code, label: sc.label }, stage: 'Pending L1', events: [{ s: 'Pending L1', t: Date.now(), n: 'Raised from ' + sc.label }] }, (del ? 'Delete' : 'Change') + ' request for ' + sc.noun + ' ' + code);
-      if (id) toast('Request raised – Super admin will review it in Approvals.'); return; }
+    case 'req-change': { const k = D.k, sc = SCHEMA[k], code = (r && (r[sc.titleField || sc.code] || '')) || '', del = ds.how === 'del', keep = !!CANCEL_TO[k];
+      if (del && r && (sc.doneStages || []).includes(stageOf(k, r)) && keep && stageOf(k, r) === CANCEL_TO[k]) { toast('This ' + sc.noun + ' is already ' + stageOf(k, r).toLowerCase() + '.'); return; }
+      const why = await ask(del ? 'Cancellation ticket for ' + sc.noun + ' ' + code + '. ' + (keep ? 'Once approved it is marked ' + CANCEL_TO[k] + ' (kept for audit).' : 'Once approved, Super admin deletes it.') + ' Why cancel it?' : 'Ask for a change to ' + sc.noun + ' ' + code + '. What should change?', { input: del ? 'Reason for cancelling' : 'Describe the change (field, old value → new value)', ok: del ? 'Raise ticket' : 'Raise request' }); if (!why) return;
+      if (pendingFor(k, D.id).length) { toast('A request for this ' + sc.noun + ' is already waiting: ' + (pendingFor(k, D.id)[0].no || '') + '.'); return; }
+      const amt = recAmt(k, r), body = { title: (del ? 'Cancel ' : 'Change ') + sc.noun + ' ' + code, kind: del ? 'Cancellation' : 'Change record', amount: amt, requestedBy: myStaffName() || (S.me && S.me.name) || '', notes: why, target: { k, id: D.id, code, label: sc.label }, stage: 'Pending L1', events: [{ s: 'Pending L1', t: Date.now(), n: 'Raised from ' + sc.label + ': ' + why }] };
+      const id = await save('approvals', null, body, (del ? 'Cancellation ticket' : 'Change request') + ' for ' + sc.noun + ' ' + code);
+      if (id) toast((del ? 'Cancellation ticket' : 'Change request') + ' raised – goes to ' + chainOf(body).map(x => STEP_NAME[x]).join(' → ') + '.'); return; }
     case 'delete-yes': { const k = D.k, sc = SCHEMA[k]; if (await remove(k, D.id, 'Deleted ' + sc.noun + ' ' + (r && (r[sc.titleField || sc.code] || '')))) { toast('Deleted'); closeDrawer(); } return; }
     case 'import-go': runImport(); return;
     case 'bulk-clear': { const k = curTabKey(); if (k) S.sel[k].clear(); render(); return; }
