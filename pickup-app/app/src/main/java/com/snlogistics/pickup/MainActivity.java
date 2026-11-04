@@ -118,6 +118,17 @@ public class MainActivity extends Activity {
                 pm.print(name, web.createPrintDocumentAdapter(name), at);
             });
         }
+        /** Driver trip: keep sending the position while the trip runs (also with the app in the background). */
+        @JavascriptInterface public void tripStart(final String label) {
+            runOnUiThread(() -> {
+                if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+                    requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 44);
+                if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, LOC_REQ); }
+                try { TripService.start(getApplicationContext(), label); } catch (Exception ignored) {}
+            });
+        }
+        @JavascriptInterface public void tripStop() { runOnUiThread(() -> { try { TripService.stop(getApplicationContext()); } catch (Exception ignored) {} }); }
+        @JavascriptInterface public boolean tripRunning() { return TripService.running; }
         @JavascriptInterface public String version() { return BuildConfig.VERSION_NAME; }
         @JavascriptInterface public int versionCode() { return BuildConfig.VERSION_CODE; }
         /** in-app update: download the new APK inside the app and open Android's installer */

@@ -1,2 +1,2 @@
-Clearer, shorter barcodes on box labels that scan faster.
-When a new version is out, the app shows the update screen on opening.
+Driver trip keeps sharing your location with the office when SN Pickup is in the background or the screen is off.
+A "Trip running" notification shows while a trip runs; it stops when you end the trip.
