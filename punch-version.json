@@ -1,14 +1,12 @@
 {
-  "versionCode": 72,
-  "versionName": "8.7",
+  "versionCode": 73,
+  "versionName": "8.8",
   "date": "04 Nov 2026",
-  "size": 3073052,
+  "size": 3072036,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Festival animation now plays only on the greeting banner, brighter and more real.",
+  "notes": "Festival animation back to the earlier canvas version.",
   "list": [
-    "Festival animation only on the Home greeting banner – nothing over the rest of the app.",
-    "Night-sky banner: bright coloured fireworks with trails and glitter, glowing diyas with flickering flames.",
-    "Greeting text shimmers in gold.",
+    "Festival animation back to the earlier version: fireworks, diyas, petals, snow and more behind the page and in the banner.",
     "Everything in Punch is saved on the web (portal login).",
     "Attendance logic unchanged."
   ]
