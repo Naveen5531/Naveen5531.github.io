@@ -1,15 +1,15 @@
 {
-  "versionCode": 71,
-  "versionName": "8.6",
+  "versionCode": 72,
+  "versionName": "8.7",
   "date": "04 Nov 2026",
-  "size": 3072028,
+  "size": 3073052,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Everything in Punch is saved on the web; real festival animation.",
+  "notes": "Festival animation now plays only on the greeting banner, brighter and more real.",
   "list": [
-    "Everything Punch keeps on the phone is saved on the web and comes back on any phone (portal login).",
-    "Settings › Saved on the web: last save time and Save now.",
-    "Festival themes: real animation (fireworks, diyas, petals, colours, snow, kites) instead of stickers, behind the content.",
-    "Employees page with portal employees, attendance and requests to approve.",
+    "Festival animation only on the Home greeting banner – nothing over the rest of the app.",
+    "Night-sky banner: bright coloured fireworks with trails and glitter, glowing diyas with flickering flames.",
+    "Greeting text shimmers in gold.",
+    "Everything in Punch is saved on the web (portal login).",
     "Attendance logic unchanged."
   ]
 }
