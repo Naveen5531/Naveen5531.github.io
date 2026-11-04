@@ -1,13 +1,13 @@
 {
-  "versionCode": 73,
-  "versionName": "8.8",
+  "versionCode": 74,
+  "versionName": "8.9",
   "date": "04 Nov 2026",
-  "size": 3072036,
+  "size": 3073504,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Festival animation back to the earlier canvas version.",
+  "notes": "Employee CTC and salary breakup on the Employees page.",
   "list": [
-    "Festival animation back to the earlier version: fireworks, diyas, petals, snow and more behind the page and in the banner.",
-    "Everything in Punch is saved on the web (portal login).",
+    "Employees: CTC a year under each name (HR head, HR manager, admins).",
+    "Tap an employee: Salary & CTC – CTC year and month, take-home, full breakup, hikes applied, offer letter status.",
     "Attendance logic unchanged."
   ]
 }
