@@ -5,6 +5,8 @@ service cloud.firestore {
   match /databases/{db}/documents {
 
     function signedIn() { return request.auth != null; }
+    // The only logins allowed to become the owner of a brand-new portal (see settings/owner below). Change for each company.
+    function setupLogins() { return ['change-me@example.com']; }
     function ownerDoc() { return /databases/$(db)/documents/settings/owner; }
     function memberDoc() { return /databases/$(db)/documents/members/$(request.auth.uid); }
     function isOwner() { return signedIn() && exists(ownerDoc()) && get(ownerDoc()).data.uid == request.auth.uid; }
@@ -250,7 +252,11 @@ service cloud.firestore {
     // The owner is claimed once, by the first admin, and can never be changed from the app.
     match /settings/owner {
       allow read: if signedIn();
-      allow create: if signedIn() && !exists(ownerDoc()) && request.resource.data.uid == request.auth.uid;
+      // Setting up a NEW portal: only the login named in setupLogins() can become its owner, so a stranger who opens
+      // the portal first cannot take it over. For a new company, put its first admin login here before publishing
+      // (username@staff.movana.app, or a Gmail). Does nothing once a portal has an owner.
+      allow create: if signedIn() && !exists(ownerDoc()) && request.resource.data.uid == request.auth.uid
+        && request.auth.token.email != null && request.auth.token.email.lower() in setupLogins();
       allow update, delete: if false;
     }
     // SN Pickup scan options (camera / by hand): every login reads them; managers set them

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Punch Privacy Policy</title>
+<meta name="description" content="How the Punch attendance app and staff portal collect, use and protect employee data.">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#16202b;--mute:#5b6675;--line:#e3e6ea;--acc:#a87a1e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1216;--card:#171b21;--ink:#e8ecf1;--mute:#9aa5b3;--line:#262c35;--acc:#e0b04a}}
+:root[data-theme="dark"]{--bg:#0f1216;--card:#171b21;--ink:#e8ecf1;--mute:#9aa5b3;--line:#262c35;--acc:#e0b04a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 20px;margin:0 0 16px}
+h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+h2{font-size:18px;margin:0 0 8px;color:var(--acc)}
+p,li{margin:6px 0}
+ul{padding-left:20px;margin:6px 0}
+.sub{color:var(--mute);font-size:14px}
+a{color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+td,th{border-top:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{color:var(--mute);font-weight:600;width:34%}
+</style>
+</head>
+<body>
+<main>
+<div class="card">
+  <h1>Punch Privacy Policy</h1>
+  <p class="sub">Punch attendance app and staff portal · <span id="co">SN Logistics</span> · Last updated 4 November 2026</p>
+  <p>Punch is used by your employer to record attendance, leave and pay. This page explains what Punch collects, why, where it is kept and what you can ask for. Your employer is responsible for your data (the "Data Fiduciary" under India's Digital Personal Data Protection Act, 2023).</p>
+</div>
+
+<div class="card">
+  <h2>What Punch collects</h2>
+  <table>
+    <tr><th>Location</th><td>Your phone's location when you check in and check out, and while you are checked in. If you turn on <b>Auto check-in</b>, Punch also checks your location in the background (including when the app is closed) to check you in and out at your workplace and to log work trips. Punch does not track you when you are not checked in and Auto check-in is off.</td></tr>
+    <tr><th>Attendance</th><td>Check-in and check-out times, hours worked, attendance marks, leave, comp off and the requests you send.</td></tr>
+    <tr><th>Profile and pay</th><td>Name, employee ID, designation, grade, workplace, weekly offs, salary set-up, payslips, offer and salary letters, and the bank / PAN / UAN details you or HR enter for the payslip.</td></tr>
+    <tr><th>App settings</th><td>Saved places, trips, expenses you add, theme and festival settings.</td></tr>
+    <tr><th>Sign-in</th><td>Your login name, or your Gmail address if you sign in with Google.</td></tr>
+  </table>
+  <p class="sub">Punch does not read your contacts, photos, messages or calls, and does not show ads or sell data.</p>
+</div>
+
+<div class="card">
+  <h2>Why it is used</h2>
+  <ul>
+    <li>To record attendance and work hours, and to check that check-ins happen at the workplace.</li>
+    <li>To work out leave balances, salary and payslips, and to prepare HR letters.</li>
+    <li>To let HR approve your requests and to keep your data when you change phones.</li>
+  </ul>
+  <p>Your location is used only for attendance and work trips, and only by your employer.</p>
+</div>
+
+<div class="card">
+  <h2>Where it is kept and who sees it</h2>
+  <ul>
+    <li>Data is stored on your phone and in your employer's Google Firebase database (Google Cloud, Mumbai region where set up so), protected by sign-in and access rules.</li>
+    <li><b>You</b> see your own data. <b>HR</b> sees attendance, requests and profiles of employees. <b>Salary</b> is visible only to HR head, HR manager and admins.</li>
+    <li>Data is not shared with anyone else, except where the law requires it.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>How long it is kept</h2>
+  <p>Detailed check-in locations are kept on the phone for about 3 months and trips for 1 year. Attendance, pay and HR records are kept as long as your employer must keep employment and payroll records under law, and then deleted.</p>
+</div>
+
+<div class="card">
+  <h2>Your choices and rights</h2>
+  <ul>
+    <li>You can turn off <b>Auto check-in</b> in Punch › Settings at any time, and you can turn off location for Punch in your phone settings (check-in will then not work).</li>
+    <li>You can ask your employer to see, correct or delete your data, to withdraw consent, or to name someone to act for you, and you can raise a complaint. If you are not satisfied, you can approach the Data Protection Board of India.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>Contact</h2>
+  <p id="contact">For questions or requests about your data, contact your HR department.</p>
+</div>
+</main>
+<script>
+/* Fill in for each company: the company name and the grievance contact (email or phone). */
+const PRIVACY = { company: 'SN Logistics', contact: '' };
+document.getElementById('co').textContent = PRIVACY.company;
+if (PRIVACY.contact) document.getElementById('contact').textContent = 'For questions or requests about your data, contact ' + PRIVACY.company + ' at ' + PRIVACY.contact + '.';
+</script>
+</body>
+</html>

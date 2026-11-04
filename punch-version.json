@@ -1,13 +1,15 @@
 {
-  "versionCode": 74,
-  "versionName": "8.9",
+  "versionCode": 75,
+  "versionName": "9.0",
   "date": "04 Nov 2026",
-  "size": 3073504,
+  "size": 2468254,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Employee CTC and salary breakup on the Employees page.",
+  "notes": "Release build, privacy notice and per-company set-up.",
   "list": [
-    "Employees: CTC a year under each name (HR head, HR manager, admins).",
-    "Tap an employee: Salary & CTC – CTC year and month, take-home, full breakup, hikes applied, offer letter status.",
+    "Proper release build of Punch.",
+    "First sign-in shows a location and data notice with the privacy policy.",
+    "Company name, logo, website and grades come from one settings file.",
+    "Employee CTC on the Employees page.",
     "Attendance logic unchanged."
   ]
 }

@@ -2537,25 +2537,25 @@ function vtypesView() {
 }
 // ---- upload templates ----
 const TEMPLATE_SAMPLES = {
-  shipments: [{ ref: '8105525865', customer: 'Avenue Supermarts (DMart)', origin: 'Hyderabad DC', originCity: 'Hyderabad', originState: 'Telangana', consignee: 'Kompally Hyderabad DMart', phone: '9800000000', address: 'Kompally, Hyderabad', destCity: 'Hyderabad', destState: 'Telangana', pincode: '500014', pieces: 120, weight: 1010.47, l: 60, w: 40, h: 40, mode: 'Prepaid', priority: 'Standard', promised: today() }],
-  pickups: [{ customer: 'Avenue Supermarts (DMart)', address: 'Warehouse gate 2', city: 'Hyderabad', date: today(), slot: '09–12', pieces: 40, rider: 'Ravi', hub: 'Hyderabad DC' }],
-  trips: [{ from: 'Hyderabad DC', to: 'Warangal DC', vehicle: 'TS08UD1153', driver: 'Suresh', vendor: 'Kohinoor Cargo Movers', seal: 'S12345', planned: today(), km: 150, cost: 9000 }],
-  drs: [{ hub: 'Warangal DC', rider: 'Ravi', date: today(), vehicle: 'TS08UD1153', area: 'Hanamkonda' }],
-  returns: [{ type: 'Customer return', awb: 'MV2610141001', customer: 'Avenue Supermarts (DMart)', item: 'SKU-1001', qty: 2, value: 1500, reason: 'Damaged', qc: 'Pending' }],
-  payments: [{ type: 'Customer receipt', party: 'Avenue Supermarts (DMart)', amount: 25000, mode: 'NEFT', due: today(), link: 'INV…', utr: '' }],
-  vendorbills: [{ vendor: 'Kohinoor Cargo Movers', billNo: 'S42', billDate: today(), account: 'Vendor freight', amount: 140094, gstPct: '0', tds: '1' }],
+  shipments: [{ ref: 'DEMO-0001', customer: 'Demo Retail Pvt Ltd', origin: 'Hyderabad DC', originCity: 'Hyderabad', originState: 'Telangana', consignee: 'Kompally Demo Store', phone: '9800000000', address: 'Kompally, Hyderabad', destCity: 'Hyderabad', destState: 'Telangana', pincode: '500014', pieces: 120, weight: 1010.47, l: 60, w: 40, h: 40, mode: 'Prepaid', priority: 'Standard', promised: today() }],
+  pickups: [{ customer: 'Demo Retail Pvt Ltd', address: 'Warehouse gate 2', city: 'Hyderabad', date: today(), slot: '09–12', pieces: 40, rider: 'Ravi', hub: 'Hyderabad DC' }],
+  trips: [{ from: 'Hyderabad DC', to: 'Warangal DC', vehicle: 'TS00AB1234', driver: 'Suresh', vendor: 'Demo Cargo Movers', seal: 'S12345', planned: today(), km: 150, cost: 9000 }],
+  drs: [{ hub: 'Warangal DC', rider: 'Ravi', date: today(), vehicle: 'TS00AB1234', area: 'Hanamkonda' }],
+  returns: [{ type: 'Customer return', awb: 'MV2610141001', customer: 'Demo Retail Pvt Ltd', item: 'SKU-1001', qty: 2, value: 1500, reason: 'Damaged', qc: 'Pending' }],
+  payments: [{ type: 'Customer receipt', party: 'Demo Retail Pvt Ltd', amount: 25000, mode: 'NEFT', due: today(), link: 'INV…', utr: '' }],
+  vendorbills: [{ vendor: 'Demo Cargo Movers', billNo: 'S42', billDate: today(), account: 'Vendor freight', amount: 140094, gstPct: '0', tds: '1' }],
   tickets: [{ title: 'Label printer not printing', category: 'Printer', priority: 'P2 High', location: 'Hyderabad DC', raisedBy: 'Ravi' }],
   assets: [{ type: 'Handheld scanner', model: 'Zebra TC21', serial: 'SN123', assignedTo: 'Ravi', location: 'Hyderabad DC', purchased: today(), warranty: addDays(today(), 365), cost: 28000, life: 3, stage: 'Issued' }],
   access: [{ person: 'Ravi', system: 'Handheld app', level: 'User', approver: 'Suresh', till: addDays(today(), 180), reason: 'New rider' }],
-  approvals: [{ title: 'Tyre replacement TS08UD1153', kind: 'Vehicle repair', amount: 24000, requestedBy: 'Suresh', center: 'Hyderabad DC', due: today() }],
+  approvals: [{ title: 'Tyre replacement TS00AB1234', kind: 'Vehicle repair', amount: 24000, requestedBy: 'Suresh', center: 'Hyderabad DC', due: today() }],
   staff: [{ name: 'Ravi Kumar', role: 'Delivery rider', hub: 'Warangal DC', phone: '9800000001', joined: today(), salary: 18000, licence: addDays(today(), 700), stage: 'Active' }],
-  vehicles: [{ number: 'TS08UD1153', type: '17 ft', capacity: 5000, ownership: 'Dedicated vendor', vendor: 'Kohinoor Cargo Movers', driver: 'Suresh', hub: 'Hyderabad DC', insurance: addDays(today(), 200), fitness: addDays(today(), 300), puc: addDays(today(), 90), permit: addDays(today(), 365), serviceKm: 10000, stage: 'Available' }],
+  vehicles: [{ number: 'TS00AB1234', type: '17 ft', capacity: 5000, ownership: 'Dedicated vendor', vendor: 'Demo Cargo Movers', driver: 'Suresh', hub: 'Hyderabad DC', insurance: addDays(today(), 200), fitness: addDays(today(), 300), puc: addDays(today(), 90), permit: addDays(today(), 365), serviceKm: 10000, stage: 'Available' }],
   vtypes: VTYPE_TEMPLATES.slice(0, 3).map(([name, category, kg, l, w, h, body, kmpl, rate]) => ({ name, category, capacity: kg, lenFt: l, widFt: w, htFt: h, body, kmpl, ratePerKm: rate })),
-  maintenance: [{ vehicle: 'TS08UD1153', date: today(), kind: 'Periodic service', odometer: 45000, cost: 6500, garage: 'Eicher service', nextDate: addDays(today(), 90) }],
-  fuel: [{ vehicle: 'TS08UD1153', date: today(), litres: 60, amount: 5700, odometer: 45300, station: 'HPCL card', driver: 'Suresh' }],
-  customers: [{ name: 'Avenue Supermarts (DMart)', kind: 'Customer', contact: 'Logistics desk', phone: '9800000002', email: 'logistics@example.com', gstin: '36AAAAA0000A1Z5', state: 'Telangana', city: 'Hyderabad', creditDays: 30, creditLimit: 500000 }],
+  maintenance: [{ vehicle: 'TS00AB1234', date: today(), kind: 'Periodic service', odometer: 45000, cost: 6500, garage: 'Eicher service', nextDate: addDays(today(), 90) }],
+  fuel: [{ vehicle: 'TS00AB1234', date: today(), litres: 60, amount: 5700, odometer: 45300, station: 'HPCL card', driver: 'Suresh' }],
+  customers: [{ name: 'Demo Retail Pvt Ltd', kind: 'Customer', contact: 'Logistics desk', phone: '9800000002', email: 'logistics@example.com', gstin: '36AAAAA0000A1Z5', state: 'Telangana', city: 'Hyderabad', creditDays: 30, creditLimit: 500000 }],
   hubs: [{ name: 'Hyderabad DC', code: 'HYD1', type: 'Warehouse / DC', city: 'Hyderabad', state: 'Telangana', manager: 'Suresh', area: 50000, docks: 12, capacity: 2000, hours: '06:00–22:00' }],
-  rates: [{ customer: 'Avenue Supermarts (DMart)', rLocal: 16, rRegional: 20, rMetro: 26, rNational: 34, rSpecial: 50, minCharge: 200, tLocal: 1, tRegional: 2, tMetro: 3, tNational: 5, tSpecial: 7, validTill: addDays(today(), 365) }]
+  rates: [{ customer: 'Demo Retail Pvt Ltd', rLocal: 16, rRegional: 20, rMetro: 26, rNational: 34, rSpecial: 50, minCharge: 200, tLocal: 1, tRegional: 2, tMetro: 3, tNational: 5, tSpecial: 7, validTill: addDays(today(), 365) }]
 };
 function templatesView() {
   const ks = Object.keys(SCHEMA).filter(k => !SCHEMA[k].noForm);

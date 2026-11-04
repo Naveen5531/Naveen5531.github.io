@@ -58,3 +58,9 @@ or delete the user in Firebase console → Authentication and add them again. Lo
 | HR executive | Attendance and employee details, sees requests; no approvals, no salary |
 | Employee (Punch app only) | Own check-ins, own requests, own payslip; nothing else in the portal |
 | Other portal roles | No Punch data |
+
+## Selling Punch and the portal to another company
+1. **Firebase:** a new Firebase project for that company (steps above). In `firestore.rules` set `setupLogins()` to the company's first admin login (for example `admin@staff.movana.app` or their Gmail) **before** publishing the rules, so nobody else can take over the new portal.
+2. **Website:** host `portal/` (with that company's `firebase-config.js`), `privacy.html`, `Punch.apk` and `punch-version.json` on the company's own site.
+3. **Punch app:** in the Punch repo edit `app/src/main/assets/brand.js` (company name, website, portal, mail name/domain, grades) and replace `sn-logo.png` / `sn-mark.png`. Use a separate signing key per company.
+4. **Privacy:** in `privacy.html` set `PRIVACY.company` and `PRIVACY.contact` (grievance contact email or phone).
