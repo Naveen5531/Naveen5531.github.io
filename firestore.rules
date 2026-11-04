@@ -42,7 +42,7 @@ service cloud.firestore {
     // Gmail sign-in: an admin approves an address (collection "gmail", document id = the address) with a role.
     function gmailDoc() { return /databases/$(db)/documents/gmail/$(request.auth.token.email.lower()); }
     function gmailOk(r) { return signedIn() && request.auth.token.email_verified == true && exists(gmailDoc()) && get(gmailDoc()).data.role == r; }
-    function punchColl(c) { return c in ['punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer', 'punch_exp', 'punch_state']; }
+    function punchColl(c) { return c in ['punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer', 'punch_exp', 'punch_state', 'livepos', 'drvtrips']; }
 
     // Employee profile for the app (designation, workplace, weekly offs …): HR keeps it, the employee reads their own.
     // Everyone signed in may read these basic profiles (Employee directory); salary is in punch_pay, not here.
@@ -88,6 +88,17 @@ service cloud.firestore {
     match /punch_state/{uid} {
       allow read: if mine(uid) || hrAll();
       allow write: if mine(uid) && request.resource.data.uid == request.auth.uid;
+    }
+    // Driver on a trip in the Punch app: their own live position (one document per login), shown on the portal's live map.
+    match /livepos/{uid} {
+      allow read: if mine(uid) || (isMember() && !isEmpOnly());
+      allow write: if mine(uid) && request.resource.data.uid == request.auth.uid;
+    }
+    // Driver trips from the Punch app (start / end odometer, fuel, vehicle checklist): the driver keeps their own; office staff read.
+    match /drvtrips/{id} {
+      allow read: if (signedIn() && resource.data.uid == request.auth.uid) || (isMember() && !isEmpOnly());
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn() && resource.data.uid == request.auth.uid && request.resource.data.uid == request.auth.uid && resource.data.get('stage', '') != 'Closed';
     }
     // Leave, comp off and attendance-change requests.
     match /punch_req/{id} {

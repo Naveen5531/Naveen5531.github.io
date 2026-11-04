@@ -305,7 +305,7 @@ input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
 .kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 .kv > div { background: var(--surface-2); border-radius: var(--r-sm); padding: 10px 12px; }
 .mini { font-size: .76rem; color: var(--muted); }
-.ok-t { color: var(--good); } .bad-t { color: var(--bad); } .warn-t { color: var(--warn); }
+.ok-t { color: var(--good); } .bad-t { color: var(--bad); } .good-t { color: var(--good, #0f8a6d); } .warn-t { color: var(--warn); }
 .att td { text-align: center; } .att td:first-child, .att th:first-child { text-align: left; }
 .att button { border: 1px solid var(--line-2); background: var(--surface); border-radius: 8px; width: 34px; padding: 4px 0; font-weight: 700; }
 .att button.P { background: var(--good-bg); color: var(--good); border-color: transparent; } .att button.A { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
@@ -563,7 +563,7 @@ const ACCT_TYPE = Object.fromEntries(COA);
 const EXPENSE_ACCTS = COA.filter(a => a[1] === 'Expense').map(a => a[0]);
 
 // ================= state =================
-const COLLS = ['shipments', 'pickups', 'pvendors', 'trips', 'drs', 'returns', 'invoices', 'payments', 'vendorbills', 'journal', 'tickets', 'assets', 'access', 'approvals', 'staff', 'attendance', 'vehicles', 'vtypes', 'maintenance', 'fuel', 'customers', 'hubs', 'rates', 'settings', 'audit', 'pins', 'leaves', 'payroll', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer'];
+const COLLS = ['shipments', 'pickups', 'pvendors', 'trips', 'drs', 'returns', 'invoices', 'payments', 'vendorbills', 'journal', 'tickets', 'assets', 'access', 'approvals', 'staff', 'attendance', 'vehicles', 'vtypes', 'maintenance', 'fuel', 'customers', 'hubs', 'rates', 'settings', 'audit', 'pins', 'leaves', 'payroll', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer', 'items', 'stockmoves', 'orders', 'ewaybills', 'livepos', 'drvtrips', 'leads', 'quotes', 'purchasereq', 'purchaseorders', 'pettycash', 'compliance', 'contracts', 'gatepass', 'visitors', 'checklists', 'supplies', 'budgets'];
 const S = { mod: 'dashboard', tab: {}, data: {}, loaded: {}, q: {}, filt: {}, sel: {}, db: null, me: null, canWrite: true, readonly: false, dbState: 'connecting', downloads: null, users: null,
   from: addDays(today(), -29), to: today(), month: today().slice(0, 7), attDate: today(), attHub: '' };
 COLLS.forEach(k => { S.data[k] = []; S.q[k] = ''; S.filt[k] = 'All'; S.sel[k] = new Set(); });
@@ -600,7 +600,7 @@ async function boot() {
   COLLS.forEach(k => {
     let q = db.collection(k);
     if (k === 'audit') q = q.orderBy('day', 'desc').limit(31);
-    else if (!['settings', 'attendance', 'pins', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer'].includes(k)) q = q.orderBy('createdAt', 'desc').limit(1000);
+    else if (!['settings', 'attendance', 'pins', 'roles', 'members', 'punch_emp', 'punch_pay', 'punch_att', 'punch_mark', 'punch_req', 'punch_bal', 'punch_offer', 'livepos'].includes(k)) q = q.orderBy('createdAt', 'desc').limit(1000);
     q.onSnapshot(snap => {
       S.data[k] = snap.docs.map(d => Object.assign({ _id: d.id }, d.data()));
       S.loaded[k] = true; scheduleRender();
@@ -1089,11 +1089,12 @@ const statusOf = (k, r) => HOOK.title.status ? HOOK.title.status(k, r) : stageOf
 
 // ---------- list ----------
 function colLabel(k, c) {
+  if (SCHEMA[k].colLabels && SCHEMA[k].colLabels[c]) return SCHEMA[k].colLabels[c];
   const sp = { hht: 'SN Pickup', lr: 'LR', route: 'Route', cbm: 'CBM', chain: 'Progress', dims: 'Body size', fleet: 'In fleet', cbm: 'CBM', ratePerKm: 'Rate / km', stage: 'Status', sla: 'SLA', level: 'Level', docs: 'Papers', chg: 'Chg kg', total: 'Charge', zone: 'Zone', count: 'Shipments', codExp: 'COD due', codGot: 'COD got', gross: 'Payable', linked: 'Linked', book: 'Book value', levels: 'Approver', att: 'Present (month)', kmpl: 'km / l', outstanding: 'Outstanding', load: 'Today' };
   if (sp[c]) return sp[c];
   const f = SCHEMA[k].fields.find(x => x.k === c); return f ? f.label : c;
 }
-const isNumCol = (k, c) => { const f = SCHEMA[k].fields.find(x => x.k === c); return (f && (f.type === 'money' || f.type === 'number')) || ['chg', 'total', 'count', 'codExp', 'codGot', 'gross', 'book', 'att', 'kmpl', 'outstanding', 'load', 'fleet'].includes(c); };
+const isNumCol = (k, c) => { const f = SCHEMA[k].fields.find(x => x.k === c); return (SCHEMA[k].numCols || []).includes(c) || (f && (f.type === 'money' || f.type === 'number')) || ['chg', 'total', 'count', 'codExp', 'codGot', 'gross', 'book', 'att', 'kmpl', 'outstanding', 'load', 'fleet'].includes(c); };
 function cellValue(k, r, c) {
   const hook = HOOK.cell[k] && HOOK.cell[k][c];
   if (hook) return hook(r);
@@ -1110,7 +1111,7 @@ function chipList(k) {
   const sc = SCHEMA[k];
   if (!sc.stages) return [];
   const extra = k === 'shipments' ? MILES.filter(m => m.stages.length > 1).map(m => 'mile:' + m.name) : [];
-  const more = (k === 'payments' || k === 'invoices' || k === 'vendorbills') ? ['Overdue'] : (k === 'tickets' ? ['SLA breached'] : []);
+  const more = (k === 'payments' || k === 'invoices' || k === 'vendorbills' || sc.overdue) ? ['Overdue'] : (k === 'tickets' ? ['SLA breached'] : []);
   return ['All'].concat(extra, sc.stages, sc.extraStages || [], more);
 }
 function matchChip(k, r, f) {
@@ -1318,7 +1319,7 @@ async function quickSave() {
 function datalists() {
   const parties = S.data.customers;
   const lists = { customers: parties.filter(r => r.kind !== 'Vendor / transporter').map(r => r.name), vendors: parties.filter(r => r.kind !== 'Customer').map(r => r.name), parties: parties.map(r => r.name).concat(S.data.staff.map(r => r.name)),
-    cities: CITY_NAMES, hubs: S.data.hubs.map(r => r.name), vehicles: S.data.vehicles.map(r => r.number), staff: S.data.staff.map(r => r.name), states: STATES, assets: S.data.assets.map(r => r.tag) };
+    cities: CITY_NAMES, hubs: S.data.hubs.map(r => r.name), vehicles: S.data.vehicles.map(r => r.number), staff: S.data.staff.map(r => r.name), states: STATES, assets: S.data.assets.map(r => r.tag), items: (S.data.items || []).map(r => r.sku) };
   let html = '';
   Object.keys(lists).forEach(k => { html += '<datalist id="dl-' + k + '">' + uniq(lists[k]).map(v => '<option value="' + esc(v) + '">').join('') + '</datalist>'; });
   const holder = document.createElement('div'); holder.hidden = true; holder.innerHTML = html; $('#layer').appendChild(holder);
@@ -2625,10 +2626,10 @@ function auditView() {
 // ================= departments, roles & access =================
 const DEPTS = [
   { id: 'overview', label: 'Overview', icon: 'dash', note: 'Dashboard, reports, your access' },
-  { id: 'ops', label: 'Operations', icon: 'truck', note: 'Bookings, first / mid / last mile, returns, fleet' },
+  { id: 'ops', label: 'Operations', icon: 'truck', note: 'Bookings, first / mid / last mile, returns, fleet, warehouse, live tracking, sales' },
   { id: 'fin', label: 'Finance', icon: 'book', note: 'Billing, payments, books and GST' },
   { id: 'hr', label: 'HR', icon: 'people', note: 'Employees, attendance, leave, payroll' },
-  { id: 'adm', label: 'Admin', icon: 'cog', note: 'Approvals, roles & access, settings' },
+  { id: 'adm', label: 'Admin', icon: 'cog', note: 'Approvals, purchase, compliance, facilities, roles & access, settings' },
   { id: 'itd', label: 'IT', icon: 'ticket', note: 'Helpdesk, assets, system access' }
 ];
 const LEVELS = ['No access', 'View', 'Edit', 'Full'];
@@ -2642,7 +2643,7 @@ const ADMIN_ONLY = ['roles', 'members', 'settings', 'joinreq'];
 
 function roleSpec(dept, over) {
   const p = {};
-  NAV.forEach(m => { p[m.id] = over && over[m.id] != null ? over[m.id] : (dept[m.dept] || 0); });
+  NAV.forEach(m => { p[m.id] = over && over[m.id] != null ? over[m.id] : Math.max(dept[m.dept] || 0, ...(m.also || []).map(d => dept[d] || 0)); });
   return p;
 }
 const EMP = { dashboard: 1, it: 2, leave: 2, admin: 2 }; // every staff role can raise IT tickets, apply leave, raise requests
@@ -2716,9 +2717,16 @@ function gradeRoles() {
   }));
   return out;
 }
+/* New modules for existing roles (on top of their department level) */
+const MORE_PERMS = { ops_manager: { wms: 3, tracking: 3, sales: 2, purchase: 2, facilities: 1, mis: 1 }, ops_exec: { wms: 2, tracking: 1 }, hub_sup: { wms: 2, tracking: 1, facilities: 2, purchase: 2 },
+  linehaul: { tracking: 2, wms: 1 }, lastmile_lead: { tracking: 1 }, fleet_sup: { tracking: 2, compliance: 1 }, vendor_coord: { tracking: 1, purchase: 1 }, pricing: { sales: 3, mis: 1 }, booking_exec: { sales: 2, tracking: 1 },
+  gm: { sales: 3, purchase: 3, compliance: 2, facilities: 2, mis: 2 }, branch_manager: { wms: 3, tracking: 2, facilities: 2, purchase: 2, mis: 1 }, fin_head: { compliance: 3, purchase: 3, mis: 3 }, fin_manager: { compliance: 3, purchase: 3, mis: 3 },
+  accountant: { purchase: 2, compliance: 2, mis: 1 }, tax_exec: { compliance: 3 }, ap_exec: { purchase: 2 }, cashier: { purchase: 2 }, hr_head: { compliance: 2, facilities: 1 }, hr_manager: { compliance: 1 },
+  admin_head: { purchase: 3, compliance: 3, facilities: 3, mis: 1 }, admin_officer: { purchase: 2, compliance: 2, facilities: 3 }, front_office: { facilities: 2, purchase: 2 }, approver: { purchase: 2 }, it_manager: { purchase: 1 } };
+const moreRolePerms = r => MORE_PERMS[r._id] ? Object.assign({}, r, { perms: Object.assign({}, r.perms, Object.fromEntries(Object.entries(MORE_PERMS[r._id]).map(([k, v]) => [k, Math.max(num(r.perms[k]), v)]))) }) : r;
 function allRoles() {
   const saved = S.data.roles || [];
-  const base = builtinRoles().map(r => {
+  const base = builtinRoles().map(moreRolePerms).map(r => {
     const s = saved.find(x => x._id === r._id);
     return Object.assign({ builtin: true }, r, s && !r.locked ? { name: s.name || r.name, desc: s.desc || r.desc, dept: s.dept || r.dept, perms: Object.assign({}, r.perms, s.perms || {}), changed: true } : {});
   });
@@ -3653,6 +3661,292 @@ document.addEventListener('change', async e => {
     if (await pSet('punch_mark', uid + '_' + ym, { uid, ym, marks, lt, by: S.me && S.me.id, updatedAt: Date.now() })) toast('Marked'); }
 });
 
+// ================= more modules: warehouse, live tracking & e-way bills, sales, purchase & petty cash, compliance & legal,
+// facilities & security, budgets & MIS. Each uses the generic list / form / status screens above. =================
+Object.assign(ICON, {
+  box: '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>',
+  cart: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11.5l2-8H6.2"/>',
+  shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+  gate: '<path d="M3 21V7l9-4 9 4v14"/><path d="M7 21v-8h10v8M7 17h10"/>',
+  phone: '<path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/>',
+  live: '<circle cx="12" cy="11" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><path d="M4 4l2 2M20 4l-2 2"/>'
+});
+const EXP_HEADS = COA.filter(a => a[1] === 'Expense').map(a => a[0]);
+const PETTY_HEADS = [['Fuel', 'Fuel'], ['Tolls', 'Tolls'], ['Vehicle repairs', 'Vehicle maintenance'], ['Loading / unloading', 'Office & admin'], ['Office & stationery', 'Office & admin'], ['Food & refreshments', 'Office & admin'], ['Travel & conveyance', 'Office & admin'], ['Courier & postage', 'Office & admin'], ['Other', 'Office & admin']];
+Object.assign(SCHEMA, {
+  // ---- Warehouse & inventory ----
+  items: { label: 'Items (SKU master)', noun: 'item', code: 'sku', prefix: 'SKU', titleField: 'name', noStage: true,
+    fields: [F('sku', 'SKU code', 'code'), F('name', 'Item name', 'text', { req: 1 }), F('owner', 'Owner / customer', 'text', { list: 'customers' }),
+      F('category', 'Category', 'select', { opts: ['Goods', 'Packaging material', 'Spares', 'Office / stationery', 'Other'] }), F('uom', 'Unit', 'select', { opts: ['Nos', 'Box', 'Carton', 'Kg', 'Litre', 'Pallet', 'Set'] }),
+      F('reorder', 'Reorder level', 'number'), F('bin', 'Default bin / location'), F('rate', 'Value per unit', 'money'), F('notes', 'Notes', 'textarea')],
+    cols: ['sku', 'name', 'owner', 'category', 'uom', 'stock', 'reorder', 'bin'], colLabels: { stock: 'In stock' }, numCols: ['stock'] },
+  stockmoves: { label: 'Stock movements', noun: 'stock entry', code: 'no', prefix: 'STK', noStage: true,
+    fields: [F('no', 'Entry no', 'code'), F('kind', 'Type', 'select', { req: 1, opts: ['Inward (GRN)', 'Outward (dispatch)', 'Transfer out', 'Transfer in', 'Count adjust +', 'Count adjust −', 'Damage / write-off'] }),
+      F('date', 'Date', 'date', { req: 1 }), F('sku', 'SKU code', 'text', { req: 1, list: 'items' }), F('qty', 'Quantity', 'number', { req: 1 }), F('hub', 'Warehouse', 'ref', { src: 'hubs', req: 1 }),
+      F('bin', 'Bin / location'), F('ref', 'Reference (PO / order / invoice / AWB)'), F('party', 'Supplier / customer', 'text', { list: 'parties' }), F('vehicle', 'Vehicle', 'text', { list: 'vehicles' }), F('notes', 'Notes', 'textarea')],
+    cols: ['no', 'date', 'kind', 'sku', 'qty', 'hub', 'bin', 'ref'] },
+  orders: { label: 'Outbound orders', noun: 'order', code: 'no', prefix: 'ORD', stages: ['Received', 'Picking', 'Packed', 'Dispatched'], extraStages: ['On hold', 'Cancelled'], doneStages: ['Dispatched', 'Cancelled'], overdue: true,
+    fields: [F('no', 'Order no', 'code'), F('customer', 'Customer', 'text', { req: 1, list: 'customers' }), F('hub', 'Warehouse', 'ref', { src: 'hubs', req: 1 }),
+      F('lines', 'Items – one per line: SKU x qty (e.g. SKU-1001 x 20)', 'textarea', { req: 1 }), F('due', 'Dispatch by', 'date'), F('consignee', 'Ship to'), F('awb', 'AWB / LR no'), F('vehicle', 'Vehicle', 'text', { list: 'vehicles' }), F('notes', 'Notes', 'textarea')],
+    cols: ['no', 'customer', 'hub', 'due', 'awb', 'stage'] },
+  // ---- Live tracking & e-way bills ----
+  ewaybills: { label: 'E-way bills', noun: 'e-way bill', code: 'ewb', titleField: 'ewb', stages: ['Active', 'Closed'], extraStages: ['Cancelled', 'Expired'], doneStages: ['Closed', 'Cancelled', 'Expired'], overdue: true, freeStage: true,
+    fields: [F('ewb', 'E-way bill no (12 digits)', 'text', { req: 1 }), F('date', 'Generated on', 'date', { req: 1 }), F('due', 'Valid till', 'date', { req: 1 }), F('invoice', 'Invoice / challan no'),
+      F('value', 'Goods value', 'money'), F('from', 'From (place)', 'text', { list: 'cities' }), F('to', 'To (place)', 'text', { list: 'cities' }), F('vehicle', 'Vehicle', 'text', { list: 'vehicles' }),
+      F('ref', 'Trip / AWB'), F('transporter', 'Transporter', 'text', { list: 'vendors' }), F('notes', 'Notes', 'textarea')],
+    cols: ['ewb', 'date', 'due', 'from', 'to', 'vehicle', 'value', 'stage'] },
+  drvtrips: { label: 'Driver trips', noun: 'driver trip', code: 'no', prefix: 'DT', noForm: true, stages: ['On trip', 'Closed'], doneStages: ['Closed'], noBulk: true,
+    fields: [F('no', 'Trip no', 'code'), F('name', 'Driver'), F('vehicle', 'Vehicle'), F('trip', 'Portal trip / runsheet'), F('from', 'From'), F('to', 'To'), F('date', 'Date', 'date'),
+      F('odoStart', 'Odometer start', 'number'), F('odoEnd', 'Odometer end', 'number'), F('km', 'Km', 'number'), F('fuelL', 'Fuel (litres)', 'number'), F('fuelAmt', 'Fuel amount', 'money'), F('toll', 'Tolls', 'money'),
+      F('check', 'Vehicle checklist', 'textarea'), F('issues', 'Issues reported', 'textarea'), F('podText', 'Deliveries (POD)', 'textarea')],
+    cols: ['no', 'date', 'name', 'vehicle', 'from', 'to', 'km', 'fuelL', 'pods', 'stage'], colLabels: { pods: 'PODs' }, numCols: ['pods'] },
+  // ---- Sales & CRM ----
+  leads: { label: 'Leads', noun: 'lead', code: 'no', prefix: 'LD', titleField: 'company', stages: ['New', 'Contacted', 'Qualified', 'Quote sent', 'Negotiation', 'Won'], extraStages: ['Lost'], doneStages: ['Won', 'Lost'], overdue: true,
+    fields: [F('no', 'Lead no', 'code'), F('company', 'Company', 'text', { req: 1 }), F('contact', 'Contact person'), F('phone', 'Phone'), F('email', 'Email'), F('city', 'City', 'text', { list: 'cities' }),
+      F('source', 'Source', 'select', { opts: ['Referral', 'Website', 'Cold call', 'Walk-in', 'Existing customer', 'Tender', 'Other'] }),
+      F('need', 'Service', 'select', { opts: ['FTL', 'PTL', 'Express parcel', 'Warehousing', 'Last mile', 'Reverse logistics', 'Other'] }),
+      F('volume', 'Expected business / month', 'money'), F('owner', 'Owner', 'text', { list: 'staff' }), F('due', 'Next follow-up', 'date'), F('notes', 'Notes / follow-up log', 'textarea')],
+    cols: ['no', 'company', 'contact', 'city', 'need', 'volume', 'owner', 'due', 'stage'] },
+  quotes: { label: 'Quotations', noun: 'quotation', code: 'no', prefix: 'QT', stages: ['Draft', 'Sent', 'Accepted'], extraStages: ['Rejected', 'Expired'], doneStages: ['Accepted', 'Rejected', 'Expired'], overdue: true,
+    fields: [F('no', 'Quote no', 'code'), F('party', 'Customer / lead', 'text', { req: 1, list: 'parties' }), F('lane', 'Lane / service (e.g. Hyderabad → Pune, FTL 17 ft)', 'text', { req: 1 }),
+      F('basis', 'Rate basis', 'select', { opts: ['Per trip', 'Per kg', 'Per km', 'Per box', 'Monthly fixed'] }), F('rate', 'Rate', 'money', { req: 1 }), F('est', 'Expected value / month', 'money'),
+      F('due', 'Valid till', 'date'), F('terms', 'Terms (payment, fuel, detention, GST)', 'textarea'), F('notes', 'Notes', 'textarea')],
+    cols: ['no', 'party', 'lane', 'basis', 'rate', 'est', 'due', 'stage'] },
+  // ---- Purchase & petty cash ----
+  purchasereq: { label: 'Purchase requests', noun: 'purchase request', code: 'no', prefix: 'PR', stages: ['Requested', 'Approved', 'PO raised'], extraStages: ['Rejected', 'Cancelled'], doneStages: ['PO raised', 'Rejected', 'Cancelled'], overdue: true,
+    fields: [F('no', 'PR no', 'code'), F('item', 'What is needed', 'text', { req: 1 }), F('qty', 'Quantity', 'number', { req: 1 }), F('est', 'Estimated cost', 'money'),
+      F('hub', 'For warehouse / office', 'ref', { src: 'hubs' }), F('requestedBy', 'Requested by', 'text', { req: 1, list: 'staff' }), F('due', 'Needed by', 'date'), F('vendor', 'Suggested vendor', 'text', { list: 'vendors' }), F('notes', 'Why it is needed', 'textarea')],
+    cols: ['no', 'item', 'qty', 'est', 'hub', 'requestedBy', 'due', 'stage'] },
+  purchaseorders: { label: 'Purchase orders', noun: 'purchase order', code: 'no', prefix: 'PO', stages: ['Draft', 'Sent to vendor', 'Partly received', 'Received', 'Billed'], extraStages: ['Cancelled'], doneStages: ['Billed', 'Cancelled'], overdue: true,
+    fields: [F('no', 'PO no', 'code'), F('vendor', 'Vendor', 'text', { req: 1, list: 'vendors' }), F('pr', 'From PR no'), F('lines', 'Items – one per line (SKU x qty adds to stock when received)', 'textarea', { req: 1 }),
+      F('amount', 'Amount before GST', 'money', { req: 1 }), F('gstPct', 'GST %', 'select', { opts: ['0', '5', '12', '18', '28'] }), F('hub', 'Deliver to', 'ref', { src: 'hubs' }), F('due', 'Delivery by', 'date'),
+      F('receivedOn', 'Received on', 'date'), F('grn', 'Goods received note (what came, shortages)', 'textarea'), F('billNo', 'Vendor bill no'), F('notes', 'Terms / notes', 'textarea')],
+    cols: ['no', 'vendor', 'pr', 'amount', 'gstPct', 'hub', 'due', 'stage'] },
+  pettycash: { label: 'Petty cash', noun: 'petty cash entry', code: 'no', prefix: 'PC', noStage: true,
+    fields: [F('no', 'Voucher no', 'code'), F('date', 'Date', 'date', { req: 1 }), F('hub', 'Cash box (warehouse / office)', 'ref', { src: 'hubs', req: 1 }),
+      F('kind', 'Type', 'select', { req: 1, opts: ['Expense paid', 'Cash received'] }), F('amount', 'Amount', 'money', { req: 1 }), F('head', 'Expense head', 'select', { opts: PETTY_HEADS.map(h => h[0]) }),
+      F('paidTo', 'Paid to / received from'), F('billNo', 'Bill / receipt no'), F('vehicle', 'Vehicle (if any)', 'text', { list: 'vehicles' }), F('notes', 'Notes', 'textarea')],
+    cols: ['no', 'date', 'hub', 'kind', 'head', 'paidTo', 'amount'] },
+  // ---- Compliance & legal ----
+  compliance: { label: 'Statutory calendar', noun: 'compliance item', code: 'no', prefix: 'CMP', stages: ['Upcoming', 'Filed / done'], extraStages: ['Not applicable'], doneStages: ['Filed / done', 'Not applicable'], overdue: true,
+    sort: (a, b) => String(a.due || '').localeCompare(String(b.due || '')),
+    fields: [F('no', 'Item no', 'code'), F('task', 'What is due', 'text', { req: 1 }), F('law', 'Law / area', 'select', { req: 1, opts: ['GST', 'TDS / TCS', 'Income tax', 'PF', 'ESI', 'Professional tax', 'Labour law', 'ROC / MCA', 'Licence / registration', 'Insurance', 'Other'] }),
+      F('period', 'For period (e.g. 2026-10)'), F('due', 'Due date', 'date', { req: 1 }), F('owner', 'Owner', 'text', { list: 'staff' }), F('amount', 'Amount paid', 'money'),
+      F('filedOn', 'Filed / paid on', 'date'), F('ack', 'Acknowledgement / challan no'), F('notes', 'Notes', 'textarea')],
+    cols: ['no', 'task', 'law', 'period', 'due', 'owner', 'filedOn', 'stage'] },
+  contracts: { label: 'Contracts & licences', noun: 'contract or licence', code: 'no', prefix: 'CT', stages: ['Active', 'Renewal due', 'Renewed', 'Expired'], extraStages: ['Terminated'], doneStages: ['Renewed', 'Expired', 'Terminated'], overdue: true, freeStage: true,
+    fields: [F('no', 'Ref no', 'code'), F('party', 'Party / authority', 'text', { req: 1, list: 'parties' }),
+      F('kind', 'Type', 'select', { req: 1, opts: ['Customer agreement', 'Vendor / transporter agreement', 'Lease / rent', 'Insurance policy', 'Licence / registration', 'AMC / service contract', 'NDA', 'Other'] }),
+      F('title', 'Title / policy / licence no'), F('start', 'Start date', 'date'), F('due', 'End / renewal date', 'date', { req: 1 }), F('notice', 'Remind days before', 'number'),
+      F('value', 'Value / premium', 'money'), F('owner', 'Owner', 'text', { list: 'staff' }), F('link', 'Document link (Drive)'), F('notes', 'Key terms', 'textarea')],
+    cols: ['no', 'party', 'kind', 'title', 'due', 'value', 'owner', 'stage'] },
+  // ---- Facilities & security ----
+  gatepass: { label: 'Gate passes', noun: 'gate pass', code: 'no', prefix: 'GP', stages: ['Open', 'Returned', 'Closed'], extraStages: ['Cancelled'], doneStages: ['Returned', 'Closed', 'Cancelled'], overdue: true,
+    fields: [F('no', 'Pass no', 'code'), F('kind', 'Type', 'select', { req: 1, opts: ['Returnable – going out', 'Non-returnable – going out', 'Material coming in'] }), F('hub', 'Gate (warehouse / office)', 'ref', { src: 'hubs', req: 1 }),
+      F('material', 'Material', 'text', { req: 1 }), F('qty', 'Quantity'), F('person', 'Carried by'), F('vehicle', 'Vehicle', 'text', { list: 'vehicles' }), F('date', 'Date', 'date', { req: 1 }), F('due', 'Expected back', 'date'),
+      F('approvedBy', 'Approved by', 'text', { list: 'staff' }), F('notes', 'Notes', 'textarea')],
+    cols: ['no', 'date', 'kind', 'material', 'qty', 'person', 'hub', 'due', 'stage'] },
+  visitors: { label: 'Visitors', noun: 'visitor', code: 'no', prefix: 'VS', titleField: 'name', stages: ['Inside', 'Left'], doneStages: ['Left'],
+    fields: [F('no', 'Visitor no', 'code'), F('name', 'Visitor name', 'text', { req: 1 }), F('phone', 'Phone'), F('company', 'From company'), F('host', 'Meeting', 'text', { list: 'staff' }),
+      F('purpose', 'Purpose', 'select', { opts: ['Meeting', 'Delivery', 'Interview', 'Vendor / service', 'Audit / inspection', 'Other'] }), F('hub', 'Site', 'ref', { src: 'hubs', req: 1 }),
+      F('date', 'Date', 'date', { req: 1 }), F('inTime', 'Time in'), F('outTime', 'Time out'), F('badge', 'Badge no'), F('notes', 'Notes', 'textarea')],
+    cols: ['no', 'date', 'name', 'company', 'host', 'purpose', 'hub', 'inTime', 'outTime', 'stage'] },
+  checklists: { label: 'Site checklists', noun: 'checklist', code: 'no', prefix: 'CK', noStage: true,
+    fields: [F('no', 'Check no', 'code'), F('date', 'Date', 'date', { req: 1 }), F('hub', 'Site', 'ref', { src: 'hubs', req: 1 }),
+      F('kind', 'Checklist', 'select', { req: 1, opts: ['Housekeeping', 'Security round', 'Fire safety', 'Office opening / closing', 'Washrooms & drinking water', 'CCTV & lighting', 'Pest control'] }),
+      F('result', 'Result', 'select', { req: 1, opts: ['All OK', 'Issues found'] }), F('issues', 'Issues and action taken', 'textarea'), F('by', 'Checked by', 'text', { list: 'staff' })],
+    cols: ['no', 'date', 'hub', 'kind', 'result', 'by'] },
+  supplies: { label: 'Office supplies', noun: 'supply item', code: 'no', prefix: 'SUP', titleField: 'name', noStage: true,
+    fields: [F('no', 'Item no', 'code'), F('name', 'Item', 'text', { req: 1 }), F('hub', 'Site', 'ref', { src: 'hubs' }), F('qty', 'In stock', 'number', { req: 1 }), F('unit', 'Unit', 'select', { opts: ['Nos', 'Pack', 'Ream', 'Box', 'Litre', 'Kg'] }),
+      F('reorder', 'Reorder at', 'number'), F('lastIssued', 'Last issued on', 'date'), F('notes', 'Notes', 'textarea')],
+    cols: ['no', 'name', 'hub', 'qty', 'unit', 'reorder', 'low', 'lastIssued'], colLabels: { low: 'Stock' } },
+  // ---- Budgets ----
+  budgets: { label: 'Budgets', noun: 'budget line', code: 'no', prefix: 'BG', noStage: true,
+    fields: [F('no', 'Line no', 'code'), F('month', 'Month (YYYY-MM)', 'text', { req: 1 }), F('head', 'Expense head', 'select', { req: 1, opts: EXP_HEADS }), F('amount', 'Budget', 'money', { req: 1 }), F('notes', 'Notes', 'textarea')],
+    cols: ['no', 'month', 'head', 'amount', 'actual', 'var'], colLabels: { actual: 'Actual (books)', var: 'Variance' }, numCols: ['actual', 'var'] }
+});
+Object.assign(COLL_MOD, { items: 'wms', stockmoves: 'wms', orders: 'wms', ewaybills: 'tracking', livepos: 'tracking', drvtrips: 'tracking', leads: 'sales', quotes: 'sales', purchasereq: 'purchase', purchaseorders: 'purchase', pettycash: 'purchase',
+  compliance: 'compliance', contracts: 'compliance', gatepass: 'facilities', visitors: 'facilities', checklists: 'facilities', supplies: 'facilities', budgets: 'mis' });
+
+// ---- stock: balance by SKU × warehouse × bin from the movements ----
+const STOCK_IN = ['Inward (GRN)', 'Transfer in', 'Count adjust +'];
+const stockSign = k => STOCK_IN.includes(k) ? 1 : -1;
+function stockRows() {
+  const m = new Map();
+  (S.data.stockmoves || []).forEach(x => { const key = lc(x.sku) + '|' + (x.hub || '') + '|' + lc(x.bin || ''); const r = m.get(key) || { sku: x.sku, hub: x.hub || '', bin: x.bin || '', qty: 0, last: '' }; r.qty += stockSign(x.kind) * num(x.qty); if (String(x.date || '') > r.last) r.last = x.date || ''; m.set(key, r); });
+  return [...m.values()].map(r => { const it = (S.data.items || []).find(i => lc(i.sku) === lc(r.sku)) || {}; return Object.assign(r, { name: it.name || '', reorder: num(it.reorder), uom: it.uom || '', value: r.qty * num(it.rate) }); });
+}
+const stockOfSku = sku => sum((S.data.stockmoves || []).filter(x => lc(x.sku) === lc(sku)), x => stockSign(x.kind) * num(x.qty));
+HOOK.cell.items = { stock: r => { const q = stockOfSku(r.sku), low = num(r.reorder) && q <= num(r.reorder); return '<b' + (low ? ' class="bad-t"' : '') + '>' + esc(String(Math.round(q * 100) / 100)) + '</b>'; } };
+HOOK.cell.drvtrips = { pods: r => String((r.pods || []).length) };
+HOOK.detail.drvtrips = r => (r.pods || []).length ? '<h4 class="section-title">Proof of delivery</h4>' + r.pods.map(p => '<div style="display:flex;gap:10px;align-items:flex-start;margin:8px 0">' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="POD photo" style="width:96px;height:96px;object-fit:cover;border-radius:10px">' : '') + (p.sign ? '<img src="' + esc(p.sign) + '" alt="Signature" style="width:120px;height:60px;object-fit:contain;background:#fff;border:1px solid #e3e6ea;border-radius:8px">' : '') + '<div><b>' + esc(p.awb || '') + '</b><br><small>' + esc(p.name || '') + ' · ' + esc(new Date(p.at || 0).toLocaleString('en-IN')) + (p.lat != null ? ' · <a href="https://www.google.com/maps?q=' + p.lat + ',' + p.lng + '" target="_blank" rel="noopener">Map</a>' : '') + '</small></div></div>').join('') : '';
+HOOK.cell.supplies = { low: r => num(r.reorder) && num(r.qty) <= num(r.reorder) ? pill('Reorder') : '' };
+function stockView(lowOnly) {
+  if (!S.loaded.stockmoves && S.dbState === 'ok') return '<div class="empty">Loading…</div>';
+  const hubs = uniq((S.data.hubs || []).map(h => h.name)), hf = S.q._stockHub || '', q = lc(S.q._stock || '');
+  let rows = stockRows().filter(r => (!hf || r.hub === hf) && (!q || lc(r.sku + ' ' + r.name + ' ' + r.bin).includes(q)));
+  if (lowOnly) { const by = new Map(); stockRows().forEach(r => by.set(lc(r.sku), (by.get(lc(r.sku)) || 0) + r.qty)); rows = (S.data.items || []).filter(i => num(i.reorder) && (by.get(lc(i.sku)) || 0) <= num(i.reorder)).map(i => ({ sku: i.sku, name: i.name, hub: 'All', bin: i.bin || '', qty: by.get(lc(i.sku)) || 0, reorder: num(i.reorder), uom: i.uom || '', value: 0 })); }
+  rows.sort((a, b) => String(a.sku).localeCompare(String(b.sku)) || String(a.hub).localeCompare(String(b.hub)));
+  let h = '<div class="toolbar"><input type="search" class="search" id="stockQ" placeholder="Search SKU, item or bin" value="' + esc(S.q._stock || '') + '" aria-label="Search stock">' + (lowOnly ? '' : '<select id="stockHub" aria-label="Warehouse"><option value="">All warehouses</option>' + hubs.map(x => '<option' + (x === hf ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select>') +
+    (writable('stockmoves') ? '<button class="btn primary" type="button" data-new="stockmoves" data-preset="' + esc(JSON.stringify({ kind: 'Inward (GRN)', date: today() })) + '">+ Inward (GRN)</button><button class="btn" type="button" data-new="stockmoves" data-preset="' + esc(JSON.stringify({ kind: 'Outward (dispatch)', date: today() })) + '">+ Outward</button><button class="btn" type="button" data-new="stockmoves" data-preset="' + esc(JSON.stringify({ kind: 'Count adjust +', date: today() })) + '">Stock count adjust</button>' : '') + '</div>';
+  if (!rows.length) return h + '<div class="empty">' + (lowOnly ? 'Nothing at or below its reorder level.' : 'No stock yet. Add items in Items (SKU master), then record an Inward (GRN).') + '</div>';
+  h += '<div class="tablewrap"><table><thead><tr><th>SKU</th><th>Item</th><th>Warehouse</th><th>Bin</th><th class="num">In stock</th><th>Unit</th><th class="num">Reorder at</th><th class="num">Value</th><th>Last movement</th></tr></thead><tbody>' +
+    rows.slice(0, 1000).map(r => '<tr><td><span class="code">' + esc(r.sku) + '</span></td><td>' + esc(r.name) + '</td><td>' + esc(r.hub) + '</td><td>' + esc(r.bin) + '</td><td class="num"><b' + (r.qty < 0 || (r.reorder && r.qty <= r.reorder) ? ' class="bad-t"' : '') + '>' + esc(String(Math.round(r.qty * 100) / 100)) + '</b></td><td>' + esc(r.uom) + '</td><td class="num">' + (r.reorder || '') + '</td><td class="num">' + (r.value ? money(r.value) : '') + '</td><td>' + esc(fmtDate(r.last)) + '</td></tr>').join('') +
+    '</tbody></table></div><div class="foot"><span>' + rows.length + ' stock lines</span><span>Total value: ' + money(sum(rows, r => r.value)) + '</span></div>';
+  return h;
+}
+document.addEventListener('input', e => { if (e.target && e.target.id === 'stockQ') { S.q._stock = e.target.value; const p = e.target.selectionStart; render(); const z = $('#stockQ'); if (z) { z.focus(); try { z.setSelectionRange(p, p); } catch (x) {} } } });
+document.addEventListener('change', e => { if (e.target && e.target.id === 'stockHub') { S.q._stockHub = e.target.value; render(); } });
+/* "SKU-1001 x 20" lines → [{sku, qty}] */
+const parseLines = t => String(t || '').split(/\n|;/).map(l => { const m = /^\s*([A-Za-z0-9._\-\/]+)\s*(?:x|×|\*|:|-|,)\s*(\d+(?:\.\d+)?)/i.exec(l); return m ? { sku: m[1], qty: num(m[2]) } : null; }).filter(Boolean);
+async function stockFromLines(lines, kind, hub, ref, party) {
+  const known = new Set((S.data.items || []).map(i => lc(i.sku))), L2 = parseLines(lines).filter(x => known.has(lc(x.sku)));
+  for (const x of L2) await save('stockmoves', null, { no: nextCode('STK', 'stockmoves', 'no'), kind, date: today(), sku: x.sku, qty: x.qty, hub: hub || '', ref: ref || '', party: party || '' });
+  return L2.length;
+}
+HOOK.onStage.orders = async (r, to, from, extra) => {
+  if (to === 'Dispatched' && !r.stockOut) { const n = await stockFromLines(r.lines, 'Outward (dispatch)', r.hub, r.no + (r.awb ? ' / ' + r.awb : ''), r.customer); extra.stockOut = true; if (n) toast(n + ' stock line' + (n === 1 ? '' : 's') + ' taken out of ' + (r.hub || 'stock')); }
+};
+HOOK.onStage.purchaseorders = async (r, to, from, extra) => {
+  if (['Partly received', 'Received'].includes(to) && !r.stockIn) { const n = await stockFromLines(r.lines, 'Inward (GRN)', r.hub, r.no, r.vendor); if (n) { extra.stockIn = true; toast(n + ' item' + (n === 1 ? '' : 's') + ' added to stock'); } if (!r.receivedOn) extra.receivedOn = today(); }
+  if (to === 'Billed' && !r.billLinked && writable('vendorbills')) {
+    const id = await save('vendorbills', null, { no: nextCode('VB', 'vendorbills', 'no'), vendor: r.vendor, billNo: r.billNo || '', billDate: today(), account: 'Office & admin', amount: num(r.amount), gstPct: r.gstPct || '18', tds: '0', due: addDays(today(), 30), notes: 'From ' + r.no });
+    if (id) { extra.billLinked = id; toast('Vendor bill added in Payments › Vendor bills – check the expense account.'); }
+  }
+};
+HOOK.onStage.purchasereq = async (r, to, from, extra) => {
+  if (to === 'PO raised' && !r.poNo && writable('purchaseorders')) {
+    const no = nextCode('PO', 'purchaseorders', 'no'), id = await save('purchaseorders', null, { no, vendor: r.vendor || '', pr: r.no, lines: (r.item || '') + ' x ' + num(r.qty), amount: num(r.est), gstPct: '18', hub: r.hub || '', due: r.due || '', stage: 'Draft' });
+    if (id) { extra.poNo = no; toast('Draft ' + no + ' created in Purchase orders.'); }
+  }
+};
+HOOK.onStage.leads = async (r, to, from, extra) => {
+  if (to === 'Won' && !(S.data.customers || []).some(c => lc(c.name) === lc(r.company)) && writable('customers')) {
+    await save('customers', null, { name: r.company, kind: 'Customer', contact: r.contact || '', phone: r.phone || '', email: r.email || '', city: r.city || '' }); toast(r.company + ' added to Customers.');
+  }
+};
+// ---- petty cash: posts to the books, balance per cash box ----
+HOOK.afterCreate.pettycash = async (id, b) => {
+  const amt = num(b.amount); if (!amt) return; const head = (PETTY_HEADS.find(h => h[0] === b.head) || [0, 'Office & admin'])[1];
+  const lines = b.kind === 'Cash received' ? [{ a: 'Cash in hand', dr: amt }, { a: 'Bank', cr: amt }] : [{ a: head, dr: amt }, { a: 'Cash in hand', cr: amt }];
+  try { await postJournal(b.date, 'Petty cash ' + (b.no || '') + ' · ' + (b.kind === 'Cash received' ? 'cash to ' + (b.hub || '') : (b.head || '') + ' · ' + (b.paidTo || '')), lines, 'Petty cash', id); } catch (e) {}
+};
+function pettyBalance() {
+  const P = S.data.pettycash || [], hubs = uniq(P.map(p => p.hub || '—')), ym = today().slice(0, 7);
+  if (!P.length) return '<div class="empty">No petty cash entries yet.' + (writable('pettycash') ? ' <button class="btn small primary" type="button" data-new="pettycash">+ New entry</button>' : '') + '</div>';
+  const rows = hubs.map(hb => { const L2 = P.filter(p => (p.hub || '—') === hb), inn = sum(L2.filter(p => p.kind === 'Cash received'), p => num(p.amount)), out = sum(L2.filter(p => p.kind !== 'Cash received'), p => num(p.amount)), mo = sum(L2.filter(p => p.kind !== 'Cash received' && String(p.date || '').startsWith(ym)), p => num(p.amount)); return { hb, inn, out, bal: inn - out, mo }; });
+  const heads = PETTY_HEADS.map(h => h[0]).map(hd => [hd, sum(P.filter(p => p.kind !== 'Cash received' && p.head === hd && String(p.date || '').startsWith(ym)), p => num(p.amount))]).filter(x => x[1]);
+  return '<div class="tablewrap"><table><thead><tr><th>Cash box</th><th class="num">Received</th><th class="num">Spent</th><th class="num">Balance</th><th class="num">Spent this month</th></tr></thead><tbody>' +
+    rows.map(r => '<tr><td>' + esc(r.hb) + '</td><td class="num">' + money(r.inn) + '</td><td class="num">' + money(r.out) + '</td><td class="num"><b' + (r.bal < 0 ? ' class="bad-t"' : '') + '>' + money(r.bal) + '</b></td><td class="num">' + money(r.mo) + '</td></tr>').join('') + '</tbody></table></div>' +
+    (heads.length ? '<h4 class="section-title">This month by expense head</h4><div class="tablewrap"><table><tbody>' + heads.map(([hd, v]) => '<tr><td>' + esc(hd) + '</td><td class="num">' + money(v) + '</td></tr>').join('') + '</tbody></table></div>' : '') +
+    '<p class="help">Every entry is also posted to Accounts › Journal (expense against Cash in hand), so it shows in Profit & loss and Budget vs actual.</p>';
+}
+// ---- statutory calendar: one tap adds the usual monthly / quarterly / yearly due dates for a month ----
+function statutoryFor(ym) {
+  const [y, m] = ym.split('-').map(Number), nx = (d, add) => { const t = new Date(y, m - 1 + (add == null ? 1 : add), d); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); };
+  const L2 = [['GSTR-1 (outward supplies)', 'GST', nx(11)], ['GSTR-3B return and GST payment', 'GST', nx(20)], ['TDS / TCS payment', 'TDS / TCS', m === 3 ? nx(30, 1) : nx(7)],
+    ['PF ECR and payment', 'PF', nx(15)], ['ESI contribution', 'ESI', nx(15)], ['Professional tax (Telangana)', 'Professional tax', nx(10)]];
+  if ([6, 9, 12, 3].includes(m)) { L2.push(['TDS returns 24Q / 26Q (quarter)', 'TDS / TCS', m === 3 ? nx(31, 2) : nx(31)]); L2.push(['Advance tax instalment', 'Income tax', nx(15, 0)]); }
+  if (m === 3) L2.push(['GSTR-9 annual return', 'GST', (y) + '-12-31'], ['Income tax return (company / audit)', 'Income tax', y + '-10-31'], ['ROC annual filings (AOC-4, MGT-7)', 'ROC / MCA', y + '-10-30']);
+  return L2.map(([task, law, due]) => ({ task, law, due, period: ym }));
+}
+async function seedStatutory() {
+  const ym = ($('#cmpMonth') && $('#cmpMonth').value) || today().slice(0, 7); if (!/^\d{4}-\d{2}$/.test(ym)) { toast('Pick a month.'); return; }
+  const have = new Set((S.data.compliance || []).map(c => lc(c.task) + '|' + c.period)); let n = 0;
+  for (const x of statutoryFor(ym)) { if (have.has(lc(x.task) + '|' + x.period)) continue; if (await save('compliance', null, Object.assign({ no: nextCode('CMP', 'compliance', 'no'), stage: 'Upcoming' }, x))) n++; }
+  toast(n ? n + ' due date' + (n === 1 ? '' : 's') + ' added for ' + ym + '. Check them against the current government notifications.' : 'Already added for ' + ym + '.');
+}
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#cmpSeed')) seedStatutory(); });
+const cmpTools = () => writable('compliance') ? '<input type="month" id="cmpMonth" value="' + today().slice(0, 7) + '" aria-label="Month" style="max-width:170px"><button class="btn" type="button" id="cmpSeed" title="Adds GSTR-1, GSTR-3B, TDS, PF, ESI, PT and the quarterly / yearly dates">Add statutory dates for month</button>' : '';
+// ---- budgets: actual = expense posted in the books for that head and month ----
+function actualFor(head, ym) { return sum((S.data.journal || []).filter(j => String(j.date || '').startsWith(ym)), j => sum((j.lines || []).filter(l => l.a === head), l => num(l.dr) - num(l.cr))); }
+HOOK.cell.budgets = { actual: r => money(actualFor(r.head, r.month)), var: r => { const v = num(r.amount) - actualFor(r.head, r.month); return '<b class="' + (v < 0 ? 'bad-t' : 'good-t') + '">' + money(v) + '</b>'; } };
+function budgetView() {
+  const ym = S.q._bym || today().slice(0, 7), B = (S.data.budgets || []).filter(b => b.month === ym);
+  const heads = uniq(B.map(b => b.head).concat(EXP_HEADS.filter(h => actualFor(h, ym))));
+  let h = '<div class="toolbar"><input type="month" id="bvaMonth" value="' + esc(ym) + '" aria-label="Month">' + (writable('budgets') ? '<button class="btn primary" type="button" data-new="budgets" data-preset="' + esc(JSON.stringify({ month: ym })) + '">+ Budget line</button>' : '') + '</div>';
+  if (!heads.length) return h + '<div class="empty">No budget or spending for ' + esc(ym) + ' yet.</div>';
+  const rows = heads.map(hd => { const b = sum(B.filter(x => x.head === hd), x => num(x.amount)), a = actualFor(hd, ym); return { hd, b, a, v: b - a, p: b ? Math.round(a / b * 100) : null }; });
+  return h + '<div class="tablewrap"><table><thead><tr><th>Expense head</th><th class="num">Budget</th><th class="num">Actual</th><th class="num">Variance</th><th class="num">Used</th></tr></thead><tbody>' +
+    rows.map(r => '<tr><td>' + esc(r.hd) + '</td><td class="num">' + money(r.b) + '</td><td class="num">' + money(r.a) + '</td><td class="num"><b class="' + (r.v < 0 ? 'bad-t' : 'good-t') + '">' + money(r.v) + '</b></td><td class="num">' + (r.p == null ? '—' : r.p + '%') + '</td></tr>').join('') +
+    '<tr><td><b>Total</b></td><td class="num"><b>' + money(sum(rows, r => r.b)) + '</b></td><td class="num"><b>' + money(sum(rows, r => r.a)) + '</b></td><td class="num"><b>' + money(sum(rows, r => r.v)) + '</b></td><td></td></tr></tbody></table></div><p class="help">Actual = what is posted in Accounts › Journal for that expense head in the month (vendor bills, payroll, petty cash, fuel and manual journals).</p>';
+}
+document.addEventListener('change', e => { if (e.target && e.target.id === 'bvaMonth') { S.q._bym = e.target.value; render(); } if (e.target && e.target.id === 'misMonth') { S.q._mym = e.target.value; render(); } });
+// ---- MIS: one page for management ----
+function misView() {
+  const ym = S.q._mym || today().slice(0, 7), inM = d => String(d == null ? '' : (typeof d === 'number' ? new Date(d).toISOString() : d)).slice(0, 7) === ym;
+  const sh = S.data.shipments || [], booked = sh.filter(s => inM(s.createdAt)).length, del = sh.filter(s => stageOf('shipments', s) === 'Delivered' && inM(s.deliveredAt)), ot = del.filter(s => typeof onTime === 'function' ? onTime(s) : false).length;
+  const rev = sum((S.data.invoices || []).filter(i => inM(i.date)), i => num(i.sub || i.total)), inc = EXP_HEADS.reduce((t, hd) => t + actualFor(hd, ym), 0);
+  const km = sum((S.data.trips || []).filter(t => inM(t.planned || t.createdAt)), t => num(t.km)), fuelL = sum((S.data.fuel || []).filter(f => inM(f.date)), f => num(f.litres));
+  const kpi = (v, l, c) => '<div class="kpi' + (c ? ' ' + c : '') + '"><span class="v">' + v + '</span><span class="l">' + esc(l) + '</span></div>';
+  const lowStock = (S.data.items || []).filter(i => num(i.reorder) && stockOfSku(i.sku) <= num(i.reorder)).length;
+  const cmpLate = (S.data.compliance || []).filter(r => isOverdue('compliance', r)).length, ctSoon = (S.data.contracts || []).filter(r => !SCHEMA.contracts.doneStages.includes(stageOf('contracts', r)) && daysFrom(r.due) != null && daysFrom(r.due) <= 30).length;
+  const pipe = sum((S.data.leads || []).filter(l => !SCHEMA.leads.doneStages.includes(stageOf('leads', l))), l => num(l.volume)), won = (S.data.leads || []).filter(l => stageOf('leads', l) === 'Won' && inM(l.updatedAt)).length;
+  const openT = (S.data.tickets || []).filter(t => !SCHEMA.tickets.doneStages.includes(stageOf('tickets', t))).length, ewbSoon = (S.data.ewaybills || []).filter(r => stageOf('ewaybills', r) === 'Active' && daysFrom(r.due) != null && daysFrom(r.due) <= 0).length;
+  return '<div class="toolbar"><input type="month" id="misMonth" value="' + esc(ym) + '" aria-label="Month"></div>' +
+    '<h4 class="section-title">Operations</h4><div class="kpis">' + kpi(booked, 'Shipments booked') + kpi(del.length, 'Delivered') + kpi(del.length ? Math.round(ot / del.length * 100) + '%' : '—', 'On time', del.length && ot / del.length < .9 ? 'alert' : 'okay') + kpi(Math.round(km).toLocaleString('en-IN'), 'Trip km') + kpi(fuelL ? (km / fuelL).toFixed(1) : '—', 'km per litre') + '</div>' +
+    '<h4 class="section-title">Money</h4><div class="kpis">' + kpi(money(rev), 'Revenue (invoiced)') + kpi(money(inc), 'Expenses (books)') + kpi(money(rev - inc), 'Operating margin', rev - inc < 0 ? 'alert' : 'okay') + kpi(del.length ? money(inc / del.length) : '—', 'Cost per delivery') + kpi(km ? money(inc / km) : '—', 'Cost per km') + '</div>' +
+    '<h4 class="section-title">Sales</h4><div class="kpis">' + kpi(money(pipe), 'Open pipeline / month') + kpi(won, 'Leads won') + kpi((S.data.quotes || []).filter(q => stageOf('quotes', q) === 'Sent').length, 'Quotes waiting') + '</div>' +
+    '<h4 class="section-title">Watch list</h4><div class="kpis">' + kpi(lowStock, 'Items to reorder', lowStock ? 'alert' : '') + kpi(cmpLate, 'Statutory items overdue', cmpLate ? 'alert' : '') + kpi(ctSoon, 'Contracts ending in 30 days', ctSoon ? 'alert' : '') + kpi(ewbSoon, 'E-way bills expiring today', ewbSoon ? 'alert' : '') + kpi(openT, 'Open IT tickets') + '</div>' +
+    '<h4 class="section-title">Budget vs actual</h4>' + budgetView().replace(/<div class="toolbar">[\s\S]*?<\/div>/, '');
+}
+// ---- live tracking: drivers on a trip in the Punch app share their position (livepos/<uid>) ----
+let LMAP = null, LMARK = {};
+function liveMapView() {
+  const P = (S.data.livepos || []).filter(p => p.lat != null && p.lng != null).sort((a, b) => (b.at || 0) - (a.at || 0)), act = P.filter(p => p.active && Date.now() - (p.at || 0) < 15 * 60e3);
+  const ago = t => { const m = Math.round((Date.now() - (t || 0)) / 60e3); return m < 1 ? 'now' : m < 60 ? m + ' min ago' : Math.round(m / 60) + ' h ago'; };
+  setTimeout(drawLiveMap, 30);
+  return '<div class="kpis">' + '<div class="kpi okay"><span class="v">' + act.length + '</span><span class="l">On a trip now</span></div><div class="kpi"><span class="v">' + P.length + '</span><span class="l">Drivers seen</span></div></div>' +
+    '<div id="liveMap" style="height:420px;border-radius:14px;overflow:hidden;border:1px solid var(--line,#e3e6ea);margin:10px 0"></div>' +
+    (P.length ? '<div class="tablewrap"><table><thead><tr><th>Driver</th><th>Vehicle</th><th>Trip</th><th>Status</th><th>Last seen</th><th>Speed</th><th></th></tr></thead><tbody>' + P.map(p => '<tr><td>' + esc(p.name || '') + '</td><td>' + esc(p.vehicle || '') + '</td><td>' + esc(p.trip || '') + '</td><td>' + pill(p.active && Date.now() - (p.at || 0) < 15 * 60e3 ? 'On trip' : 'Off') + '</td><td>' + esc(ago(p.at)) + '</td><td>' + (p.speed != null ? Math.round(p.speed * 3.6) + ' km/h' : '') + '</td><td><a href="https://www.google.com/maps?q=' + p.lat + ',' + p.lng + '" target="_blank" rel="noopener">Map</a></td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="empty">No driver has shared a location yet. Drivers start a trip in the Punch app (More › Driver trip); their position shows here while the trip runs.</div>');
+}
+function drawLiveMap() {
+  const el = $('#liveMap'); if (!el) { LMAP = null; return; }
+  const go2 = () => { if (!window.L || !window.L.map) return; if (!LMAP || LMAP._container !== el) { LMAP = window.L.map(el).setView([17.385, 78.4867], 6); window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(LMAP); LMARK = {}; }
+    const P = (S.data.livepos || []).filter(p => p.lat != null && p.lng != null), b = [];
+    P.forEach(p => { const on = p.active && Date.now() - (p.at || 0) < 15 * 60e3, ll = [p.lat, p.lng]; b.push(ll); const lbl = esc((p.vehicle || p.name || 'Driver') + (p.trip ? ' · ' + p.trip : ''));
+      if (LMARK[p._id]) LMARK[p._id].setLatLng(ll); else LMARK[p._id] = window.L.circleMarker(ll, { radius: 9, weight: 3, color: '#fff', fillColor: on ? '#0f8a6d' : '#94a3b8', fillOpacity: 1 }).addTo(LMAP).bindTooltip(lbl, { permanent: true, direction: 'top', offset: [0, -8] });
+      LMARK[p._id].setStyle({ fillColor: on ? '#0f8a6d' : '#94a3b8' }); });
+    if (b.length && !LMAP._fit) { LMAP.fitBounds(b, { padding: [40, 40], maxZoom: 14 }); LMAP._fit = 1; } setTimeout(() => LMAP && LMAP.invalidateSize(), 100); };
+  if (window.L && window.L.map) return go2();
+  if (!document.getElementById('lfcss')) { const c = document.createElement('link'); c.id = 'lfcss'; c.rel = 'stylesheet'; c.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(c); const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; s.onload = go2; document.head.appendChild(s); }
+}
+setInterval(() => { try { if (S.mod === 'tracking' && curTab().id === 'live' && !document.hidden) drawLiveMap(); } catch (e) {} }, 20000);
+const soon = (k, days) => r => !SCHEMA[k].doneStages.includes(stageOf(k, r)) && daysFrom(r.due) != null && daysFrom(r.due) <= days;
+const NAV_MORE = [
+  { id: 'wms', label: 'Warehouse & inventory', icon: 'box', dept: 'ops', sub: () => 'Items, inward (GRN), stock by bin, outbound orders, stock counts', tabs: [
+    { id: 'stock', label: 'Stock', view: () => stockView(false) },
+    { id: 'orders', label: 'Outbound orders', view: L('orders'), n: () => (S.data.orders || []).filter(o => !SCHEMA.orders.doneStages.includes(stageOf('orders', o))) },
+    { id: 'inward', label: 'Inward (GRN)', view: L('stockmoves', { extraFilter: r => STOCK_IN.includes(r.kind), preset: { kind: 'Inward (GRN)', date: today() }, noun: 'inward entry' }) },
+    { id: 'moves', label: 'All movements', view: L('stockmoves') }, { id: 'items', label: 'Items (SKU master)', view: L('items'), n: () => S.data.items || [] },
+    { id: 'low', label: 'Reorder list', view: () => stockView(true), n: () => (S.data.items || []).filter(i => num(i.reorder) && stockOfSku(i.sku) <= num(i.reorder)) }] },
+  { id: 'tracking', label: 'Live tracking & e-way', icon: 'live', dept: 'ops', sub: () => 'Drivers on a trip on the map, e-way bills and their validity', tabs: [
+    { id: 'live', label: 'Live vehicles', view: liveMapView },
+    { id: 'dtrips', label: 'Driver trips', view: L('drvtrips', { noNew: true }), n: () => (S.data.drvtrips || []).filter(t => stageOf('drvtrips', t) === 'On trip') },
+    { id: 'ewb', label: 'E-way bills', view: L('ewaybills'), n: () => (S.data.ewaybills || []).filter(r => stageOf('ewaybills', r) === 'Active') },
+    { id: 'ewbsoon', label: 'Expiring in 1 day', view: L('ewaybills', { extraFilter: soon('ewaybills', 1), noNew: true, noChips: true, empty: 'No active e-way bill expires within a day.' }), n: () => (S.data.ewaybills || []).filter(soon('ewaybills', 1)) }] },
+  { id: 'sales', label: 'Sales & CRM', icon: 'phone', dept: 'ops', also: ['fin'], sub: () => 'Leads, follow-ups, quotations – a won lead becomes a customer', tabs: [
+    { id: 'leads', label: 'Leads', view: L('leads'), n: () => (S.data.leads || []).filter(l => !SCHEMA.leads.doneStages.includes(stageOf('leads', l))) },
+    { id: 'follow', label: 'Follow-ups due', view: L('leads', { extraFilter: soon('leads', 0), noNew: true, noChips: true, empty: 'No follow-up due today.' }), n: () => (S.data.leads || []).filter(soon('leads', 0)) },
+    { id: 'quotes', label: 'Quotations', view: L('quotes'), n: () => (S.data.quotes || []).filter(q => stageOf('quotes', q) === 'Sent') }] },
+  { id: 'purchase', label: 'Purchase & petty cash', icon: 'cart', dept: 'adm', also: ['fin'], sub: () => 'Purchase request → PO → goods received → vendor bill; petty cash per site', tabs: [
+    { id: 'pr', label: 'Purchase requests', view: L('purchasereq'), n: () => (S.data.purchasereq || []).filter(r => ['Requested', 'Approved'].includes(stageOf('purchasereq', r))) },
+    { id: 'po', label: 'Purchase orders', view: L('purchaseorders'), n: () => (S.data.purchaseorders || []).filter(r => !SCHEMA.purchaseorders.doneStages.includes(stageOf('purchaseorders', r))) },
+    { id: 'petty', label: 'Petty cash', view: L('pettycash', { preset: { date: today(), kind: 'Expense paid' } }) }, { id: 'pbal', label: 'Cash balance', view: pettyBalance }] },
+  { id: 'compliance', label: 'Compliance & legal', icon: 'shield', dept: 'adm', also: ['fin'], sub: () => 'GST, TDS, PF, ESI, PT due dates; contracts, licences and insurance renewals', tabs: [
+    { id: 'cal', label: 'Statutory calendar', view: () => listView('compliance', { tools: cmpTools() }), n: () => (S.data.compliance || []).filter(soon('compliance', 7)) },
+    { id: 'ct', label: 'Contracts & licences', view: L('contracts') },
+    { id: 'soon', label: 'Ending in 30 days', view: L('contracts', { extraFilter: soon('contracts', 30), noNew: true, noChips: true, empty: 'Nothing ends in the next 30 days.' }), n: () => (S.data.contracts || []).filter(soon('contracts', 30)) }] },
+  { id: 'facilities', label: 'Facilities & security', icon: 'gate', dept: 'adm', sub: () => 'Gate passes, visitor log, daily site checklists, office supplies', tabs: [
+    { id: 'gp', label: 'Gate passes', view: L('gatepass', { preset: { date: today() } }), n: () => (S.data.gatepass || []).filter(r => stageOf('gatepass', r) === 'Open') },
+    { id: 'vis', label: 'Visitors', view: L('visitors', { preset: { date: today() } }), n: () => (S.data.visitors || []).filter(r => stageOf('visitors', r) === 'Inside') },
+    { id: 'chk', label: 'Site checklists', view: L('checklists', { preset: { date: today() } }) },
+    { id: 'sup', label: 'Office supplies', view: L('supplies'), n: () => (S.data.supplies || []).filter(r => num(r.reorder) && num(r.qty) <= num(r.reorder)) }] },
+  { id: 'mis', label: 'Budgets & MIS', icon: 'chart', dept: 'fin', also: ['overview'], sub: () => 'Management numbers for the month, budget vs actual', tabs: [
+    { id: 'mis', label: 'MIS', view: misView }, { id: 'bva', label: 'Budget vs actual', view: budgetView }, { id: 'budgets', label: 'Budget lines', view: L('budgets') }] }
+];
+
 const NAV = [
   { id: 'punch', label: 'Team live', icon: 'clock', dept: 'hr', top: true, hidden: true, href: '../hr/#/live', sub: () => 'Live attendance from the Punch app · ' + fmtDate(today()),
     get tabs() { return [{ id: 'live', label: 'Live', view: punchLive }, { id: 'reg', label: 'Attendance register', view: punchRegister }]
@@ -3717,6 +4011,7 @@ const NAV = [
   { id: 'reports', label: 'Reports', icon: 'chart', dept: 'overview', sub: () => 'Service levels, revenue and productivity', tabs: [{ id: 'main', label: 'Performance', view: reports }] },
   { id: 'settings', label: 'Settings', icon: 'cog', dept: 'adm', sub: () => 'Rates, rules, routing, upload templates and the audit log', tabs: [{ id: 'main', label: 'Settings', view: settingsView }, { id: 'pins', label: 'Pincodes & states', view: pinsView }, { id: 'templates', label: 'Upload templates', view: templatesView }, { id: 'audit', label: 'Audit log', view: auditView }] }
 ];
+NAV.splice(NAV.findIndex(m => m.id === 'directory'), 0, ...NAV_MORE);
 const visibleMods = () => NAV.filter(m => !m.href && anyLvl(m.id) >= 1);
 const curMod = () => { const v = visibleMods(); return v.find(m => m.id === S.mod) || v[0] || NAV.find(m => m.id === 'me'); };
 const curTab = () => { const m = curMod(), ts = tabsOf(m); return ts.find(t => t.id === S.tab[m.id]) || ts[0] || m.tabs[0]; };
