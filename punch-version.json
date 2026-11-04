@@ -1,12 +1,15 @@
 {
-  "versionCode": 66,
-  "versionName": "8.2",
-  "date": "29 Oct 2026",
-  "size": 3059972,
+  "versionCode": 69,
+  "versionName": "8.4.1",
+  "date": "04 Nov 2026",
+  "size": 3061508,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Payslip shows total month days and payable days.",
+  "notes": "Employee requests now reach HR.",
   "list": [
-    "Payslip shows Total Month Days and Total Payable Days.",
-    "Login on this phone shows this phone's own profile and check-ins."
+    "Requests show ✓ Sent to HR or ⚠ On this phone only.",
+    "Requests saved on the phone are sent to HR automatically after signing in with the portal login.",
+    "Warning when signed in on this phone only (portal sign-in failed).",
+    "Team tab: red badge with waiting requests, and the reason if requests cannot be loaded.",
+    "Attendance logic unchanged."
   ]
 }
