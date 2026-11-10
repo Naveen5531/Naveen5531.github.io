@@ -1,13 +1,13 @@
 {
-  "versionCode": 77,
-  "versionName": "9.2",
+  "versionCode": 78,
+  "versionName": "9.3",
   "date": "10 Nov 2026",
-  "size": 2469710,
+  "size": 2469870,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Admin can mark any day; Optional holiday option.",
+  "notes": "Optional holiday in Apply leave and Attendance; Admin can mark any day.",
   "list": [
-    "Admin can mark any day, including old weeks and days with a check-in.",
-    "Clear mark brings back the recorded status.",
-    "New Optional holiday choice when marking or requesting attendance (up to 4 a year)."
+    "Apply leave now has OH · Optional holiday (any date, up to 4 a year).",
+    "Attendance status list has Optional holiday too.",
+    "Admin can mark any day, including old weeks and days with a check-in."
   ]
 }
