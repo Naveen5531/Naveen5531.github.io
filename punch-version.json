@@ -1,13 +1,13 @@
 {
-  "versionCode": 79,
-  "versionName": "9.4",
+  "versionCode": 80,
+  "versionName": "9.5",
   "date": "10 Nov 2026",
-  "size": 2469986,
+  "size": 2470066,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Weekly off change now stays; Optional holiday in Apply leave and Attendance; Admin can mark any day.",
+  "notes": "Optional holiday (OH) everywhere; weekly off change stays; Admin can mark any day.",
   "list": [
+    "Optional holiday (OH) in Admin Set status, request approval, Attendance and Apply leave.",
     "Changing weekly offs now saves online, so it no longer jumps back.",
-    "Apply leave has OH · Optional holiday (any date, up to 4 a year).",
     "Admin can mark any day, including old weeks and days with a check-in."
   ]
 }
