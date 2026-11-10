@@ -1,15 +1,13 @@
 {
-  "versionCode": 75,
-  "versionName": "9.0",
-  "date": "04 Nov 2026",
-  "size": 2468254,
+  "versionCode": 77,
+  "versionName": "9.2",
+  "date": "10 Nov 2026",
+  "size": 2469710,
   "url": "https://naveen5531.github.io/Punch.apk",
-  "notes": "Release build, privacy notice and per-company set-up.",
+  "notes": "Admin can mark any day; Optional holiday option.",
   "list": [
-    "Proper release build of Punch.",
-    "First sign-in shows a location and data notice with the privacy policy.",
-    "Company name, logo, website and grades come from one settings file.",
-    "Employee CTC on the Employees page.",
-    "Attendance logic unchanged."
+    "Admin can mark any day, including old weeks and days with a check-in.",
+    "Clear mark brings back the recorded status.",
+    "New Optional holiday choice when marking or requesting attendance (up to 4 a year)."
   ]
 }
